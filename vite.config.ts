@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import tsconfigPaths from 'vite-tsconfig-paths';
 import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
 import tailwindcss from '@tailwindcss/vite';
 import obfuscator from 'rollup-plugin-obfuscator';
@@ -27,7 +26,6 @@ export default defineConfig({
       autoCodeSplitting: true,
     }),
     react(),
-    tsconfigPaths(),
     // Disable obfuscator in production to prevent runtime errors
     // process.env.NODE_ENV === 'production' ? obfuscator() : null,
   ].filter(Boolean),
@@ -51,7 +49,6 @@ export default defineConfig({
         chunkFileNames: 'assets/[name].js',
         entryFileNames: 'assets/[name].js',
         assetFileNames: 'assets/[name].[ext]',
-        inlineDynamicImports: false,
       }
     }
   },
