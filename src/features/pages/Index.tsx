@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Flame, PlaySquare, ChevronRight, Loader2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link } from '@tanstack/react-router';
 import { supabase } from '@/integrations/supabase/loose';
 import { toast } from 'sonner';
 
