@@ -28,7 +28,8 @@ export default defineConfig({
     }),
     react(),
     tsconfigPaths(),
-    process.env.NODE_ENV === 'production' ? obfuscator() : null,
+    // Disable obfuscator in production to prevent runtime errors
+    // process.env.NODE_ENV === 'production' ? obfuscator() : null,
   ].filter(Boolean),
   resolve: {
     tsconfigPaths: true,
@@ -42,42 +43,11 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: false,
-        drop_debugger: false,
-        dead_code: true,
-        conditionals: true,
-        evaluate: true,
-        booleans: true,
-        loops: true,
-        unused: true,
-        hoist_funs: true,
-        keep_fargs: false,
-        hoist_vars: false,
-        if_return: true,
-        join_vars: true,
-        side_effects: true,
-        sequences: true,
-        properties: true,
-      },
-      mangle: {
-        toplevel: true,
-        properties: {
-          regex: /^_/
-        },
-        keep_fnames: false,
-        keep_classnames: false,
-      },
-      format: {
-        comments: false,
-        ascii_only: true,
-      }
-    },
-    sourcemap: false,
+    sourcemap: true,
+    minify: 'esbuild',
     rollupOptions: {
       output: {
+        manualChunks: undefined,
         chunkFileNames: 'assets/[name].js',
         entryFileNames: 'assets/[name].js',
         assetFileNames: 'assets/[name].[ext]',
