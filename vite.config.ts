@@ -40,16 +40,13 @@ export default defineConfig({
   optimizeDeps: {
     include: ['@tanstack/react-start'],
   },
-  optimizeDeps: {
-    include: ['@tanstack/react-start'],
-  },
   build: {
+    outDir: 'dist',
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true,
-        drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn', 'console.error'],
+        drop_console: false,
+        drop_debugger: false,
         dead_code: true,
         conditionals: true,
         evaluate: true,
