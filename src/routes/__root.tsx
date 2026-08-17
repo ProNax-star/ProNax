@@ -1,51 +1,53 @@
-// Suppress browser extension warnings immediately - more aggressive approach
-(function() {
-  if (typeof console === 'undefined') return;
-  
-  const originalWarn = console.warn;
-  const originalError = console.error;
-  const originalLog = console.log;
-  
-  // Create a comprehensive filter function
-  const shouldSuppress = (...args: any[]): boolean => {
-    const fullMessage = args.map(arg => 
-      typeof arg === 'string' ? arg : 
-      typeof arg === 'object' ? JSON.stringify(arg) : 
-      String(arg)
-    ).join(' ');
+// Suppress browser extension warnings - only in development
+if (import.meta.env.DEV) {
+  (function() {
+    if (typeof console === 'undefined') return;
     
-    // Suppress browser extension warnings
-    const suppressPatterns = [
-      'MaxListenersExceededWarning',
-      'ObjectMultiplex',
-      'orphaned data',
-      'contentscript.js',
-      'app-init-liveness',
-      'background-liveness'
-    ];
+    const originalWarn = console.warn;
+    const originalError = console.error;
+    const originalLog = console.log;
     
-    return suppressPatterns.some(pattern => fullMessage.includes(pattern));
-  };
-  
-  // Override console methods
-  console.warn = function(...args: any[]) {
-    if (!shouldSuppress(...args)) {
-      originalWarn.apply(console, args);
-    }
-  };
-  
-  console.error = function(...args: any[]) {
-    if (!shouldSuppress(...args)) {
-      originalError.apply(console, args);
-    }
-  };
-  
-  console.log = function(...args: any[]) {
-    if (!shouldSuppress(...args)) {
-      originalLog.apply(console, args);
-    }
-  };
-})();
+    // Create a comprehensive filter function
+    const shouldSuppress = (...args: any[]): boolean => {
+      const fullMessage = args.map(arg => 
+        typeof arg === 'string' ? arg : 
+        typeof arg === 'object' ? JSON.stringify(arg) : 
+        String(arg)
+      ).join(' ');
+      
+      // Suppress browser extension warnings
+      const suppressPatterns = [
+        'MaxListenersExceededWarning',
+        'ObjectMultiplex',
+        'orphaned data',
+        'contentscript.js',
+        'app-init-liveness',
+        'background-liveness'
+      ];
+      
+      return suppressPatterns.some(pattern => fullMessage.includes(pattern));
+    };
+    
+    // Override console methods
+    console.warn = function(...args: any[]) {
+      if (!shouldSuppress(...args)) {
+        originalWarn.apply(console, args);
+      }
+    };
+    
+    console.error = function(...args: any[]) {
+      if (!shouldSuppress(...args)) {
+        originalError.apply(console, args);
+      }
+    };
+    
+    console.log = function(...args: any[]) {
+      if (!shouldSuppress(...args)) {
+        originalLog.apply(console, args);
+      }
+    };
+  })();
+}
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
