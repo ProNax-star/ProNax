@@ -454,7 +454,7 @@ export function VideoPlayer({
           }`}
         >
           <div
-            className="px-3 pt-8 pb-2"
+            className="px-3 pt-10 pb-2 md:pt-8"
             style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0))' }}
           >
             {/* Progress */}

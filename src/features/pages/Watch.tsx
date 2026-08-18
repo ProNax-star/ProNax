@@ -487,8 +487,8 @@ export default function Watch() {
           <div className="relative md:rounded-2xl overflow-hidden bg-black aspect-video w-full max-h-[70vh] md:max-h-[580px] shrink-0 shadow-2xl sticky top-0 z-30 md:relative">
 
             {/* Live watching badge — inside the player, top-right corner */}
-            <div className="absolute top-3 right-3 z-40 pointer-events-none">
-              <LiveWatcherBadge videoId={videoId} baseViewsCount={Number(dbVideo?.views_count || 500)} variant="3d-overlay" />
+            <div className="absolute top-2 right-2 md:top-3 md:right-3 z-40 pointer-events-none">
+              <LiveWatcherBadge videoId={videoId} baseViewsCount={Number(dbVideo?.views_count || 500)} variant="3d-overlay" showText={false} />
             </div>
 
 
