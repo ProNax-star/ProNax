@@ -23,12 +23,12 @@ export default function Auth() {
   const [awaitingVerification, setAwaitingVerification] = useState(false);
 
   useEffect(() => {
-    // If already signed in, redirect to wallet
+    // If already signed in, redirect to home page
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate('/wallet', { replace: true });
+      if (data.session) navigate('/', { replace: true });
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) navigate('/wallet', { replace: true });
+      if (session) navigate('/', { replace: true });
     });
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
