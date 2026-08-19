@@ -56,7 +56,7 @@ function VideoCardTile({ v, i }: { v: GridVideo; i: number }) {
         to={v.is_short ? `/shorts/${v.id}` : `/watch/${v.id}`}
         className="block group w-full"
       >
-        <div className="relative w-full aspect-video overflow-hidden rounded-xl bg-gray-800">
+        <div className="relative w-full aspect-video overflow-hidden rounded-none sm:rounded-xl bg-gray-800">
           {v.thumb_url ? (
             <img
               src={v.thumb_url}
@@ -74,7 +74,7 @@ function VideoCardTile({ v, i }: { v: GridVideo; i: number }) {
             </span>
           )}
         </div>
-        <div className="flex gap-3 mt-2 px-1 w-full">
+        <div className="flex gap-3 mt-3 px-3 w-full">
           <div className="h-9 w-9 shrink-0 rounded-full bg-gray-700 overflow-hidden">
             {v.ownerAvatar ? (
               <img src={v.ownerAvatar} alt={v.ownerName || 'Creator'} className="h-full w-full object-cover" />
@@ -121,7 +121,7 @@ function MobileVirtualList({ items }: { items: (GridVideo | { __ad: true; key: s
   return (
     <div
       ref={parentRef}
-      className="scroll-gpu overflow-y-auto px-3"
+      className="scroll-gpu overflow-y-auto px-0"
       style={{ height: 'calc(100vh - 140px)', contain: 'strict' }}
     >
       <div style={{ height: rowVirtualizer.getTotalSize(), position: 'relative', width: '100%' }}>
@@ -177,7 +177,7 @@ export function VideoGrid({ videos, empty }: { videos: GridVideo[]; empty?: stri
   }
 
   // Desktop → responsive grid with `content-visibility: auto` per card.
-  const gridCls = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2 px-3 sm:px-0';
+  const gridCls = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2 px-0 sm:px-0';
   if (!freq) {
     return (
       <div className={gridCls}>

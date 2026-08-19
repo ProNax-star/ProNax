@@ -20,8 +20,8 @@ export function NeonSkeletonBlock({ className = '' }: { className?: string }) {
 export function VideoCardSkeleton() {
   return (
     <div className="flex flex-col gap-2">
-      <div className="aspect-video w-full rounded-lg bg-gray-800 animate-pulse" />
-      <div className="flex items-start gap-3">
+      <div className="aspect-video w-full rounded-none sm:rounded-lg bg-gray-800 animate-pulse" />
+      <div className="flex items-start gap-3 px-3">
         <div className="w-9 h-9 rounded-full bg-gray-700 shrink-0 animate-pulse" />
         <div className="flex-1 space-y-2">
           <div className="h-4 w-11/12 bg-gray-700 rounded animate-pulse" />

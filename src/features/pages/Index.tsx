@@ -367,13 +367,13 @@ export default function Index() {
       )}
 
       {/* Grid */}
-      <div className="px-3 lg:px-6 pb-4 perspective-container w-full">
+      <div className="px-0 lg:px-6 pb-4 perspective-container w-full">
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2 w-full">
             {Array.from({ length: 9 }).map((_, i) => (
               <div key={i} className="flex flex-col gap-2 w-full">
-                <div className="aspect-video rounded-xl bg-gray-800 animate-pulse w-full" />
-                <div className="flex gap-3 px-1 w-full">
+                <div className="aspect-video rounded-none sm:rounded-xl bg-gray-800 animate-pulse w-full" />
+                <div className="flex gap-3 mt-3 px-3 w-full">
                   <div className="w-9 h-9 rounded-full bg-gray-700 animate-pulse shrink-0" />
                   <div className="flex-1 space-y-2 w-full">
                     <div className="h-4 w-11/12 bg-gray-700 rounded animate-pulse" />
@@ -416,7 +416,7 @@ export default function Index() {
                 style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
               >
                 <Link to={`/watch/${v.id}`} className="block group w-full">
-                  <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-800 w-full">
+                  <div className="relative aspect-video rounded-none sm:rounded-xl overflow-hidden bg-gray-800 w-full">
                     {v.thumb_url ? (
                       <img src={v.thumb_url} alt={v.title} loading={i < 3 ? 'eager' : 'lazy'} decoding="async" fetchPriority={i === 0 ? 'high' : 'auto'} className="absolute inset-0 w-full h-full object-cover" />
 
@@ -432,7 +432,7 @@ export default function Index() {
                       </span>
                     )}
                   </div>
-                  <div className="flex gap-3 mt-2 px-1 w-full">
+                  <div className="flex gap-3 mt-3 px-3 w-full">
                     <div className="w-9 h-9 rounded-full shrink-0 bg-gray-700 overflow-hidden">
                       {v.ownerAvatar ? (
                         <img src={v.ownerAvatar} alt={v.ownerName || 'Creator'} className="w-full h-full object-cover" />
