@@ -19,8 +19,8 @@ export function MobileNav() {
             to={to}
             end={to === '/'}
             aria-label={label}
-            className="flex flex-col items-center justify-center gap-1 text-muted-foreground transition-all duration-200 min-w-[44px] min-h-[44px] px-2 py-1 hover:text-foreground active:scale-95"
-            activeClassName="text-foreground"
+            className="flex flex-col items-center justify-center gap-1 text-gray-500 transition-all duration-200 min-w-[44px] min-h-[44px] px-2 py-1 hover:text-gray-400 active:scale-95"
+            activeClassName="text-white"
           >
             <Icon className="w-6 h-6 transition-transform duration-200" />
             <span className="text-[11px] font-medium">{label}</span>

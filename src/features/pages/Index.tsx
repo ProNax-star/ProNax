@@ -320,7 +320,7 @@ export default function Index() {
             key={k}
             onClick={() => setFeedKind(k)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-              feedKind === k ? 'bg-foreground text-background font-semibold' : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+              feedKind === k ? 'bg-white text-black font-semibold' : 'bg-transparent text-gray-400 hover:text-gray-300'
             }`}
           >
             {k === 'foryou' ? 'For You' : k}
@@ -369,17 +369,15 @@ export default function Index() {
       {/* Grid */}
       <div className="px-3 lg:px-6 pb-4 perspective-container">
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2">
             {Array.from({ length: 9 }).map((_, i) => (
               <div key={i} className="flex flex-col gap-2">
-                <div className="aspect-video rounded-lg bg-primary/5 border border-primary/10 relative overflow-hidden">
-                  <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-primary/10 to-transparent" />
-                </div>
-                <div className="flex gap-2">
-                  <div className="w-9 h-9 rounded-full bg-primary/10 animate-pulse shrink-0" />
-                  <div className="flex-1 space-y-1.5">
-                    <div className="h-3 w-11/12 rounded bg-primary/10 animate-pulse" />
-                    <div className="h-2.5 w-2/3 rounded bg-primary/10 animate-pulse" />
+                <div className="aspect-video rounded-lg bg-gray-800 animate-pulse" />
+                <div className="flex gap-3">
+                  <div className="w-9 h-9 rounded-full bg-gray-700 animate-pulse shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-11/12 bg-gray-700 rounded animate-pulse" />
+                    <div className="h-3 w-2/3 bg-gray-700 rounded animate-pulse" />
                   </div>
                 </div>
               </div>

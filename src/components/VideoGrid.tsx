@@ -56,7 +56,7 @@ function VideoCardTile({ v, i }: { v: GridVideo; i: number }) {
         to={v.is_short ? `/shorts/${v.id}` : `/watch/${v.id}`}
         className="block group"
       >
-        <div className="relative w-full aspect-video overflow-hidden rounded-lg bg-muted/20">
+        <div className="relative w-full aspect-video overflow-hidden rounded-lg bg-gray-800">
           {v.thumb_url ? (
             <img
               src={v.thumb_url}
@@ -66,7 +66,7 @@ function VideoCardTile({ v, i }: { v: GridVideo; i: number }) {
               className="absolute inset-0 h-full w-full object-cover"
             />
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/15 to-accent/20" />
+            <div className="absolute inset-0 bg-gray-800" />
           )}
           {fmtDuration(v.duration_seconds) && (
             <span className="absolute bottom-1 right-1 rounded bg-black/80 px-1 py-0.5 text-[11px] font-medium text-white">
@@ -75,20 +75,20 @@ function VideoCardTile({ v, i }: { v: GridVideo; i: number }) {
           )}
         </div>
         <div className="flex gap-3 mt-3">
-          <div className="h-9 w-9 shrink-0 rounded-full bg-muted overflow-hidden">
+          <div className="h-9 w-9 shrink-0 rounded-full bg-gray-700 overflow-hidden">
             {v.ownerAvatar ? (
               <img src={v.ownerAvatar} alt={v.ownerName || 'Creator'} className="h-full w-full object-cover" />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-primary text-[10px] font-bold text-primary-foreground">
+              <div className="flex h-full w-full items-center justify-center bg-gray-600 text-[10px] font-bold text-white">
                 {(v.ownerName || '?').slice(0, 2).toUpperCase()}
               </div>
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="line-clamp-2 text-[14px] font-medium leading-[18px] text-foreground">
+            <h3 className="line-clamp-2 text-[14px] font-semibold leading-[18px] text-white">
               {v.title}
             </h3>
-            <div className="mt-1 flex items-center gap-1 text-[12px] text-muted-foreground">
+            <div className="mt-1 flex items-center gap-1 text-[12px] text-gray-400">
               <span className="truncate">@{(v.ownerName || 'creator').replace(/\s+/g, '')}</span>
               <span>•</span>
               <span className="shrink-0">{views > 0 ? <AnimatedCounter value={views} format={compactFormat} /> + ' views' : '0 views'}</span>
