@@ -367,15 +367,15 @@ export default function Index() {
       )}
 
       {/* Grid */}
-      <div className="px-3 lg:px-6 pb-4 perspective-container">
+      <div className="px-3 lg:px-6 pb-4 perspective-container w-full">
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2 w-full">
             {Array.from({ length: 9 }).map((_, i) => (
-              <div key={i} className="flex flex-col gap-2">
-                <div className="aspect-video rounded-lg bg-gray-800 animate-pulse" />
-                <div className="flex gap-3">
+              <div key={i} className="flex flex-col gap-2 w-full">
+                <div className="aspect-video rounded-xl bg-gray-800 animate-pulse w-full" />
+                <div className="flex gap-3 px-1 w-full">
                   <div className="w-9 h-9 rounded-full bg-gray-700 animate-pulse shrink-0" />
-                  <div className="flex-1 space-y-2">
+                  <div className="flex-1 space-y-2 w-full">
                     <div className="h-4 w-11/12 bg-gray-700 rounded animate-pulse" />
                     <div className="h-3 w-2/3 bg-gray-700 rounded animate-pulse" />
                   </div>
@@ -407,56 +407,57 @@ export default function Index() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2 w-full">
             {filtered.map((v, i) => (
               <ImpressionCard
                 key={v.id}
                 videoId={String(v.id)}
-                className="card-vis animate-[fadeUp_.35s_ease-out_both]"
+                className="card-vis animate-[fadeUp_.35s_ease-out_both] w-full"
                 style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
               >
-                <Link to={`/watch/${v.id}`} className="block group">
-                  <div className="relative aspect-video rounded-lg overflow-hidden bg-muted/20">
+                <Link to={`/watch/${v.id}`} className="block group w-full">
+                  <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-800 w-full">
                     {v.thumb_url ? (
-                      <img src={v.thumb_url} alt={v.title} loading={i < 3 ? 'eager' : 'lazy'} decoding="async" fetchPriority={i === 0 ? 'high' : 'auto'} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      <img src={v.thumb_url} alt={v.title} loading={i < 3 ? 'eager' : 'lazy'} decoding="async" fetchPriority={i === 0 ? 'high' : 'auto'} className="absolute inset-0 w-full h-full object-cover" />
 
                     ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/15 to-accent/20" />
+                      <div className="absolute inset-0 bg-gray-800" />
                     )}
                     {v.preview_sprite_url && v.preview_sprite_frames ? (
                       <HoverSprite url={v.preview_sprite_url} frames={v.preview_sprite_frames} />
                     ) : null}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     {fmtDuration(v.duration_seconds) && (
-                      <span className="absolute bottom-1.5 right-1.5 px-1 py-0.5 rounded text-[10px] font-mono font-bold bg-background/90 text-foreground backdrop-blur-sm">
+                      <span className="absolute bottom-1 right-1 rounded bg-black/80 px-1 py-0.5 text-[11px] font-medium text-white">
                         {fmtDuration(v.duration_seconds)}
                       </span>
                     )}
                   </div>
-                  <div className="flex gap-2 mt-2">
-                    <div className="w-9 h-9 rounded-full shrink-0 bg-muted flex items-center justify-center text-[10px] font-display font-bold text-foreground overflow-hidden">
+                  <div className="flex gap-3 mt-2 px-1 w-full">
+                    <div className="w-9 h-9 rounded-full shrink-0 bg-gray-700 overflow-hidden">
                       {v.ownerAvatar ? (
                         <img src={v.ownerAvatar} alt={v.ownerName || 'Creator'} className="w-full h-full object-cover" />
                       ) : (
-                        <span>{(v.ownerName || '?').slice(0, 2).toUpperCase()}</span>
+                        <div className="flex h-full w-full items-center justify-center bg-gray-600 text-[10px] font-bold text-white">
+                          {(v.ownerName || '?').slice(0, 2).toUpperCase()}
+                        </div>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-medium text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+                    <div className="flex-1 min-w-0 w-full">
+                      <h3 className="text-[14px] font-semibold leading-[18px] text-white line-clamp-2">
                         {v.title}
                       </h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">@{(v.ownerName || 'creator').replace(/\s+/g, '')}</p>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <span><AnimatedCounter value={v.views ?? 0} format={compactFormat} /> views</span>
+                      <div className="mt-1 flex items-center gap-1 text-[12px] text-gray-400">
+                        <span className="truncate">@{(v.ownerName || 'creator').replace(/\s+/g, '')}</span>
                         <span>•</span>
-                        <span>{timeAgo(v.created_at)}</span>
+                        <span className="shrink-0">{v.views > 0 ? <AnimatedCounter value={v.views} format={compactFormat} /> + ' views' : '0 views'}</span>
+                        <span>•</span>
+                        <span className="shrink-0">{timeAgo(v.created_at)}</span>
                       </div>
                     </div>
                   </div>
                 </Link>
               </ImpressionCard>
             ))}
-
           </div>
         )}
         {!loading && hasMore && cat === 'All' && (
