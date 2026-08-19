@@ -44,18 +44,17 @@ export function AppShell() {
           {!isStudioRoute && <AppSidebar />}
           <div className="flex-1 flex flex-col min-w-0">
             {!isStudioRoute && (
-              <div className="lg:hidden sticky top-0 z-50 glass-strong border-b border-border/30 h-16 flex items-center justify-between px-4 gap-3">
-                <div className="flex items-center gap-3 shrink-0">
-                  <SidebarTrigger aria-label="Toggle menu" className="text-foreground p-2 rounded-lg hover:bg-muted/20 transition-colors">
+              <div className="lg:hidden sticky top-0 z-50 bg-background/95 backdrop-blur-lg border-b border-border/20 h-14 flex items-center justify-between px-3 gap-2">
+                <div className="flex items-center gap-2 shrink-0">
+                  <SidebarTrigger aria-label="Toggle menu" className="text-foreground p-2 rounded-full hover:bg-muted/20 transition-colors">
                     <Menu className="w-5 h-5" />
                   </SidebarTrigger>
-                  <span className="text-sm font-display font-bold text-primary text-glow tracking-wide">PRO NAX</span>
+                  <span className="text-base font-display font-bold text-foreground tracking-tight">PRO NAX</span>
                 </div>
-                <div className="flex-1 min-w-0 max-w-[200px]">
+                <div className="flex-1 min-w-0 max-w-[180px]">
                   <SmartSearch />
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <InstallButton compact />
+                <div className="flex items-center gap-1 shrink-0">
                   <EngineBoundary name="notifications" silent>
                     <NotificationsBell />
                   </EngineBoundary>

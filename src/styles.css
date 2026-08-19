@@ -391,3 +391,25 @@ body::-webkit-scrollbar,
 .neon-glow-red {
   box-shadow: 0 0 20px rgba(239, 68, 68, 0.25);
 }
+
+/* Mobile UI improvements */
+@media (max-width: 768px) {
+  body {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .mobile-touch-friendly {
+    touch-action: manipulation;
+  }
+  
+  /* Better mobile text spacing */
+  h1, h2, h3 {
+    letter-spacing: -0.02em;
+  }
+  
+  /* Improved mobile readability */
+  p, span, div {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+}

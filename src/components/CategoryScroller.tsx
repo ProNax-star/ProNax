@@ -33,10 +33,10 @@ export function CategoryScroller({ items, value, prefix = '', onSelect, rounded 
               key={item}
               type="button"
               onClick={() => onSelect(item)}
-              className={`shrink-0 px-4 py-1.5 text-xs font-semibold transition-all border ${rounded === 'pill' ? 'rounded-full' : 'rounded-lg'} ${
+              className={`shrink-0 px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
                 active
-                  ? 'gradient-primary text-primary-foreground border-primary glow-primary'
-                  : 'bg-muted/45 text-muted-foreground border-border/30 hover:text-foreground hover:bg-muted hover:border-primary/35'
+                  ? 'bg-foreground text-background font-semibold'
+                  : 'bg-muted/50 text-muted-foreground hover:bg-muted/70'
               }`}
             >
               {prefix}{item}

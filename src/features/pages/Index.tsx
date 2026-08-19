@@ -310,17 +310,17 @@ export default function Index() {
   const filtered = cat === 'All' ? videos : videos.filter(v => (v.category || '').toLowerCase() === cat.toLowerCase());
 
   return (
-    <div className="flex-1 min-h-screen relative">
+    <div className="flex-1 min-h-screen relative pb-16 md:pb-0">
       <OrbBackground variant="aurora" />
 
       {/* Feed kind toggle */}
-      <div className="flex gap-2 px-4 lg:px-6 pt-4">
+      <div className="flex gap-2 px-3 lg:px-6 pt-3">
         {(['foryou', 'trending', 'following'] as FeedKind[]).map((k) => (
           <button
             key={k}
             onClick={() => setFeedKind(k)}
-            className={`px-4 py-2 rounded-full text-xs font-display tracking-wider uppercase transition-all duration-200 shadow-sm ${
-              feedKind === k ? 'gradient-primary text-primary-foreground glow-primary shadow-md' : 'glass border border-border/40 text-muted-foreground hover:text-foreground hover:bg-muted/30'
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+              feedKind === k ? 'bg-foreground text-background font-semibold' : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
             }`}
           >
             {k === 'foryou' ? 'For You' : k}
@@ -329,11 +329,11 @@ export default function Index() {
       </div>
 
       {/* Categories */}
-      <div className="px-4 lg:px-6 py-3">
+      <div className="px-3 lg:px-6 py-2">
         <CategoryScroller items={categories} value={cat} onSelect={setCat} />
       </div>
 
-      <div className="px-4 lg:px-6"><LiveNowRail /></div>
+      <div className="px-3 lg:px-6"><LiveNowRail /></div>
 
       {/* Hero / Trending banner */}
 
@@ -367,19 +367,19 @@ export default function Index() {
       )}
 
       {/* Grid */}
-      <div className="px-4 lg:px-6 pb-4 perspective-container">
+      <div className="px-3 lg:px-6 pb-4 perspective-container">
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-4">
             {Array.from({ length: 9 }).map((_, i) => (
-              <div key={i} className="flex flex-col gap-3">
-                <div className="aspect-video rounded-xl bg-primary/5 border border-primary/10 relative overflow-hidden">
+              <div key={i} className="flex flex-col gap-2">
+                <div className="aspect-video rounded-lg bg-primary/5 border border-primary/10 relative overflow-hidden">
                   <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-primary/10 to-transparent" />
                 </div>
-                <div className="flex gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 animate-pulse" />
-                  <div className="flex-1 space-y-2">
+                <div className="flex gap-2">
+                  <div className="w-9 h-9 rounded-full bg-primary/10 animate-pulse shrink-0" />
+                  <div className="flex-1 space-y-1.5">
                     <div className="h-3 w-11/12 rounded bg-primary/10 animate-pulse" />
-                    <div className="h-3 w-2/3 rounded bg-primary/10 animate-pulse" />
+                    <div className="h-2.5 w-2/3 rounded bg-primary/10 animate-pulse" />
                   </div>
                 </div>
               </div>
@@ -409,7 +409,7 @@ export default function Index() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-4">
             {filtered.map((v, i) => (
               <ImpressionCard
                 key={v.id}
@@ -417,10 +417,10 @@ export default function Index() {
                 className="card-vis animate-[fadeUp_.35s_ease-out_both]"
                 style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
               >
-                <Link to={`/watch/${v.id}`} className="block group tilt-3d">
-                  <div className="relative aspect-video rounded-xl overflow-hidden bg-muted/20 neon-edge shadow-lg">
+                <Link to={`/watch/${v.id}`} className="block group">
+                  <div className="relative aspect-video rounded-lg overflow-hidden bg-muted/20">
                     {v.thumb_url ? (
-                      <img src={v.thumb_url} alt={v.title} loading={i < 3 ? 'eager' : 'lazy'} decoding="async" fetchPriority={i === 0 ? 'high' : 'auto'} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <img src={v.thumb_url} alt={v.title} loading={i < 3 ? 'eager' : 'lazy'} decoding="async" fetchPriority={i === 0 ? 'high' : 'auto'} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
 
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/15 to-accent/20" />
@@ -430,13 +430,13 @@ export default function Index() {
                     ) : null}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     {fmtDuration(v.duration_seconds) && (
-                      <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-background/90 text-foreground backdrop-blur-sm">
+                      <span className="absolute bottom-1.5 right-1.5 px-1 py-0.5 rounded text-[10px] font-mono font-bold bg-background/90 text-foreground backdrop-blur-sm">
                         {fmtDuration(v.duration_seconds)}
                       </span>
                     )}
                   </div>
-                  <div className="flex gap-3 mt-3">
-                    <div className="w-10 h-10 rounded-full shrink-0 gradient-primary flex items-center justify-center text-[10px] font-display font-bold text-primary-foreground shadow-md overflow-hidden">
+                  <div className="flex gap-2 mt-2">
+                    <div className="w-9 h-9 rounded-full shrink-0 bg-muted flex items-center justify-center text-[10px] font-display font-bold text-foreground overflow-hidden">
                       {v.ownerAvatar ? (
                         <img src={v.ownerAvatar} alt={v.ownerName || 'Creator'} className="w-full h-full object-cover" />
                       ) : (
@@ -444,10 +444,10 @@ export default function Index() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                      <h3 className="text-sm font-medium text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
                         {v.title}
                       </h3>
-                      <p className="text-xs text-muted-foreground mt-1">@{(v.ownerName || 'creator').replace(/\s+/g, '')}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">@{(v.ownerName || 'creator').replace(/\s+/g, '')}</p>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <span><AnimatedCounter value={v.views ?? 0} format={compactFormat} /> views</span>
                         <span>•</span>
@@ -462,7 +462,7 @@ export default function Index() {
           </div>
         )}
         {!loading && hasMore && cat === 'All' && (
-          <div id="feed-sentinel" className="flex items-center justify-center py-8 text-muted-foreground text-xs">
+          <div id="feed-sentinel" className="flex items-center justify-center py-6 text-muted-foreground text-xs">
             {loadingMore ? (<><Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading more…</>) : 'Scroll for more'}
           </div>
         )}
@@ -471,19 +471,19 @@ export default function Index() {
 
       {/* Shorts strip */}
       {shorts.length > 0 && (
-        <div className="px-4 lg:px-6 pb-8">
-          <div className="flex items-center justify-between mb-4">
+        <div className="px-3 lg:px-6 pb-6">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <PlaySquare className="w-5 h-5 text-accent" />
-              <h2 className="text-base font-bold text-foreground">Shorts</h2>
+              <PlaySquare className="w-4 h-4 text-accent" />
+              <h2 className="text-sm font-bold text-foreground">Shorts</h2>
             </div>
             <Link to="/shorts" className="flex items-center gap-1 text-xs text-primary hover:underline font-medium">
               View all <ChevronRight className="w-3 h-3" />
             </Link>
           </div>
-          <div className="flex gap-3 overflow-x-auto no-scrollbar rail-gpu pb-3">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar rail-gpu pb-2">
             {shorts.map((s) => (
-              <Link key={s.id} to="/shorts" className="shrink-0 w-36 aspect-[9/16] rounded-xl overflow-hidden relative group neon-edge card-vis shadow-lg" style={{ scrollSnapAlign: 'start' }}>
+              <Link key={s.id} to="/shorts" className="shrink-0 w-32 aspect-[9/16] rounded-lg overflow-hidden relative group" style={{ scrollSnapAlign: 'start' }}>
                 {s.thumb_url ? (
                   <img src={s.thumb_url} alt={s.title} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
 
