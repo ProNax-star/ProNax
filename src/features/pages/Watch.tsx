@@ -1029,13 +1029,13 @@ export default function Watch() {
               className="md:hidden pt-3 pb-4 border-t border-border/30 space-y-3"
             >
               <div className="flex items-center justify-between px-3">
-                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <span className="inline-block w-1.5 h-4 rounded-full gradient-primary glow-primary" />
                   Up Next
                 </h3>
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Recommended</span>
+                <span className="text-[10px] uppercase tracking-wider text-gray-400 font-medium">Recommended</span>
               </div>
-              <div className="px-3 mx-0 w-full grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="px-0 mx-0 w-full grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {suggestedVideos.map((v, i) => (
                   <motion.div
                     key={v.id}
@@ -1057,9 +1057,9 @@ export default function Watch() {
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-border/20 sticky top-0 bg-background/95 backdrop-blur-md z-10 pt-1 px-3">
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-4 rounded-full gradient-primary glow-primary" />
-              <h3 className="text-sm font-bold text-foreground">Up Next</h3>
+              <h3 className="text-sm font-bold text-white">Up Next</h3>
             </div>
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Recommended</span>
+            <span className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Recommended</span>
           </div>
           <div className="px-3 mx-0 w-full flex flex-col gap-2 pb-4">
             {suggestedVideos.map((v, i) => (

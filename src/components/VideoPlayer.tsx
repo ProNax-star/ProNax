@@ -441,7 +441,7 @@ export function VideoPlayer({
             className="pointer-events-auto"
             aria-label="Play"
           >
-            <span className="w-16 h-16 rounded-full flex items-center justify-center bg-primary/20 border border-primary/60 backdrop-blur-md shadow-[0_0_40px_hsla(var(--primary)/0.7)] transition-transform hover:scale-110">
+            <span className="flex items-center justify-center transition-transform hover:scale-110">
               <Play className="w-7 h-7 text-primary fill-primary" />
             </span>
           </button>
