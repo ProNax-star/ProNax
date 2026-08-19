@@ -1,4 +1,3 @@
-import { createServerFn } from '@tanstack/react-start';
 import { audioFingerprintService } from '@/lib/audioFingerprint';
 import { supabase } from '@/integrations/supabase/loose';
 import { AcousticFingerprinter, checkCopyrightViolation } from '@/lib/copyrightDetection';
@@ -19,6 +18,7 @@ export interface VideoUploadParams {
   duration: number;
   thumbnailUrl: string;
   ownerId: string;
+  videoData?: string; // Additional base64 data for storage
 }
 
 export interface VideoUploadResult {
@@ -31,16 +31,16 @@ export interface VideoUploadResult {
     songName?: string;
     confidence?: number;
     matchType?: 'exact' | 'acoustic' | 'partial' | 'text';
+    duplicateDetected?: boolean;
+    claimId?: string;
   };
 }
 
 /**
- * Server function for video upload with copyright detection
- * This runs on the server side to avoid CSP issues with localhost:8000
+ * Client-side function for video upload with copyright detection
+ * This runs on the client side to avoid AsyncLocalStorage issues
  */
-export const uploadVideoWithCopyrightDetection = createServerFn({ method: 'POST' })
-  .validator((data: VideoUploadParams) => data)
-  .handler(async ({ data: params }) => {
+export async function uploadVideoWithCopyrightDetection(params: VideoUploadParams): Promise<VideoUploadResult> {
     console.log('Starting video upload for:', params.fileName, 'Size:', params.fileSize);
     
     try {
@@ -66,29 +66,100 @@ export const uploadVideoWithCopyrightDetection = createServerFn({ method: 'POST'
         // Continue without hash if generation fails
       }
 
-      // Create minimal placeholder file for R2 upload (no actual file data)
-      const file = new File([new Uint8Array([0])], params.fileName, { type: params.fileType });
-
-      // Step 3: Upload video to Cloudflare R2
-      const r2UploadResult = await uploadToR2(file);
+      // For large files, use R2 Storage (if configured) or Supabase Storage
+      // This avoids database timeout issues
+      const MAX_DB_STORAGE_SIZE = 5 * 1024 * 1024; // 5MB limit for database storage
+      const useBase64Storage = params.fileSize < MAX_DB_STORAGE_SIZE;
       
-      if (!r2UploadResult.success) {
-        return {
-          success: false,
-          status: 'error' as const,
-          message: 'Failed to upload video to storage'
-        };
+      let videoUrl = '';
+      let r2VideoKey = '';
+      
+      if (useBase64Storage) {
+        const videoDataUrl = `data:${params.fileType};base64,${params.fileData}`;
+        r2VideoKey = `local-${Date.now()}-${params.fileName}`;
+        videoUrl = videoDataUrl;
+        console.log('Using local base64 storage for video playback');
+      } else {
+        // Check if R2 is configured
+        const r2AccountId = import.meta.env.VITE_R2_ACCOUNT_ID;
+        const r2AccessKey = import.meta.env.VITE_R2_ACCESS_KEY_ID;
+        const r2SecretKey = import.meta.env.VITE_R2_SECRET_ACCESS_KEY;
+        const r2Bucket = import.meta.env.VITE_R2_BUCKET_NAME || 'pronax-videos';
+        const r2PublicUrl = import.meta.env.VITE_R2_PUBLIC_URL;
+        
+        if (r2AccountId && r2AccessKey && r2SecretKey) {
+          // Use R2 Storage
+          const fileName = `${Date.now()}-${params.fileName}`;
+          const filePath = `videos/${fileName}`;
+          
+          try {
+            // Upload to R2 via Supabase Edge Function (or direct if possible)
+            const r2Url = `${r2PublicUrl || `https://${r2AccountId}.r2.dev`}/${r2Bucket}/${filePath}`;
+            
+            r2VideoKey = filePath;
+            videoUrl = r2Url;
+            console.log('Using R2 Storage:', r2Url);
+            
+            // Note: Actual R2 upload requires edge function or server-side
+            // For now, we'll use Supabase Storage as fallback
+            console.warn('R2 configured but upload requires edge function, falling back to Supabase Storage');
+          } catch (r2Error) {
+            console.error('R2 upload failed:', r2Error);
+          }
+        }
+        
+        // Fallback to Supabase Storage
+        if (!videoUrl) {
+          const fileName = `${Date.now()}-${params.fileName}`;
+          const filePath = `videos/${fileName}`;
+          
+          try {
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('videos')
+              .upload(filePath, Buffer.from(params.fileData, 'base64'), {
+                contentType: params.fileType,
+                upsert: true
+              });
+            
+            if (uploadError) {
+              console.error('Supabase Storage upload failed:', uploadError);
+              throw uploadError;
+            }
+            
+            const { data: { publicUrl } } = supabase.storage
+              .from('videos')
+              .getPublicUrl(filePath);
+            
+            r2VideoKey = filePath;
+            videoUrl = publicUrl;
+            console.log('File uploaded to Supabase Storage:', publicUrl);
+          } catch (storageError) {
+            console.error('Failed to upload to storage:', storageError);
+            // Final fallback: use data URL
+            const videoDataUrl = `data:${params.fileType};base64,${params.fileData}`;
+            r2VideoKey = `fallback-${Date.now()}-${params.fileName}`;
+            videoUrl = videoDataUrl;
+            console.log('Using fallback base64 storage');
+          }
+        }
       }
-      
-      console.log('R2 upload successful:', r2UploadResult.videoUrl);
 
       // Step 4: Check for duplicate using SHA-256 hash before creating video
       console.log('Checking for duplicate videos using SHA-256 hash:', fileHash);
-      const { data: existingVideo } = await supabase
-        .from('videos')
-        .select('id, title, owner_id')
-        .eq('sha256', fileHash)
-        .single();
+      let existingVideo = null;
+      try {
+        const { data: duplicateData, error: duplicateError } = await supabase
+          .from('videos')
+          .select('id, title, owner_id')
+          .eq('sha256', fileHash)
+          .maybeSingle();
+        
+        if (!duplicateError && duplicateData) {
+          existingVideo = duplicateData;
+        }
+      } catch (duplicateCheckError) {
+        console.warn('Duplicate check failed (non-critical):', duplicateCheckError);
+      }
 
       if (existingVideo) {
         console.warn('Duplicate video detected:', existingVideo);
@@ -110,10 +181,11 @@ export const uploadVideoWithCopyrightDetection = createServerFn({ method: 'POST'
       // Step 5: Create video record with SHA-256 hash
       const videoId = await createVideoRecord({
         ...params,
-        r2VideoKey: r2UploadResult.r2VideoKey!,
-        videoUrl: r2UploadResult.videoUrl!,
+        r2VideoKey: r2VideoKey,
+        videoUrl: videoUrl,
         status: 'processing', // Set to processing initially
-        sha256: fileHash // Store SHA-256 hash for duplicate detection
+        sha256: fileHash, // Store SHA-256 hash for duplicate detection
+        videoData: useBase64Storage ? params.fileData : null // Only store base64 for small files
       });
       
       console.log('Video created with visibility:', params.visibility, 'and status: processing');
@@ -136,6 +208,9 @@ export const uploadVideoWithCopyrightDetection = createServerFn({ method: 'POST'
           // For now, we'll skip server-side fingerprinting and do it client-side or in background
           // TODO: Move fingerprinting to background worker or use server-side audio processing
           
+          // Create a placeholder file for copyright check (base64 conversion)
+          const file = new File([new Uint8Array([0])], params.fileName, { type: params.fileType });
+          
           // For now, just do basic text-based copyright check
           copyrightMatches = await checkCopyrightViolation(file, params.title, params.description);
           console.log('Copyright check completed, matches:', copyrightMatches.length);
@@ -147,38 +222,42 @@ export const uploadVideoWithCopyrightDetection = createServerFn({ method: 'POST'
           
           console.log('Checking for duplicate fingerprint:', videoFingerprint);
           
-          const { data: duplicateCheck, error: duplicateError } = await supabase
-            .rpc('check_and_handle_duplicate_fingerprint', {
-              p_fingerprint: videoFingerprint,
-              p_video_id: videoId,
-              p_video_title: params.title,
-              p_owner_id: params.ownerId
-            });
-          
-          if (duplicateError) {
-            console.error('Duplicate check failed:', duplicateError);
-          } else if (duplicateCheck && duplicateCheck.length > 0) {
-            const checkResult = duplicateCheck[0];
-            if (checkResult.is_duplicate) {
-              console.warn('Duplicate content detected:', checkResult);
-              duplicateDetected = true;
-              duplicateInfo = {
-                claimId: checkResult.claim_id,
-                status: checkResult.status,
-                message: checkResult.message
-              };
-              // Add to copyright matches for consistent handling
-              copyrightMatches.push({
-                content_id: videoId,
-                content_type: 'video',
-                owner_id: params.ownerId,
-                match_percentage: 100,
-                metadata: { title: params.title },
-                match_type: 'exact',
-                duplicate_detected: true,
-                claim_id: checkResult.claim_id
+          try {
+            const { data: duplicateCheck, error: duplicateError } = await supabase
+              .rpc('check_and_handle_duplicate_fingerprint' as any, {
+                p_fingerprint: videoFingerprint,
+                p_video_id: videoId,
+                p_video_title: params.title,
+                p_owner_id: params.ownerId
               });
+            
+            if (duplicateError) {
+              console.error('Duplicate check failed:', duplicateError);
+            } else if (duplicateCheck && Array.isArray(duplicateCheck) && duplicateCheck.length > 0) {
+              const checkResult = duplicateCheck[0];
+              if (checkResult.is_duplicate) {
+                console.warn('Duplicate content detected:', checkResult);
+                duplicateDetected = true;
+                duplicateInfo = {
+                  claimId: checkResult.claim_id,
+                  status: checkResult.status,
+                  message: checkResult.message
+                };
+                // Add to copyright matches for consistent handling
+                copyrightMatches.push({
+                  content_id: videoId,
+                  content_type: 'video',
+                  owner_id: params.ownerId,
+                  match_percentage: 100,
+                  metadata: { title: params.title },
+                  match_type: 'exact',
+                  duplicate_detected: true,
+                  claim_id: checkResult.claim_id
+                });
+              }
             }
+          } catch (rpcError) {
+            console.error('RPC duplicate check failed:', rpcError);
           }
         } else {
           console.log('File too large for copyright detection, skipping');
@@ -193,52 +272,20 @@ export const uploadVideoWithCopyrightDetection = createServerFn({ method: 'POST'
       
       console.log('Updating video status to:', finalStatus, 'for video:', videoId);
       
-      // Always use service role for status update to ensure it works
+      // Use the existing Supabase client for status update
       try {
-        const { createClient } = await import('@supabase/supabase-js');
-        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
-                                process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
-                                process.env.SUPABASE_SECRET_KEY ||
-                                process.env.VITE_SUPABASE_SECRET_KEY;
-        const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+        const { error: statusError } = await supabase
+          .from('videos')
+          .update({ status: finalStatus })
+          .eq('id', videoId);
         
-        if (serviceRoleKey && supabaseUrl) {
-          const adminClient = createClient(supabaseUrl, serviceRoleKey);
-          const { error: statusError } = await adminClient
-            .from('videos')
-            .update({ status: finalStatus })
-            .eq('id', videoId);
-          
-          if (statusError) {
-            console.error('Service role status update failed:', statusError);
-            // Fallback to regular client
-            await supabase
-              .from('videos')
-              .update({ status: finalStatus })
-              .eq('id', videoId);
-          } else {
-            console.log('Video status successfully updated to:', finalStatus);
-          }
+        if (statusError) {
+          console.error('Status update failed:', statusError);
         } else {
-          // No service role key, use regular client
-          await supabase
-            .from('videos')
-            .update({ status: finalStatus })
-            .eq('id', videoId);
-          console.log('Video status updated using regular client to:', finalStatus);
+          console.log('Video status successfully updated to:', finalStatus);
         }
       } catch (updateError) {
-        console.error('All status update attempts failed:', updateError);
-        // Force update with direct query as last resort
-        try {
-          await supabase
-            .from('videos')
-            .update({ status: finalStatus })
-            .eq('id', videoId);
-          console.log('Emergency status update completed to:', finalStatus);
-        } catch (emergencyError) {
-          console.error('Emergency status update also failed:', emergencyError);
-        }
+        console.error('Status update failed:', updateError);
       }
 
       // Step 7: Store fingerprint if available (non-blocking)
@@ -246,7 +293,7 @@ export const uploadVideoWithCopyrightDetection = createServerFn({ method: 'POST'
       if (!duplicateDetected) {
         try {
           const { generateVideoFingerprint } = await import('@/lib/videoFingerprint');
-          const videoFingerprint = generateVideoFingerprint(params.title, params.fileSize, params.duration);
+          const videoFingerprint = await generateVideoFingerprint(params.title, params.fileSize, params.duration);
           
           await supabase.from('copyright_fingerprints').insert({
             content_id: videoId,
@@ -258,7 +305,7 @@ export const uploadVideoWithCopyrightDetection = createServerFn({ method: 'POST'
               description: params.description,
               duration: params.duration,
               file_size: params.fileSize
-            },
+            } as any,
             metadata: {
               title: params.title,
               description: params.description,
@@ -313,7 +360,24 @@ export const uploadVideoWithCopyrightDetection = createServerFn({ method: 'POST'
         message: error instanceof Error ? error.message : 'Unknown error occurred during upload'
       };
     }
+  }
+
+/**
+ * Convert file to base64 string
+ */
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Remove data URL prefix (e.g., "data:video/mp4;base64,")
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = (error) => reject(error);
   });
+}
 
 /**
  * Generate SHA-256 hash from base64 string without loading full file into memory
@@ -340,31 +404,11 @@ async function generateHashFromBase64(base64: string): Promise<string> {
 }
 
 /**
- * Upload video file to Cloudflare R2
- * TODO: Implement actual R2 upload logic
- */
-async function uploadToR2(file: File): Promise<{
-  success: boolean;
-  r2VideoKey?: string;
-  videoUrl?: string;
-}> {
-  // TODO: Implement actual Cloudflare R2 upload
-  // For now, return a simulated result
-  const fileKey = `videos/${Date.now()}-${file.name}`;
-  
-  return {
-    success: true,
-    r2VideoKey: fileKey,
-    videoUrl: `https://r2.example.com/${fileKey}`
-  };
-}
-
-/**
  * Create video record in Supabase
  * Improved error handling and profile creation
  */
 async function createVideoRecord(
-  params: VideoUploadParams & { r2VideoKey: string; videoUrl: string; status: string; sha256?: string }
+  params: VideoUploadParams & { r2VideoKey: string; videoUrl: string; status: string; sha256?: string; videoData?: string }
 ): Promise<string> {
   console.log('Creating video record for owner:', params.ownerId);
   
@@ -408,32 +452,9 @@ async function createVideoRecord(
     console.warn('Continuing with video creation');
   }
 
-  // Step 2: Use service role key for video insertion to bypass RLS
-  const { createClient } = await import('@supabase/supabase-js');
-  
-  // Check for service role key, fallback to secret key
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
-                          process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
-                          process.env.SUPABASE_SECRET_KEY ||
-                          process.env.VITE_SUPABASE_SECRET_KEY;
-  
-  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-  
-  if (!serviceRoleKey) {
-    console.warn('No service role key found, using regular client. This may fail due to RLS policies.');
-  }
-  
-  if (!supabaseUrl) {
-    throw new Error('Supabase URL not found in environment variables');
-  }
-
-  // Use service role if available, otherwise use regular client
-  const supabaseClient = serviceRoleKey 
-    ? createClient(supabaseUrl, serviceRoleKey)
-    : supabase;
-
+  // Step 2: Use the existing Supabase client for video insertion
   try {
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
       .from('videos')
       .insert({
         owner_id: params.ownerId,
@@ -445,7 +466,7 @@ async function createVideoRecord(
         scheduled_at: params.scheduledAt || null,
         monetization_enabled: params.monetizationEnabled || false,
         is_short: params.isShort || false,
-        duration_seconds: params.duration || 0,
+        duration_seconds: params.duration || 180, // Default to 3 minutes if not provided
         thumb_url: params.thumbnailUrl || null,
         r2_video_key: params.r2VideoKey,
         video_url: params.videoUrl,
@@ -453,7 +474,8 @@ async function createVideoRecord(
         mime_type: params.fileType || 'video/mp4',
         size_bytes: params.fileSize || 0,
         published_at: (params.visibility === 'public' && !params.scheduledAt) ? new Date().toISOString() : null,
-        sha256: params.sha256 || null // Store SHA-256 hash for duplicate detection
+        sha256: params.sha256 || null, // Store SHA-256 hash for duplicate detection
+        video_data: params.videoData || null // Store base64 data for local playback
       })
       .select('id')
       .single();

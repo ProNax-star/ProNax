@@ -1,6 +1,6 @@
 /**
  * Video Upload Service with Copyright Detection
- * Handles video upload to Cloudflare R2 and FastAPI copyright detection
+ * Handles video upload to Cloudflare R2 via pre-signed URLs and FastAPI copyright detection
  */
 
 import { audioFingerprintService, RecognitionResult, FingerprintResult } from './audioFingerprint';
@@ -41,9 +41,30 @@ export async function uploadVideoWithCopyrightDetection(
   params: VideoUploadParams
 ): Promise<VideoUploadResult> {
   try {
-    // Step 1: Upload video to Cloudflare R2
-    // TODO: Implement actual R2 upload. For now, we'll simulate it
-    const r2UploadResult = await uploadToR2(params.file);
+    // Step 1: Get pre-signed URL from Supabase Edge Function
+    const presignedUrlResult = await getPresignedUploadUrl(params.file);
+    
+    if (!presignedUrlResult.success) {
+      return {
+        success: false,
+        status: 'error',
+        message: presignedUrlResult.error || 'Failed to get upload URL'
+      };
+    }
+
+    // Step 2: Upload video directly to R2 using pre-signed URL
+    if (!presignedUrlResult.presignedUrl) {
+      return {
+        success: false,
+        status: 'error',
+        message: 'No presigned URL returned from Edge Function'
+      };
+    }
+
+    const r2UploadResult = await uploadToR2WithPresignedUrl(
+      params.file,
+      presignedUrlResult.presignedUrl
+    );
     
     if (!r2UploadResult.success) {
       return {
@@ -53,16 +74,16 @@ export async function uploadVideoWithCopyrightDetection(
       };
     }
 
-    // Step 2: Call FastAPI /recognize endpoint for copyright detection
+    // Step 3: Call FastAPI /recognize endpoint for copyright detection
     const recognitionResult = await audioFingerprintService.recognizeAudio(params.file);
 
-    // Step 3: Handle copyright detection result
+    // Step 4: Handle copyright detection result
     if (recognitionResult.success && recognitionResult.matched) {
       // Copyright detected - flag the video
       const videoId = await createVideoRecord({
         ...params,
-        r2VideoKey: r2UploadResult.r2VideoKey,
-        videoUrl: r2UploadResult.videoUrl,
+        r2VideoKey: presignedUrlResult.fileKey ?? '',
+        videoUrl: presignedUrlResult.publicUrl ?? '',
         status: 'copyright_flagged'
       });
 
@@ -87,8 +108,8 @@ export async function uploadVideoWithCopyrightDetection(
 
       const videoId = await createVideoRecord({
         ...params,
-        r2VideoKey: r2UploadResult.r2VideoKey,
-        videoUrl: r2UploadResult.videoUrl,
+        r2VideoKey: presignedUrlResult.fileKey ?? '',
+        videoUrl: presignedUrlResult.publicUrl ?? '',
         status: 'ready'
       });
 
@@ -113,23 +134,74 @@ export async function uploadVideoWithCopyrightDetection(
 }
 
 /**
- * Upload video file to Cloudflare R2
- * TODO: Implement actual R2 upload logic
+ * Get pre-signed upload URL from Supabase Edge Function
  */
-async function uploadToR2(file: File): Promise<{
+async function getPresignedUploadUrl(file: File): Promise<{
   success: boolean;
-  r2VideoKey?: string;
-  videoUrl?: string;
+  presignedUrl?: string;
+  fileKey?: string;
+  publicUrl?: string;
+  error?: string;
 }> {
-  // TODO: Implement actual Cloudflare R2 upload
-  // For now, return a simulated result
-  const fileKey = `videos/${Date.now()}-${file.name}`;
-  
-  return {
-    success: true,
-    r2VideoKey: fileKey,
-    videoUrl: `https://r2.example.com/${fileKey}`
-  };
+  try {
+    console.log('[videoUpload] Calling Edge Function via Supabase client');
+    
+    const { data, error } = await supabase.functions.invoke('upload-to-r2', {
+      body: {
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size
+      }
+    });
+
+    if (error) {
+      console.error('[videoUpload] Edge Function error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to get presigned URL'
+      };
+    }
+
+    console.log('[videoUpload] Edge Function response:', data);
+    
+    return {
+      success: true,
+      presignedUrl: data.presignedUrl,
+      fileKey: data.fileKey,
+      publicUrl: data.publicUrl
+    };
+  } catch (error) {
+    console.error('Error getting presigned URL:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+  }
+}
+
+/**
+ * Upload video file to Cloudflare R2 using pre-signed URL
+ */
+async function uploadToR2WithPresignedUrl(
+  file: File,
+  presignedUrl: string
+): Promise<{ success: boolean }> {
+  try {
+    const response = await fetch(presignedUrl, {
+      method: 'PUT',
+      body: file
+    });
+
+    if (!response.ok) {
+      console.error('R2 upload failed:', response.status, response.statusText);
+      return { success: false };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error uploading to R2:', error);
+    return { success: false };
+  }
 }
 
 /**
@@ -148,6 +220,13 @@ async function createVideoRecord(
   if (profileError || !profile) {
     throw new Error(`Owner profile not found: ${params.ownerId}`);
   }
+
+  console.log('[videoUpload] Creating video record with:', {
+    visibility: params.visibility,
+    status: params.status,
+    title: params.title,
+    ownerId: params.ownerId
+  });
 
   const { data, error } = await supabase
     .from('videos')
@@ -170,8 +249,10 @@ async function createVideoRecord(
       size_bytes: params.file.size,
       published_at: params.visibility === 'public' && !params.scheduledAt ? new Date().toISOString() : null
     })
-    .select('id')
+    .select('id, visibility, status, title')
     .single();
+
+  console.log('[videoUpload] Video record created:', data, 'Error:', error);
 
   if (error) {
     throw new Error(`Failed to create video record: ${error.message}`);

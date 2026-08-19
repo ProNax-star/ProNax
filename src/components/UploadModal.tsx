@@ -23,7 +23,7 @@ import { checkCopyrightViolation } from '@/lib/copyrightDetection';
 import { generateVideoFingerprint, checkForCopyrightMatch } from '@/lib/videoFingerprint';
 import { validateFile, videoMetadataSchema, firstIssue } from '@/lib/validation';
 import { requireVerifiedUser, ensureUserProfile } from '@/lib/authGuards';
-import { uploadVideoWithCopyrightDetection } from '@/routes/-api.video-upload';
+import { uploadVideoWithCopyrightDetection } from '@/lib/videoUpload';
 import { uploadVideoFormData } from '@/routes/-api.video-upload-formdata';
 
 type WizardStep = 1 | 2 | 3; // 1: Details & Media Setup, 2: Checks & Monetization, 3: Visibility & Schedule
@@ -594,72 +594,66 @@ export function UploadModal({
         return;
       }
 
-      // Step 4: Use FormData for large files, base64 for small files
-      let uploadResult;
+      // Step 4: Try R2 upload first, fall back to FormData if it fails
+      console.log('Attempting R2 upload with pre-signed URL');
+      console.log('[UploadModal] Upload params:', {
+        visibility: isScheduled ? 'scheduled' : visibility,
+        isScheduled,
+        visibilityRaw: visibility,
+        title: title || 'Untitled Video'
+      });
       
-      if (file.size > 50 * 1024 * 1024) {
-        // Large file: Use FormData upload (no base64 conversion)
-        console.log('Large file detected, using FormData upload');
-        
-        uploadResult = await uploadVideoFormData({
-          data: {
-            file: file,
-            fileName: file.name,
-            fileType: file.type,
-            fileSize: file.size,
-            title: title || 'Untitled Video',
-            description: finalDescription || '',
-            tags: tags || [],
-            category: category || 'entertainment',
-            visibility: isScheduled ? 'scheduled' : visibility,
-            scheduledAt: isScheduled ? scheduledDateTime : null,
-            monetizationEnabled: monetizationEnabled || false,
-            isShort: isShort || false,
-            duration: duration ? Math.round(duration) : 180,
-            thumbnailUrl: chosenThumb,
-            ownerId: user.id
-          }
-        });
-        console.log('FormData upload result:', uploadResult, 'Visibility sent:', isScheduled ? 'scheduled' : visibility);
-      } else {
-        // Small file: Use base64 upload with copyright detection
-        console.log('Small file detected, using base64 upload');
-        
-        let fileData: string | null = null;
-        try {
-          fileData = await fileToBase64(file);
-          console.log('Small file converted to base64');
-        } catch (error) {
-          console.error('Failed to convert small file to base64:', error);
-          toast({
-            title: 'File processing failed',
-            description: 'Unable to process the video file. Please try a smaller file.',
-            variant: 'destructive'
-          });
-          setPublishing(false);
-          return;
-        }
-
+      let uploadResult: any = null;
+      
+      try {
         uploadResult = await uploadVideoWithCopyrightDetection({
-          data: {
-            fileData: fileData || '',
-            fileName: file.name,
-            fileType: file.type,
-            fileSize: file.size,
-            title: title || 'Untitled Video',
-            description: finalDescription || '',
-            tags: tags || [],
-            category: category || 'entertainment',
-            visibility: isScheduled ? 'scheduled' : visibility,
-            scheduledAt: isScheduled ? scheduledDateTime : null,
-            monetizationEnabled: monetizationEnabled || false,
-            isShort: isShort || false,
-            duration: duration ? Math.round(duration) : 180,
-            thumbnailUrl: chosenThumb,
-            ownerId: user.id
-          }
+          file: file,
+          title: title || 'Untitled Video',
+          description: finalDescription || '',
+          tags: tags || [],
+          category: category || 'entertainment',
+          visibility: isScheduled ? 'scheduled' : visibility,
+          scheduledAt: isScheduled ? scheduledDateTime : null,
+          monetizationEnabled: monetizationEnabled || false,
+          isShort: isShort || false,
+          duration: duration ? Math.round(duration) : 180,
+          thumbnailUrl: chosenThumb,
+          ownerId: user.id
         });
-        console.log('Base64 upload result:', uploadResult, 'Visibility sent:', isScheduled ? 'scheduled' : visibility);
+        
+        console.log('R2 upload result:', uploadResult);
+      } catch (r2Error) {
+        console.warn('R2 upload failed, falling back to FormData:', r2Error);
+        toast({
+          title: 'R2 upload failed, trying alternative method',
+          description: 'Falling back to direct upload',
+          variant: 'default'
+        });
+        
+        // Fallback to FormData upload
+        uploadResult = await uploadVideoFormData({
+          file: file,
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          title: title || 'Untitled Video',
+          description: finalDescription || '',
+          tags: tags || [],
+          category: category || 'entertainment',
+          visibility: isScheduled ? 'scheduled' : visibility,
+          scheduledAt: isScheduled ? scheduledDateTime : null,
+          monetizationEnabled: monetizationEnabled || false,
+          isShort: isShort || false,
+          duration: duration ? Math.round(duration) : 180,
+          thumbnailUrl: chosenThumb,
+          ownerId: user.id
+        });
+        
+        console.log('FormData upload result:', uploadResult);
+      }
+
+      if (!uploadResult) {
+        throw new Error('Upload result is undefined');
       }
 
       console.log('Upload result:', uploadResult);
@@ -745,31 +739,6 @@ export function UploadModal({
     const mins = Math.floor(secs / 60);
     const remainingSecs = Math.floor(secs % 60);
     return `${mins}:${remainingSecs.toString().padStart(2, '0')}`;
-  };
-
-  // File to base64 for small files only
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        try {
-          const base64 = reader.result as string;
-          const base64Data = base64.split(',')[1];
-          resolve(base64Data);
-        } catch (error) {
-          console.error('Error processing base64 result:', error);
-          reject(new Error('Failed to process file data'));
-        }
-      };
-      reader.onerror = (error) => {
-        console.error('FileReader error:', error);
-        reject(error);
-      };
-      reader.onabort = () => {
-        reject(new Error('File reading aborted'));
-      };
-    });
   };
 
   const suitability = getAdSuitabilityRating();

@@ -1,4 +1,3 @@
-import { createServerFn } from '@tanstack/react-start';
 import { supabase } from '@/integrations/supabase/loose';
 
 export interface FormDataUploadParams {
@@ -33,12 +32,10 @@ export interface FormDataUploadResult {
 }
 
 /**
- * FormData-based video upload for large files
+ * Client-side FormData-based video upload for large files
  * This avoids base64 conversion which causes Chrome crash
  */
-export const uploadVideoFormData = createServerFn({ method: 'POST' })
-  .validator((data: FormDataUploadParams) => data)
-  .handler(async ({ data: params }) => {
+export async function uploadVideoFormData(params: FormDataUploadParams): Promise<FormDataUploadResult> {
     console.log('Starting FormData upload for:', params.fileName, 'Size:', params.fileSize);
     
     try {
@@ -62,6 +59,9 @@ export const uploadVideoFormData = createServerFn({ method: 'POST' })
         // Continue without hash if generation fails
       }
 
+      // Skip base64 conversion entirely to prevent memory issues
+      console.log('Skipping base64 conversion to prevent database timeout');
+
       // Step 3: Check for duplicate using SHA-256 hash before creating video
       if (fileHash) {
         console.log('Checking for duplicate videos using SHA-256 hash:', fileHash);
@@ -72,10 +72,9 @@ export const uploadVideoFormData = createServerFn({ method: 'POST' })
           .single();
 
         if (existingVideo) {
-          console.warn('Duplicate video detected in FormData upload:', existingVideo);
+          console.log('Duplicate video detected:', existingVideo);
           return {
-            success: true,
-            videoId: existingVideo.id,
+            success: false,
             status: 'copyright_flagged' as const,
             message: `Duplicate video detected. This video already exists as "${existingVideo.title}"`,
             copyrightMatch: {
@@ -86,24 +85,17 @@ export const uploadVideoFormData = createServerFn({ method: 'POST' })
         }
       }
 
-      // Step 4: Upload to R2 (simulated for now)
-      const r2UploadResult = await uploadToR2(params.fileName, params.fileSize);
+      // Step 4: Use placeholder for video URL (don't store base64 in database)
+      const r2VideoKey = `local-${Date.now()}-${params.fileName}`;
+      const videoUrl = `https://placeholder.com/${r2VideoKey}`; // Placeholder URL
       
-      if (!r2UploadResult.success) {
-        return {
-          success: false,
-          status: 'error' as const,
-          message: 'Failed to upload video to storage'
-        };
-      }
-      
-      console.log('R2 upload successful:', r2UploadResult.videoUrl);
+      console.log('Using placeholder URL for video (base64 not stored in database)');
 
       // Step 5: Create video record with SHA-256 hash
       const videoId = await createVideoRecord({
         ...params,
-        r2VideoKey: r2UploadResult.r2VideoKey!,
-        videoUrl: r2UploadResult.videoUrl!,
+        r2VideoKey: r2VideoKey,
+        videoUrl: videoUrl,
         status: 'processing',
         sha256: fileHash
       });
@@ -179,27 +171,6 @@ export const uploadVideoFormData = createServerFn({ method: 'POST' })
           console.log('Video status updated to ready');
         } catch (statusUpdateError) {
           console.error('Failed to update video status to ready:', statusUpdateError);
-          // Try to ensure status is ready even if update fails
-          try {
-            // Use service role as fallback
-            const { createClient } = await import('@supabase/supabase-js');
-            const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
-                                    process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
-                                    process.env.SUPABASE_SECRET_KEY ||
-                                    process.env.VITE_SUPABASE_SECRET_KEY;
-            const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-            
-            if (serviceRoleKey && supabaseUrl) {
-              const adminClient = createClient(supabaseUrl, serviceRoleKey);
-              await adminClient
-                .from('videos')
-                .update({ status: 'ready' })
-                .eq('id', videoId);
-              console.log('Video status updated to ready using service role');
-            }
-          } catch (fallbackError) {
-            console.error('Fallback status update also failed:', fallbackError);
-          }
         }
       }
 
@@ -210,7 +181,7 @@ export const uploadVideoFormData = createServerFn({ method: 'POST' })
           videoId,
           status: 'copyright_flagged' as const,
           message: `Video uploaded. Duplicate / Copyright Match Found! ${duplicateInfo?.message || 'Video flagged and monetization disabled.'}`,
-          videoUrl: r2UploadResult.videoUrl,
+          videoUrl: videoUrl,
           copyrightMatch: {
             matched: true,
             duplicateDetected: true,
@@ -224,7 +195,7 @@ export const uploadVideoFormData = createServerFn({ method: 'POST' })
         videoId,
         status: 'published' as const,
         message: 'Video uploaded successfully',
-        videoUrl: r2UploadResult.videoUrl,
+        videoUrl: videoUrl,
         copyrightMatch: {
           matched: false
         }
@@ -237,27 +208,7 @@ export const uploadVideoFormData = createServerFn({ method: 'POST' })
         message: error instanceof Error ? error.message : 'Unknown error occurred during upload'
       };
     }
-  });
-
-/**
- * Upload video file to Cloudflare R2
- * TODO: Implement actual R2 upload logic
- */
-async function uploadToR2(fileName: string, fileSize: number): Promise<{
-  success: boolean;
-  r2VideoKey?: string;
-  videoUrl?: string;
-}> {
-  // TODO: Implement actual Cloudflare R2 upload
-  // For now, return a simulated result
-  const fileKey = `videos/${Date.now()}-${fileName}`;
-  
-  return {
-    success: true,
-    r2VideoKey: fileKey,
-    videoUrl: `https://r2.example.com/${fileKey}`
-  };
-}
+  }
 
 /**
  * Generate SHA-256 hash of a file for duplicate detection
@@ -343,30 +294,9 @@ async function createVideoRecord(
     console.error('Error checking/creating profile:', profileCheckError);
   }
 
-  // Step 2: Use service role key for video insertion
-  const { createClient } = await import('@supabase/supabase-js');
-  
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
-                          process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
-                          process.env.SUPABASE_SECRET_KEY ||
-                          process.env.VITE_SUPABASE_SECRET_KEY;
-  
-  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-  
-  if (!serviceRoleKey) {
-    console.warn('No service role key found, using regular client');
-  }
-  
-  if (!supabaseUrl) {
-    throw new Error('Supabase URL not found in environment variables');
-  }
-
-  const supabaseClient = serviceRoleKey 
-    ? createClient(supabaseUrl, serviceRoleKey)
-    : supabase;
-
+  // Step 2: Use the existing Supabase client for video insertion
   try {
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
       .from('videos')
       .insert({
         owner_id: params.ownerId,

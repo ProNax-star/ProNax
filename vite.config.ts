@@ -9,6 +9,23 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Plugin to polyfill node:async_hooks for browser
+function asyncLocalStoragePolyfill() {
+  return {
+    name: 'async-local-storage-polyfill',
+    enforce: 'pre' as const,
+    transform(code: string, id: string) {
+      // Replace node:async_hooks imports with our polyfill
+      if (code.includes('node:async_hooks')) {
+        return code.replace(
+          /from ['"]node:async_hooks['"]/g,
+          `from '${__dirname}/src/async-local-storage-polyfill.ts'`
+        );
+      }
+    },
+  };
+}
+
 export default defineConfig({
   base: '/',
   server: {
@@ -19,6 +36,7 @@ export default defineConfig({
     }
   },
   plugins: [
+    asyncLocalStoragePolyfill(),
     tailwindcss(),
     TanStackRouterVite({
       routesDirectory: './src/routes',
@@ -29,6 +47,9 @@ export default defineConfig({
     // Disable obfuscator in production to prevent runtime errors
     // process.env.NODE_ENV === 'production' ? obfuscator() : null,
   ].filter(Boolean),
+  ssr: {
+    noExternal: ['@tanstack/react-start', '@tanstack/react-router', '@tanstack/react-query'],
+  },
   resolve: {
     tsconfigPaths: true,
     dedupe: ['react', 'react-dom'],
@@ -36,8 +57,15 @@ export default defineConfig({
       'node:async_hooks': __dirname + '/src/async-local-storage-polyfill.ts',
     },
   },
-  optimizeDeps: {
-    include: ['@tanstack/react-start'],
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+    global: 'globalThis',
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0'),
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    __PRODUCTION__: JSON.stringify(process.env.NODE_ENV === 'production'),
+    __LICENSE_ENABLED__: JSON.stringify(true),
+    __HWID_BINDING__: JSON.stringify(true),
+    __DOMAIN_RESTRICTION__: JSON.stringify(true),
   },
   build: {
     outDir: 'dist',
@@ -51,15 +79,5 @@ export default defineConfig({
         assetFileNames: 'assets/[name].[ext]',
       }
     }
-  },
-  define: {
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
-    global: 'globalThis',
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0'),
-    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
-    __PRODUCTION__: JSON.stringify(process.env.NODE_ENV === 'production'),
-    __LICENSE_ENABLED__: JSON.stringify(true),
-    __HWID_BINDING__: JSON.stringify(true),
-    __DOMAIN_RESTRICTION__: JSON.stringify(true),
   }
 });

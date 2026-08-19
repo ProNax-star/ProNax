@@ -244,7 +244,7 @@ END;
 $$;
 
 -- Grant execute permissions
-GRANT EXECUTE ON FUNCTION public.check_duplicate_fingerprint(TEXT, uuid) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.check_duplicate_fingerprint(TEXT, uuid, uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.create_copyright_claim_from_duplicate(uuid, uuid, uuid, TEXT, NUMERIC) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.check_and_handle_duplicate_fingerprint(TEXT, uuid, TEXT, uuid) TO authenticated, service_role;
 

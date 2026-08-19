@@ -332,10 +332,15 @@ export default function Profile() {
           'Content-Type': 'application/json', 
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ filename: f.name, contentType: f.type, kind: 'thumb', sizeBytes: f.size }),
+        body: JSON.stringify({ 
+          fileName: f.name, 
+          fileType: f.type, 
+          fileSize: f.size,
+          folder: kind === 'avatar' ? 'avatars' : 'banners'
+        }),
       });
       const data = await res.json();
-      if (!res.ok || !data?.uploadUrl) {
+      if (!res.ok || !data?.presignedUrl) {
         toast({ title: 'Upload failed', description: data?.error || 'Failed to get upload URL', variant: 'destructive' });
         return;
       }
@@ -343,8 +348,7 @@ export default function Profile() {
       // Upload to R2
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.open('PUT', data.uploadUrl, true);
-        Object.entries(data.headers || {}).forEach(([key, value]) => xhr.setRequestHeader(key, String(value)));
+        xhr.open('PUT', data.presignedUrl, true);
         xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`R2 upload failed: ${xhr.status}`)));
         xhr.onerror = () => reject(new Error('Network error during upload'));
         xhr.send(f);
@@ -367,7 +371,7 @@ export default function Profile() {
         setBanner(data.publicUrl);
       }
       
-      toast({ title: `${kind === 'avatar' ? 'Profile picture' : 'Banner'} updated successfully` });
+      toast({ title: `${kind === 'avatar' ? 'Profile picture' : 'Banner'} updated successfully`, duration: 3000 });
     } catch (err) {
       console.error('File upload error:', err);
       toast({ title: 'Upload failed', description: 'Please try again.', variant: 'destructive' });
@@ -467,11 +471,11 @@ export default function Profile() {
       <OrbBackground variant="aurora" />
 
       {/* Banner — K2 x Paradise panoramic */}
-      <div className="relative w-full h-44 sm:h-60 lg:h-80 overflow-hidden group">
+      <div className="relative w-full h-48 sm:h-64 lg:h-96 overflow-hidden group">
         <img
           src={banner || paradiseBanner}
           alt="Profile banner"
-          className="absolute inset-0 w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-[3s] ease-out"
+          className="absolute inset-0 w-full h-full object-contain object-center"
         />
         {/* Aurora tint overlay */}
         <div className="absolute inset-0 bg-gradient-to-tr from-primary/25 via-transparent to-secondary/25 mix-blend-overlay pointer-events-none" />
@@ -564,12 +568,10 @@ export default function Profile() {
 
       <div className="max-w-[1100px] mx-auto px-4 lg:px-6 perspective-container">
         {/* Hero — avatar floats over banner (no glass strip background) */}
-        <div className="relative z-10 -mt-12 sm:-mt-16 flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-5">
+        <div className="relative z-10 -mt-8 sm:-mt-12 flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-5">
           <div className="relative w-24 h-24 sm:w-32 sm:h-32 shrink-0">
-            {/* Aurora ring */}
-            <div className="absolute -inset-1.5 rounded-full bg-[conic-gradient(from_0deg,hsl(var(--primary)),hsl(var(--secondary)),hsl(var(--accent)),hsl(var(--primary)))] animate-spin-slow opacity-80 blur-[2px]" />
-            <div className="relative w-full h-full rounded-full ring-4 ring-background gradient-primary flex items-center justify-center text-2xl sm:text-3xl font-display font-bold text-primary-foreground overflow-hidden glow-primary">
-              {avatar ? <img src={avatar} alt="Avatar" className="w-full h-full object-cover" /> : name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}
+            <div className="relative w-full h-full rounded-full flex items-center justify-center text-2xl sm:text-3xl font-display font-bold text-primary-foreground overflow-hidden gradient-primary">
+              {avatar ? <img src={avatar} alt="Avatar" className="w-full h-full object-cover object-center" /> : name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}
             </div>
             {isOwnProfile && (
               <>

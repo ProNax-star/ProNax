@@ -112,7 +112,7 @@ export function useLiveStudio() {
       // Show loading state for at least 300ms to prevent flickering
       await new Promise(resolve => setTimeout(resolve, 300));
       const [vRes, pRes, fRes, wRes, uRes] = await Promise.all([
-        supabase.from("videos").select("*").eq("owner_id", userId).order("created_at", { ascending: false }),
+        supabase.from("videos").select("id, title, description, thumb_url, preview_url, duration_seconds, visibility, monetization_enabled, is_pending_review, age_restriction, created_at, views_count, tags, category, is_short").eq("owner_id", userId).order("created_at", { ascending: false }),
         supabase.from("profiles").select("display_name, avatar_url, bio").eq("id", userId).maybeSingle(),
         supabase.from("follows").select("id", { count: "exact", head: true }).eq("following_id", userId),
         supabase.from("user_wallets").select("balance, total_earned").eq("user_id", userId).maybeSingle(),
@@ -271,9 +271,25 @@ export function useLiveStudio() {
   }, []);
 
   const deleteVideo = useCallback(async (videoId: string) => {
-    setVideos((prev) => prev.filter((v) => v.id !== videoId));
-    const { error } = await supabase.from("videos").delete().eq("id", videoId);
-    if (error) console.error("[pronax-studio] delete video failed", error);
+    console.log(`[pronax-studio] Starting deletion for video ID: ${videoId}`);
+    try {
+      // Call Edge Function to delete video (handles both R2 and database deletion with service role)
+      const { error } = await supabase.functions.invoke('delete-video', {
+        body: { videoId }
+      });
+
+      if (error) {
+        console.error("[pronax-studio] Edge Function deletion failed", error);
+        return;
+      }
+
+      console.log("[pronax-studio] Video deletion successful");
+      
+      // Update local state
+      setVideos((prev) => prev.filter((v) => v.id !== videoId));
+    } catch (error) {
+      console.error("[pronax-studio] delete video error", error);
+    }
   }, []);
 
   const addCommentReply = useCallback(

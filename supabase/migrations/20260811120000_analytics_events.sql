@@ -23,6 +23,29 @@ CREATE INDEX IF NOT EXISTS idx_analytics_events_user_id ON public.analytics_even
 CREATE INDEX IF NOT EXISTS idx_analytics_events_video_id ON public.analytics_events(video_id);
 CREATE INDEX IF NOT EXISTS idx_analytics_events_event_type ON public.analytics_events(event_type);
 CREATE INDEX IF NOT EXISTS idx_analytics_events_created_at ON public.analytics_events(created_at DESC);
+
+-- Add country_code column if it doesn't exist (for existing tables)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'analytics_events' AND column_name = 'country_code'
+    ) THEN
+        ALTER TABLE public.analytics_events ADD COLUMN country_code text;
+    END IF;
+END $$;
+
+-- Add traffic_source column if it doesn't exist (for existing tables)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'analytics_events' AND column_name = 'traffic_source'
+    ) THEN
+        ALTER TABLE public.analytics_events ADD COLUMN traffic_source text;
+    END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_analytics_events_country_code ON public.analytics_events(country_code);
 CREATE INDEX IF NOT EXISTS idx_analytics_events_traffic_source ON public.analytics_events(traffic_source);
 CREATE INDEX IF NOT EXISTS idx_analytics_events_user_created ON public.analytics_events(user_id, created_at DESC);

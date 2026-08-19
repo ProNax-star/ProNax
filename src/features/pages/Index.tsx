@@ -198,6 +198,7 @@ export default function Index() {
       }
       const { data, error } = await q.range(offset, offset + PAGE - 1);
       console.log('[Home Feed] Direct query result:', { data, error, count: data?.length });
+      console.log('[Home Feed] Query filters:', { visibility: 'public', status: 'ready', category: catParam, kind });
       if (!error && Array.isArray(data) && data.length > 0) {
         return data as FeedVideo[];
       }
@@ -229,13 +230,7 @@ export default function Index() {
       console.log('[Home Feed] DEBUG error:', debugError);
     }
 
-    // 4. Return fallback videos on offset 0 if database returns no records or fails
-    if (offset === 0) {
-      return catParam
-        ? FALLBACK_VIDEOS.filter(v => v.category?.toLowerCase() === catParam.toLowerCase())
-        : FALLBACK_VIDEOS;
-    }
-
+    // 4. Return empty array when database has no videos
     return [];
   };
 
@@ -255,10 +250,9 @@ export default function Index() {
         setHasMore(first.length >= PAGE);
       } catch (e: any) {
         if (!cancelled) {
-          console.warn('[index] feed fallback applied', e);
-          const enriched = await enrich(FALLBACK_VIDEOS);
-          setVideos(enriched);
-          setHero(enriched[0] ?? null);
+          console.warn('[index] feed load error', e);
+          setVideos([]);
+          setHero(null);
           setHasMore(false);
         }
       } finally {
