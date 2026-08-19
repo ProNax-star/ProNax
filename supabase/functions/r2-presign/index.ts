@@ -2,6 +2,13 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { S3Client, PutObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.450.0'
 import { getSignedUrl } from 'https://esm.sh/@aws-sdk/s3-request-presigner@3.450.0'
 
+// Type definitions for Deno environment
+declare const Deno: {
+  env: {
+    get(key: string): string | undefined
+  }
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -15,7 +22,7 @@ interface PresignRequest {
   folder?: string
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -77,9 +84,10 @@ serve(async (req) => {
     // Generate pre-signed URL (valid for 1 hour)
     const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 })
 
-    // Generate the public URL
+    // Generate the public URL - use custom domain if configured, otherwise use R2 public URL
     const R2_PUBLIC_URL = Deno.env.get('R2_PUBLIC_URL') || `https://pub-${R2_ACCOUNT_ID}.r2.dev`
-    const publicUrl = `${R2_PUBLIC_URL}/${fileKey}`
+    const CUSTOM_DOMAIN = Deno.env.get('R2_CUSTOM_DOMAIN')
+    const publicUrl = CUSTOM_DOMAIN ? `${CUSTOM_DOMAIN}/${fileKey}` : `${R2_PUBLIC_URL}/${fileKey}`
 
     return new Response(
       JSON.stringify({

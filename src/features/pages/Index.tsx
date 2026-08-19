@@ -28,6 +28,7 @@ interface FeedVideo {
   preview_sprite_url?: string | null;
   preview_sprite_frames?: number | null;
   ownerName?: string;
+  ownerAvatar?: string;
   views?: number;
   likes?: number;
 }
@@ -126,11 +127,13 @@ async function enrich(videos: FeedVideo[]): Promise<FeedVideo[]> {
       ids.length ? supabase.from('video_likes').select('video_id').in('video_id', ids) : Promise.resolve({ data: [] }),
     ]);
     const nameMap = new Map((profiles ?? []).map((p: { id: string; display_name?: string | null }) => [p.id, p.display_name || 'Creator']));
+    const avatarMap = new Map((profiles ?? []).map((p: { id: string; avatar_url?: string | null }) => [p.id, p.avatar_url]));
     const likeMap = new Map<string, number>();
     (likes?.data ?? []).forEach((r: { video_id: string }) => likeMap.set(r.video_id, (likeMap.get(r.video_id) ?? 0) + 1));
     return videos.map(v => ({
       ...v,
       ownerName: v.ownerName || nameMap.get(v.owner_id) || 'Creator',
+      ownerAvatar: v.ownerAvatar || avatarMap.get(v.owner_id),
       likes: v.likes ?? likeMap.get(v.id) ?? 0,
       views: v.views ?? (v as any).views_count ?? 0,
     }));
@@ -433,8 +436,12 @@ export default function Index() {
                     )}
                   </div>
                   <div className="flex gap-3 mt-3">
-                    <div className="w-10 h-10 rounded-full shrink-0 gradient-primary flex items-center justify-center text-[10px] font-display font-bold text-primary-foreground shadow-md">
-                      {(v.ownerName || '?').slice(0, 2).toUpperCase()}
+                    <div className="w-10 h-10 rounded-full shrink-0 gradient-primary flex items-center justify-center text-[10px] font-display font-bold text-primary-foreground shadow-md overflow-hidden">
+                      {v.ownerAvatar ? (
+                        <img src={v.ownerAvatar} alt={v.ownerName || 'Creator'} className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{(v.ownerName || '?').slice(0, 2).toUpperCase()}</span>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-sm font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors">

@@ -18,6 +18,7 @@ export interface GridVideo {
   created_at?: string;
   duration_seconds?: number | null;
   ownerName?: string;
+  ownerAvatar?: string;
   views?: number;
   is_short?: boolean;
 }
@@ -81,8 +82,12 @@ function VideoCardTile({ v, i }: { v: GridVideo; i: number }) {
           )}
         </div>
         <div className="mt-2.5 flex items-center gap-3 px-0.5">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full gradient-primary text-[10px] font-display font-bold text-primary-foreground">
-            {(v.ownerName || '?').slice(0, 2).toUpperCase()}
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full gradient-primary text-[10px] font-display font-bold text-primary-foreground overflow-hidden">
+            {v.ownerAvatar ? (
+              <img src={v.ownerAvatar} alt={v.ownerName || 'Creator'} className="w-full h-full object-cover" />
+            ) : (
+              <span>{(v.ownerName || '?').slice(0, 2).toUpperCase()}</span>
+            )}
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors group-hover:text-primary">
@@ -211,15 +216,17 @@ export async function enrichVideos(supabase: any, videos: any[]): Promise<GridVi
   const ownerIds = [...new Set(videos.map(v => v.owner_id).filter(Boolean))];
   const ids = videos.map(v => v.id);
   const [{ data: profiles }, views] = await Promise.all([
-    ownerIds.length ? supabase.from('profiles').select('id, display_name').in('id', ownerIds) : Promise.resolve({ data: [] }),
+    ownerIds.length ? supabase.from('profiles').select('id, display_name, avatar_url').in('id', ownerIds) : Promise.resolve({ data: [] }),
     supabase.from('video_views').select('video_id').in('video_id', ids),
   ]);
   const nameMap = new Map((profiles ?? []).map((p: any) => [p.id, p.display_name || 'Creator']));
+  const avatarMap = new Map((profiles ?? []).map((p: any) => [p.id, p.avatar_url]));
   const viewMap = new Map<string, number>();
   (views.data ?? []).forEach((r: any) => viewMap.set(r.video_id, (viewMap.get(r.video_id) ?? 0) + 1));
   return videos.map(v => ({
     ...v,
     ownerName: nameMap.get(v.owner_id) ?? 'Creator',
+    ownerAvatar: avatarMap.get(v.owner_id),
     views: viewMap.get(v.id) ?? Number(v.views_count ?? v.views ?? 0),
   }));
 }

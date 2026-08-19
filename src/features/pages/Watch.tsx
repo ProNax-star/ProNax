@@ -41,7 +41,7 @@ const loadingState = {
   description: 'Loading video details...' 
 };
 
-type SuggestedVideo = { id: string; title: string; channel: string; views: string; time: string; duration: string; monetized: boolean; thumbnail?: string };
+type SuggestedVideo = { id: string; title: string; channel: string; views: string; time: string; duration: string; monetized: boolean; thumbnail?: string; channelAvatar?: string };
 type DbVideoRow = {
   id: string;
   title: string;
@@ -84,6 +84,7 @@ export default function Watch() {
   const videoId = id || '1';
   const [dbVideo, setDbVideo] = useState<DbVideoRow | null>(null);
   const [dbCreatorName, setDbCreatorName] = useState<string | null>(null);
+  const [dbCreatorAvatar, setDbCreatorAvatar] = useState<string | null>(null);
   const [dbCreatorId, setDbCreatorId] = useState<string | null>(null);
   const [dbSubtitles, setDbSubtitles] = useState<{ label: string; language: string; src: string; kind?: 'subtitles' | 'captions'; default?: boolean }[]>([]);
   
@@ -91,6 +92,7 @@ export default function Watch() {
     let cancelled = false;
     setDbVideo(null);
     setDbCreatorName(null);
+    setDbCreatorAvatar(null);
     setDbCreatorId(null);
     setDbSubtitles([]);
     if (!isUuid(videoId)) return () => { cancelled = true; };
@@ -112,14 +114,18 @@ export default function Watch() {
         setDbCreatorId((vrow as any).owner_id);
         const { data: profile } = await supabase
           .from('profiles')
-          .select('display_name')
+          .select('display_name,avatar_url')
           .eq('id', (vrow as any).owner_id)
           .maybeSingle();
-        if (!cancelled) setDbCreatorName((profile as any)?.display_name || null);
+        if (!cancelled) {
+          setDbCreatorName((profile as any)?.display_name || null);
+          setDbCreatorAvatar((profile as any)?.avatar_url || null);
+          console.log('Creator profile loaded:', { name: (profile as any)?.display_name, avatar: (profile as any)?.avatar_url });
+        }
       }
       
       // Load subtitles from database
-      const { data: subtitleData } = await supabase
+      const { data: subtitleData } = await (supabase as any)
         .from('video_subtitles')
         .select('*')
         .eq('video_id', videoId);
@@ -196,12 +202,14 @@ export default function Watch() {
         const { data, error } = await supabase.rpc('get_related_videos', { p_video: videoId, p_limit: 12 });
         if (cancelled || error || !Array.isArray(data) || data.length === 0) return;
         const ownerIds = Array.from(new Set(data.map((r: any) => r.owner_id).filter(Boolean)));
-        const { data: profs } = await supabase.from('profiles').select('id,display_name').in('id', ownerIds);
+        const { data: profs } = await supabase.from('profiles').select('id,display_name,avatar_url').in('id', ownerIds);
         const nameMap = new Map<string, string>((profs ?? []).map((p: any) => [p.id, p.display_name || 'Creator']));
+        const avatarMap = new Map<string, string | null>((profs ?? []).map((p: any) => [p.id, p.avatar_url]));
         setSuggestedVideos(data.map((r: any) => ({
           id: String(r.id),
           title: r.title,
           channel: nameMap.get(r.owner_id) || 'Creator',
+          channelAvatar: avatarMap.get(r.owner_id) || undefined,
           views: fmtViews(Number(r.views_count) || 0),
           time: fmtTimeAgo(r.created_at),
           duration: fmtDur(r.duration_seconds) || '0:00',
@@ -652,8 +660,12 @@ export default function Watch() {
                 to={`/channel/${encodeURIComponent(video.channel)}`}
                 className="flex items-center gap-3 group min-w-0"
               >
-                <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-xs font-display font-bold text-primary-foreground shrink-0 group-hover:ring-2 group-hover:ring-primary/50 transition">
-                  {initials}
+                <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-xs font-display font-bold text-primary-foreground shrink-0 group-hover:ring-2 group-hover:ring-primary/50 transition overflow-hidden">
+                  {dbCreatorAvatar ? (
+                    <img src={dbCreatorAvatar} alt="Creator avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    initials
+                  )}
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">@{video.channel.replace(/\s+/g, '')}</p>
@@ -741,8 +753,12 @@ export default function Watch() {
                     </div>
                     {sortedComments.length > 0 ? (
                       <div className="flex items-center gap-2.5 text-xs">
-                        <div className="w-6 h-6 rounded-full gradient-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground shrink-0">
-                          {sortedComments[0].user[0]}
+                        <div className="w-6 h-6 rounded-full gradient-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground shrink-0 overflow-hidden">
+                          {sortedComments[0].avatarUrl ? (
+                            <img src={sortedComments[0].avatarUrl} alt="Commenter avatar" className="w-full h-full object-cover" />
+                          ) : (
+                            sortedComments[0].user[0]
+                          )}
                         </div>
                         <p className="text-foreground/80 truncate text-xs flex-1">
                           <span className="font-semibold text-foreground mr-1">@{sortedComments[0].userHandle}:</span>
@@ -812,8 +828,12 @@ export default function Watch() {
 
                   {/* Comment Input */}
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-xs font-bold text-primary-foreground shrink-0">
-                      Y
+                    <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-xs font-bold text-primary-foreground shrink-0 overflow-hidden">
+                      {user?.user_metadata?.avatar_url ? (
+                        <img src={user.user_metadata.avatar_url} alt="Your avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        user?.user_metadata?.display_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'Y'
+                      )}
                     </div>
                     <div className="flex-1">
                       <input
@@ -919,7 +939,13 @@ export default function Watch() {
                           {/* Reply composer */}
                           {replyOpen[comment.id] && (
                             <div className="mt-2 flex items-start gap-2">
-                              <div className="w-6 h-6 rounded-full gradient-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground shrink-0">Y</div>
+                              <div className="w-6 h-6 rounded-full gradient-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground shrink-0 overflow-hidden">
+                                {user?.user_metadata?.avatar_url ? (
+                                  <img src={user.user_metadata.avatar_url} alt="Your avatar" className="w-full h-full object-cover" />
+                                ) : (
+                                  user?.user_metadata?.display_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'Y'
+                                )}
+                              </div>
                               <div className="flex-1">
                                 <input
                                   type="text"

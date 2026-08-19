@@ -16,7 +16,7 @@ interface VideoCardProps {
   is_short?: boolean;
 }
 
-export function VideoCard({ id, title, channel, views, time, thumbnail, duration, monetized = true, layout = 'grid', is_short = false }: VideoCardProps) {
+export function VideoCard({ id, title, channel, views, time, thumbnail, duration, monetized = true, channelAvatar, layout = 'grid', is_short = false }: VideoCardProps) {
   const navigate = useNavigate();
   const initials = channel.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
@@ -103,9 +103,13 @@ export function VideoCard({ id, title, channel, views, time, thumbnail, duration
         <Link
           to={`/channel/${encodeURIComponent(channel)}`}
           onClick={(e) => e.stopPropagation()}
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-full gradient-primary text-[10px] font-display font-bold text-primary-foreground transition hover:ring-2 hover:ring-primary/50"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-full gradient-primary text-[10px] font-display font-bold text-primary-foreground transition hover:ring-2 hover:ring-primary/50 overflow-hidden"
         >
-          {initials}
+          {channelAvatar ? (
+            <img src={channelAvatar} alt={channel} className="w-full h-full object-cover" />
+          ) : (
+            <span>{initials}</span>
+          )}
         </Link>
         <div className="min-w-0 flex-1">
           <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors group-hover:text-primary">
