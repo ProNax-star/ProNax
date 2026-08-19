@@ -435,168 +435,111 @@ export function VideoPlayer({
 
       {/* Big center play (main video only) */}
       {!showAd && !playing && (
-        <button
-          onClick={togglePlay}
-          className="absolute inset-0 flex items-center justify-center z-10"
-          aria-label="Play"
-        >
-          <span className="w-16 h-16 rounded-full flex items-center justify-center bg-primary/20 border border-primary/60 backdrop-blur-md shadow-[0_0_40px_hsla(var(--primary)/0.7)] transition-transform hover:scale-110">
-            <Play className="w-7 h-7 text-primary fill-primary" />
-          </span>
-        </button>
+        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+          <button
+            onClick={togglePlay}
+            className="pointer-events-auto"
+            aria-label="Play"
+          >
+            <span className="w-16 h-16 rounded-full flex items-center justify-center bg-primary/20 border border-primary/60 backdrop-blur-md shadow-[0_0_40px_hsla(var(--primary)/0.7)] transition-transform hover:scale-110">
+              <Play className="w-7 h-7 text-primary fill-primary" />
+            </span>
+          </button>
+        </div>
       )}
 
-      {/* Neon custom controls */}
+      {/* Professional YouTube-style controls */}
       {!showAd && (
         <div
-          className={`absolute inset-x-0 bottom-0 z-30 transition-opacity duration-300 ${
+          className={`absolute bottom-0 left-0 right-0 z-20 w-full flex flex-col transition-opacity duration-300 ${
             controlsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}
         >
-          <div
-            className="px-3 pt-10 pb-2 md:pt-8"
-            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0))' }}
-          >
-            {/* Progress */}
-            <div className="relative h-1 rounded-full bg-white/15 cursor-pointer group/prog"
+          <div className="flex flex-col justify-end px-3 pb-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent">
+            {/* Line 1: Progress Bar / Seekbar */}
+            <div className="relative h-1 bg-white/20 cursor-pointer group/prog hover:h-1.5 transition-all mb-0 w-full"
               onClick={(e) => {
                 const r = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
                 seek(((e.clientX - r.left) / r.width) * duration);
               }}
             >
               <div
-                className="absolute inset-y-0 left-0 rounded-full"
-                style={{
-                  width: `${pct}%`,
-                  background: 'linear-gradient(90deg, hsl(var(--primary)), hsl(var(--secondary)))',
-                  boxShadow: '0 0 12px hsla(var(--primary)/0.9)',
-                }}
+                className="absolute inset-y-0 left-0 bg-red-600 group-hover/prog:bg-red-500 transition-colors"
+                style={{ width: `${pct}%` }}
               />
               <div
-                className="absolute -top-1.5 w-4 h-4 -ml-2 rounded-full bg-white shadow-[0_0_10px_hsla(var(--primary)/0.9)] opacity-0 group-hover/prog:opacity-100 transition"
+                className="absolute -top-1.5 w-3.5 h-3.5 -ml-1.75 rounded-full bg-red-600 shadow-lg opacity-0 group-hover/prog:opacity-100 transition-all"
                 style={{ left: `${pct}%` }}
               />
             </div>
 
-            {/* Buttons row */}
-            <div className="flex items-center gap-2 mt-2 text-white">
-              <button onClick={togglePlay} className="p-1.5 rounded hover:bg-white/10" aria-label={playing ? 'Pause' : 'Play'}>
-                {playing ? <Pause className="w-5 h-5 text-primary" /> : <Play className="w-5 h-5 text-primary" />}
-              </button>
-
-              {/* Volume */}
-              <div className="flex items-center gap-1.5 group/vol">
-                <button onClick={toggleMute} className="p-1.5 rounded hover:bg-white/10" aria-label="Mute">
-                  {muted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-primary" />}
+            {/* Line 2: Bottom Control Bar */}
+            <div className="flex items-center justify-between w-full px-3 py-1 text-white">
+              <div className="flex items-center gap-2">
+                <button onClick={togglePlay} className="p-1.5 rounded-full hover:bg-white/20 transition-colors" aria-label={playing ? 'Pause' : 'Play'}>
+                  {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
                 </button>
-                <input
-                  type="range" min={0} max={1} step={0.01}
-                  value={muted ? 0 : volume}
-                  onChange={(e) => onVolChange(Number(e.target.value))}
-                  className="neon-slider w-0 group-hover/vol:w-20 transition-[width] duration-200"
-                  aria-label="Volume"
-                />
+
+                {/* Volume */}
+                <div className="flex items-center gap-1.5 group/vol">
+                  <button onClick={toggleMute} className="p-1.5 rounded-full hover:bg-white/20 transition-colors" aria-label="Mute">
+                    {muted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                  </button>
+                  <input
+                    type="range" min={0} max={1} step={0.01}
+                    value={muted ? 0 : volume}
+                    onChange={(e) => onVolChange(Number(e.target.value))}
+                    className="youtube-slider w-0 group-hover/vol:w-24 transition-[width] duration-200"
+                    aria-label="Volume"
+                  />
+                </div>
+
+                <span className="text-xs tabular-nums text-white/90 font-medium">
+                  {fmt(current)} / {fmt(duration)}
+                </span>
               </div>
 
-              <span className="text-[11px] tabular-nums text-white/80 ml-1">
-                {fmt(current)} / {fmt(duration)}
-              </span>
-
-              <div className="ml-auto flex items-center gap-1">
-                {/* Subtitles */}
-                {subtitles.length > 0 && (
-                  <div className="relative">
-                    <button
-                      onClick={() => setSubtitleOpen((v) => !v)}
-                      className="p-1.5 rounded hover:bg-white/10"
-                      aria-label="Subtitles"
-                    >
-                      <Subtitles className={`w-4 h-4 ${activeSubtitle ? 'text-primary' : ''}`} />
-                    </button>
-                    {subtitleOpen && (
-                      <div className="absolute bottom-9 right-0 min-w-[180px] rounded-lg border border-primary/40 bg-black/95 backdrop-blur-lg p-1 shadow-[0_10px_30px_hsla(var(--primary)/0.4)] text-white/90 text-xs">
-                        <button
-                          onClick={() => changeSubtitle(null)}
-                          className={`w-full flex items-center gap-2 px-3 py-1.5 rounded hover:bg-primary/20 ${!activeSubtitle ? 'text-primary font-semibold' : ''}`}
-                        >
-                          {!activeSubtitle ? <Check className="w-3.5 h-3.5" /> : <span className="w-3.5" />}
-                          Off
-                        </button>
-                        {subtitles.map((subtitle) => (
-                          <button
-                            key={subtitle.language}
-                            onClick={() => changeSubtitle(subtitle.language)}
-                            className={`w-full flex items-center gap-2 px-3 py-1.5 rounded hover:bg-primary/20 ${activeSubtitle === subtitle.language ? 'text-primary font-semibold' : ''}`}
-                          >
-                            {activeSubtitle === subtitle.language ? <Check className="w-3.5 h-3.5" /> : <span className="w-3.5" />}
-                            <span>{subtitle.label}</span>
-                            <span className="text-white/50 text-[10px]">{subtitle.language}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Speed */}
-                <div className="relative">
-                  <button
-                    onClick={() => setSpeedOpen((v) => !v)}
-                    className="flex items-center gap-1 px-2 py-1 rounded hover:bg-white/10 text-xs"
-                    aria-label="Speed"
-                  >
-                    <Gauge className="w-4 h-4 text-primary" /> {speed}x
-                  </button>
-                  {speedOpen && (
-                    <div className="absolute bottom-9 right-0 min-w-[110px] rounded-lg border border-primary/40 bg-black/95 backdrop-blur-lg p-1 shadow-[0_10px_30px_hsla(var(--primary)/0.4)]">
-                      {SPEEDS.map((s) => (
-                        <button
-                          key={s}
-                          onClick={() => changeSpeed(s)}
-                          className={`w-full text-left px-3 py-1.5 rounded text-xs hover:bg-primary/20 ${
-                            s === speed ? 'text-primary font-semibold' : 'text-white/85'
-                          }`}
-                        >
-                          {s}x {s === 1 && '(Normal)'}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+              <div className="flex items-center gap-2">
 
                 {/* Settings (gear) */}
                 <div className="relative">
                   <button
                     onClick={() => { setSettingsOpen((v) => !v); setSettingsPane('root'); }}
-                    className="p-1.5 rounded hover:bg-white/10"
+                    className="p-1.5 rounded-full hover:bg-white/20 transition-colors"
                     aria-label="Settings"
                   >
-                    <SettingsIcon className={`w-4 h-4 ${settingsOpen ? 'text-primary' : ''}`} />
+                    <SettingsIcon className={`w-4 h-4 ${settingsOpen ? 'text-white' : 'text-white/70'}`} />
                   </button>
                   {settingsOpen && (
-                    <div className="absolute bottom-9 right-0 min-w-[200px] rounded-lg border border-primary/40 bg-black/95 backdrop-blur-lg p-1 shadow-[0_10px_30px_hsla(var(--primary)/0.4)] text-white/90 text-xs">
+                    <div className="absolute bottom-8 right-0 min-w-[200px] rounded-lg bg-zinc-900/95 backdrop-blur-lg border border-white/10 p-1 shadow-xl text-white text-xs">
                       {settingsPane === 'root' && (
                         <>
-                          <button onClick={() => setSettingsPane('speed')} className="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-primary/20">
+                          <button onClick={() => setSettingsPane('speed')} className="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-white/10">
                             <span>Playback speed</span>
-                            <span className="text-primary">{speed}x ›</span>
+                            <span className="text-white/70">{speed}x ›</span>
                           </button>
-                          <button onClick={() => setSettingsPane('quality')} className="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-primary/20">
+                          <button onClick={() => setSettingsPane('quality')} className="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-white/10">
                             <span>Quality</span>
-                            <span className="text-primary">
+                            <span className="text-white/70">
                               {currentLevel === -1 ? 'Auto' : (qualities.find(q => q.level === currentLevel)?.label ?? 'Auto')} ›
                             </span>
                           </button>
+                          {subtitles.length > 0 && (
+                            <button onClick={() => setSettingsPane('subtitles')} className="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-white/10">
+                              <span>Subtitles</span>
+                              <span className="text-white/70">{activeSubtitle ? 'On' : 'Off'} ›</span>
+                            </button>
+                          )}
                         </>
                       )}
                       {settingsPane === 'speed' && (
                         <>
-                          <button onClick={() => setSettingsPane('root')} className="w-full text-left px-3 py-1.5 text-white/60 hover:bg-white/10 rounded">‹ Speed</button>
+                          <button onClick={() => setSettingsPane('root')} className="w-full text-left px-3 py-2 text-white/60 hover:bg-white/10 rounded">‹ Speed</button>
                           {SPEEDS.map((s) => (
                             <button
                               key={s}
                               onClick={() => { changeSpeed(s); setSettingsOpen(false); }}
-                              className={`w-full flex items-center gap-2 px-3 py-1.5 rounded hover:bg-primary/20 ${s === speed ? 'text-primary font-semibold' : ''}`}
+                              className={`w-full flex items-center gap-2 px-3 py-2 rounded hover:bg-white/10 ${s === speed ? 'text-white font-semibold' : 'text-white/70'}`}
                             >
                               {s === speed ? <Check className="w-3.5 h-3.5" /> : <span className="w-3.5" />}
                               {s}x {s === 1 && '(Normal)'}
@@ -606,25 +549,48 @@ export function VideoPlayer({
                       )}
                       {settingsPane === 'quality' && (
                         <>
-                          <button onClick={() => setSettingsPane('root')} className="w-full text-left px-3 py-1.5 text-white/60 hover:bg-white/10 rounded">‹ Quality</button>
+                          <button onClick={() => setSettingsPane('root')} className="w-full text-left px-3 py-2 text-white/60 hover:bg-white/10 rounded">‹ Quality</button>
                           <button
                             onClick={() => { if (hlsRef.current) hlsRef.current.currentLevel = -1; setCurrentLevel(-1); setSettingsOpen(false); }}
-                            className={`w-full flex items-center gap-2 px-3 py-1.5 rounded hover:bg-primary/20 ${currentLevel === -1 ? 'text-primary font-semibold' : ''}`}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded hover:bg-white/10 ${currentLevel === -1 ? 'text-white font-semibold' : 'text-white/70'}`}
                           >
                             {currentLevel === -1 ? <Check className="w-3.5 h-3.5" /> : <span className="w-3.5" />}
                             Auto
                           </button>
                           {qualities.length === 0 && (
-                            <div className="px-3 py-1.5 text-white/50">No variants available</div>
+                            <div className="px-3 py-2 text-white/50">No variants available</div>
                           )}
                           {qualities.map((q) => (
                             <button
                               key={q.level}
                               onClick={() => { if (hlsRef.current) hlsRef.current.currentLevel = q.level; setCurrentLevel(q.level); setSettingsOpen(false); }}
-                              className={`w-full flex items-center gap-2 px-3 py-1.5 rounded hover:bg-primary/20 ${currentLevel === q.level ? 'text-primary font-semibold' : ''}`}
+                              className={`w-full flex items-center gap-2 px-3 py-2 rounded hover:bg-white/10 ${currentLevel === q.level ? 'text-white font-semibold' : 'text-white/70'}`}
                             >
                               {currentLevel === q.level ? <Check className="w-3.5 h-3.5" /> : <span className="w-3.5" />}
                               {q.label}
+                            </button>
+                          ))}
+                        </>
+                      )}
+                      {settingsPane === 'subtitles' && (
+                        <>
+                          <button onClick={() => setSettingsPane('root')} className="w-full text-left px-3 py-2 text-white/60 hover:bg-white/10 rounded">‹ Subtitles</button>
+                          <button
+                            onClick={() => { changeSubtitle(null); setSettingsOpen(false); }}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded hover:bg-white/10 ${!activeSubtitle ? 'text-white font-semibold' : 'text-white/70'}`}
+                          >
+                            {!activeSubtitle ? <Check className="w-3.5 h-3.5" /> : <span className="w-3.5" />}
+                            Off
+                          </button>
+                          {subtitles.map((subtitle) => (
+                            <button
+                              key={subtitle.language}
+                              onClick={() => { changeSubtitle(subtitle.language); setSettingsOpen(false); }}
+                              className={`w-full flex items-center gap-2 px-3 py-2 rounded hover:bg-white/10 ${activeSubtitle === subtitle.language ? 'text-white font-semibold' : 'text-white/70'}`}
+                            >
+                              {activeSubtitle === subtitle.language ? <Check className="w-3.5 h-3.5" /> : <span className="w-3.5" />}
+                              <span>{subtitle.label}</span>
+                              <span className="text-white/50 text-[10px]">{subtitle.language}</span>
                             </button>
                           ))}
                         </>
@@ -633,21 +599,19 @@ export function VideoPlayer({
                   )}
                 </div>
 
-                {/* PiP */}
-                <button onClick={togglePip} className="p-1.5 rounded hover:bg-white/10" aria-label="Picture in Picture">
-                  <PictureInPicture2 className={`w-4 h-4 ${pip ? 'text-primary' : ''}`} />
-                </button>
-
-
-                {/* Theater */}
-                {onTheaterToggle && (
-                  <button onClick={onTheaterToggle} className="p-1.5 rounded hover:bg-white/10" aria-label="Theater mode">
-                    <Rectangle className={`w-4 h-4 ${theater ? 'text-primary' : ''}`} />
+                {/* CC/Captions quick toggle */}
+                {subtitles.length > 0 && (
+                  <button
+                    onClick={() => changeSubtitle(activeSubtitle ? null : (subtitles.find(s => s.default)?.language || subtitles[0].language))}
+                    className="p-1.5 rounded-full hover:bg-white/20 transition-colors"
+                    aria-label="Toggle captions"
+                  >
+                    <Subtitles className={`w-4 h-4 ${activeSubtitle ? 'text-white' : 'text-white/70'}`} />
                   </button>
                 )}
 
                 {/* Fullscreen */}
-                <button onClick={toggleFullscreen} className="p-1.5 rounded hover:bg-white/10" aria-label="Fullscreen">
+                <button onClick={toggleFullscreen} className="p-1.5 rounded-full hover:bg-white/20 transition-colors" aria-label="Fullscreen">
                   {fs ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                 </button>
               </div>
@@ -657,69 +621,69 @@ export function VideoPlayer({
       )}
 
       <style>{`
-        .neon-slider {
+        .youtube-slider {
           -webkit-appearance: none;
           appearance: none;
           height: 4px;
-          background: rgba(255,255,255,0.2);
-          border-radius: 999px;
+          background: rgba(255,255,255,0.3);
+          border-radius: 2px;
           outline: none;
         }
-        .neon-slider::-webkit-slider-thumb {
+        .youtube-slider::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
           width: 12px; height: 12px;
-          border-radius: 999px;
-          background: hsl(var(--primary));
-          box-shadow: 0 0 8px hsla(var(--primary)/0.9);
+          border-radius: 50%;
+          background: white;
           cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
-        .neon-slider::-moz-range-thumb {
+        .youtube-slider::-moz-range-thumb {
           width: 12px; height: 12px; border: 0;
-          border-radius: 999px;
-          background: hsl(var(--primary));
-          box-shadow: 0 0 8px hsla(var(--primary)/0.9);
+          border-radius: 50%;
+          background: white;
           cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
         ::cue {
-          background-color: rgba(0, 0, 0, 0.7) !important;
+          background-color: rgba(0, 0, 0, 0.8) !important;
           color: white !important;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-          font-size: 18px !important;
+          font-size: 20px !important;
           font-weight: 500 !important;
           line-height: 1.4 !important;
-          padding: 4px 12px !important;
-          border-radius: 8px !important;
+          padding: 4px 12px 45px 12px !important;
+          border-radius: 4px !important;
           text-align: center !important;
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+          text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
           z-index: 9999 !important;
           position: relative !important;
         }
         ::cue(*) {
-          background-color: rgba(0, 0, 0, 0.7) !important;
+          background-color: rgba(0, 0, 0, 0.8) !important;
           color: white !important;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-          font-size: 18px !important;
+          font-size: 20px !important;
           font-weight: 500 !important;
           line-height: 1.4 !important;
-          padding: 4px 12px !important;
-          border-radius: 8px !important;
+          padding: 4px 12px 45px 12px !important;
+          border-radius: 4px !important;
           text-align: center !important;
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+          text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
           z-index: 9999 !important;
           position: relative !important;
         }
         video::cue {
-          background-color: rgba(0, 0, 0, 0.7) !important;
+          background-color: rgba(0, 0, 0, 0.8) !important;
           color: white !important;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-          font-size: 18px !important;
+          font-size: 20px !important;
           font-weight: 500 !important;
           line-height: 1.4 !important;
-          padding: 4px 12px !important;
-          border-radius: 8px !important;
+          padding: 4px 12px 45px 12px !important;
+          border-radius: 4px !important;
           text-align: center !important;
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+          text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
           z-index: 9999 !important;
           position: relative !important;
         }

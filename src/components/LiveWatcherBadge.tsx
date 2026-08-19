@@ -26,7 +26,7 @@ export const LiveWatcherBadge: React.FC<LiveWatcherBadgeProps> = ({
   if (variant === '3d-overlay') {
     return (
       <div
-        className={`relative inline-flex items-center gap-2 px-3 py-1.5 rounded-full select-none
+        className={`relative inline-flex items-center gap-2 py-1 px-2.5 rounded-full select-none
           bg-gradient-to-b from-zinc-900/90 via-black/80 to-zinc-950/95
           backdrop-blur-md border border-red-500/40
           shadow-[0_6px_20px_rgba(254,44,85,0.35),inset_0_1px_1px_rgba(255,255,255,0.25)]

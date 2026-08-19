@@ -33,10 +33,10 @@ export function VideoCard({ id, title, channel, views, time, thumbnail, duration
     return (
       <motion.div
         whileHover={{ scale: 1.01 }}
-        className="cursor-pointer group flex gap-3"
+        className="cursor-pointer group flex gap-2"
         onClick={handleClick}
       >
-        <div className="relative w-40 sm:w-44 shrink-0 aspect-video rounded-lg overflow-hidden bg-muted/20">
+        <div className="relative w-40 sm:w-44 shrink-0 aspect-video rounded-xl overflow-hidden bg-muted/20">
           {thumbnail && <img src={thumbnail} alt={title} className="w-full h-full object-cover" />}
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
             <div className="w-8 h-8 rounded-full bg-background/80 flex items-center justify-center">
@@ -47,7 +47,7 @@ export function VideoCard({ id, title, channel, views, time, thumbnail, duration
             {duration}
           </span>
         </div>
-        <div className="flex-1 min-w-0 py-0.5">
+        <div className="flex-1 min-w-0 py-0">
           <h3 className="text-sm font-semibold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors">
             {title}
           </h3>
@@ -76,7 +76,7 @@ export function VideoCard({ id, title, channel, views, time, thumbnail, duration
       onClick={handleClick}
     >
       {/* Thumbnail 16:9 */}
-      <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-muted/20 border border-primary/20 transition-all duration-300 group-hover:border-primary/60 card-3d-glare neon-edge group-hover:shadow-[0_15px_45px_-10px_hsl(var(--glow-primary)/0.65),0_0_20px_1px_hsl(var(--glow-secondary)/0.3)]">
+      <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-muted/20 border border-primary/20 transition-all duration-300 group-hover:border-primary/60 card-3d-glare neon-edge group-hover:shadow-[0_15px_45px_-10px_hsl(var(--glow-primary)/0.65),0_0_20px_1px_hsl(var(--glow-secondary)/0.3)]">
         {thumbnail && <img src={thumbnail} alt={title} className="w-full h-full object-cover" />}
         <div className="absolute inset-0 bg-gradient-to-tr from-primary/0 via-transparent to-secondary/0 group-hover:from-primary/15 group-hover:to-secondary/15 transition-all duration-300" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-background/70 to-transparent" />
@@ -99,7 +99,7 @@ export function VideoCard({ id, title, channel, views, time, thumbnail, duration
       </div>
 
       {/* Info Row */}
-      <div className="mt-2.5 flex items-center gap-3">
+      <div className="mt-2 flex items-center gap-2">
         <Link
           to={`/channel/${encodeURIComponent(channel)}`}
           onClick={(e) => e.stopPropagation()}

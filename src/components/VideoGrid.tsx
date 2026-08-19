@@ -50,52 +50,49 @@ function VideoCardTile({ v, i }: { v: GridVideo; i: number }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(i, 8) * 0.03 }}
-      className="w-full min-w-0 card-vis"
+      className="w-full min-w-0"
     >
-
       <Link
         to={v.is_short ? `/shorts/${v.id}` : `/watch/${v.id}`}
-        className="block group tilt-3d rounded-2xl border border-white/5 bg-gradient-to-b from-white/[0.04] to-transparent p-2 sm:p-2.5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.4)] backdrop-blur-sm transition-all duration-300 active:scale-[0.98] sm:hover:border-primary/30 sm:hover:shadow-[0_10px_30px_-12px_hsl(var(--glow-primary)/0.55)]"
+        className="block group"
       >
-        <div className="relative w-full aspect-video overflow-hidden rounded-xl bg-muted/20 neon-edge">
+        <div className="relative w-full aspect-video overflow-hidden rounded-lg bg-muted/20">
           {v.thumb_url ? (
             <img
               src={v.thumb_url}
               alt={v.title}
               loading="lazy"
               decoding="async"
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="absolute inset-0 h-full w-full object-cover"
             />
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/15 to-accent/20" />
           )}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-background/70 to-transparent" />
           {fmtDuration(v.duration_seconds) && (
-            <span className="absolute bottom-1.5 right-1.5 rounded-md bg-background/85 px-1.5 py-0.5 font-mono text-[10px] font-bold text-foreground backdrop-blur-sm">
+            <span className="absolute bottom-1 right-1 rounded bg-black/80 px-1 py-0.5 text-[11px] font-medium text-white">
               {fmtDuration(v.duration_seconds)}
             </span>
           )}
-          {views > 0 && (
-            <span className="absolute bottom-1.5 left-1.5 rounded-md bg-background/70 px-1.5 py-0.5 text-[10px] font-medium text-foreground/90 backdrop-blur-sm">
-              <AnimatedCounter value={views} format={compactFormat} /> views
-            </span>
-          )}
         </div>
-        <div className="mt-2.5 flex items-center gap-3 px-0.5">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full gradient-primary text-[10px] font-display font-bold text-primary-foreground overflow-hidden">
+        <div className="flex gap-3 mt-3">
+          <div className="h-9 w-9 shrink-0 rounded-full bg-muted overflow-hidden">
             {v.ownerAvatar ? (
-              <img src={v.ownerAvatar} alt={v.ownerName || 'Creator'} className="w-full h-full object-cover" />
+              <img src={v.ownerAvatar} alt={v.ownerName || 'Creator'} className="h-full w-full object-cover" />
             ) : (
-              <span>{(v.ownerName || '?').slice(0, 2).toUpperCase()}</span>
+              <div className="flex h-full w-full items-center justify-center bg-primary text-[10px] font-bold text-primary-foreground">
+                {(v.ownerName || '?').slice(0, 2).toUpperCase()}
+              </div>
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors group-hover:text-primary">
+            <h3 className="line-clamp-2 text-[14px] font-medium leading-[18px] text-foreground">
               {v.title}
             </h3>
-            <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <div className="mt-1 flex items-center gap-1 text-[12px] text-muted-foreground">
               <span className="truncate">@{(v.ownerName || 'creator').replace(/\s+/g, '')}</span>
-              <span aria-hidden>•</span>
+              <span>•</span>
+              <span className="shrink-0">{views > 0 ? <AnimatedCounter value={views} format={compactFormat} /> + ' views' : '0 views'}</span>
+              <span>•</span>
               <span className="shrink-0">{timeAgo(v.created_at)}</span>
             </div>
           </div>
@@ -118,7 +115,7 @@ function MobileVirtualList({ items }: { items: (GridVideo | { __ad: true; key: s
     count: items.length,
     getScrollElement: () => parentRef.current,
     // Card ≈ aspect-video + meta row. Overscan keeps 4 rows warm for smooth flings.
-    estimateSize: (i) => ('__ad' in items[i] ? 120 : 320),
+    estimateSize: (i) => ('__ad' in items[i] ? 120 : 200),
     overscan: 4,
   });
   return (
@@ -142,7 +139,7 @@ function MobileVirtualList({ items }: { items: (GridVideo | { __ad: true; key: s
                 width: '100%',
                 transform: `translateY(${row.start}px)`,
               }}
-              className="px-4 pb-3"
+              className="px-0 pb-2"
             >
               {'__ad' in it ? (
                 <EngineBoundary name="ad-feed-row" silent>
@@ -180,7 +177,7 @@ export function VideoGrid({ videos, empty }: { videos: GridVideo[]; empty?: stri
   }
 
   // Desktop → responsive grid with `content-visibility: auto` per card.
-  const gridCls = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-x-4 lg:gap-y-6 px-4 sm:px-0';
+  const gridCls = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2 px-0 sm:px-0';
   if (!freq) {
     return (
       <div className={gridCls}>

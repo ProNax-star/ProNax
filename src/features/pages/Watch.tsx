@@ -487,15 +487,15 @@ export default function Watch() {
 
   return (
     <div className="shrink-0 min-h-0 h-[calc(100dvh-3.25rem)] max-h-[calc(100dvh-3.25rem)] overflow-hidden flex flex-col bg-background">
-      <div className={theater ? 'w-full h-full min-h-0 overflow-y-auto scrollbar-thin max-w-[1700px] mx-auto px-3 py-3' : 'w-full h-full min-h-0 max-w-[1600px] mx-auto px-2 lg:px-4 py-2 md:grid md:grid-cols-12 md:gap-6 md:items-stretch overflow-hidden'}>
+      <div className={theater ? 'w-full h-full min-h-0 overflow-y-auto scrollbar-thin max-w-[1700px] mx-auto px-2 py-2' : 'w-full h-full min-h-0 max-w-[1600px] mx-auto px-1 lg:px-2 py-1 md:grid md:grid-cols-12 md:gap-6 md:items-stretch overflow-hidden'}>
         {/* ============= Left Column: Video + Info + Comments (Independent Scroll Panel) ============= */}
-        <div className="min-w-0 min-h-0 flex flex-col md:col-span-8 lg:col-span-8 h-full overflow-y-auto overscroll-contain pr-1 md:pr-3 scrollbar-thin space-y-3.5 scroll-gpu">
+        <div className="min-w-0 min-h-0 flex flex-col md:col-span-8 lg:col-span-8 h-full overflow-y-auto overscroll-contain pr-0 md:pr-2 scrollbar-thin space-y-3.5 scroll-gpu">
 
           {/* Video Player — Sticky on mobile for seamless comment scrolling, relative on desktop */}
           <div className="relative md:rounded-2xl overflow-hidden bg-black aspect-video w-full max-h-[70vh] md:max-h-[580px] shrink-0 shadow-2xl sticky top-0 z-30 md:relative">
 
             {/* Live watching badge — inside the player, top-right corner */}
-            <div className="absolute top-2 right-2 md:top-3 md:right-3 z-40 pointer-events-none">
+            <div className="absolute top-1 right-2 z-20 pointer-events-none">
               <LiveWatcherBadge videoId={videoId} baseViewsCount={Number(dbVideo?.views_count || 500)} variant="3d-overlay" showText={false} />
             </div>
 
@@ -551,77 +551,133 @@ export default function Watch() {
           </EngineBoundary>
 
           {/* Video Details, Actions, Channel & Comments Content */}
-          <div className="px-2 md:px-0 space-y-3">
-            {/* Title */}
-            <h1 className="text-base lg:text-lg font-bold text-foreground leading-snug">
+          <div className="px-2 md:px-0 py-3 space-y-3">
+            {/* Line 1: Video Title - Bold, prominent typography */}
+            <h1 className="text-lg md:text-xl font-bold text-foreground leading-tight">
               {video.title}
             </h1>
 
-            {/* Views & Date */}
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <span>{Number(dbVideo?.views_count || 0)} views</span>
-              <span>•</span>
+            {/* Line 2: Compact stats row with pill tags */}
+            <div className="flex flex-wrap items-center gap-2 text-[13px] text-muted-foreground">
+              <span className="font-medium">{Number(dbVideo?.views_count || 0).toLocaleString()} views</span>
+              <span className="text-muted-foreground/50">•</span>
               <span>{video.time}</span>
-              <span>•</span>
               <LiveWatcherBadge videoId={videoId} baseViewsCount={Number(dbVideo?.views_count || 500)} variant="inline" />
-              <span className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[10px] font-medium ml-1">
-                ● Monetized
+              <span className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[11px] font-semibold border border-green-500/20">
+                Monetized
               </span>
             </div>
 
-            {/* Action Buttons - Scrollable on mobile */}
-            <div className="flex flex-wrap md:flex-nowrap items-center gap-2 pb-0 md:overflow-x-auto md:no-scrollbar">
-              {/* Like */}
-              <div className="flex items-center bg-muted/50 rounded-full overflow-hidden shrink-0">
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={handleLike}
-                  className={`flex items-center gap-1.5 px-3 py-2 text-xs transition-all ${
-                    liked ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <ThumbsUp className={`w-4 h-4 ${liked ? 'fill-primary' : ''}`} />
-                  {formatLikes(likes)}
-                </motion.button>
-              </div>
+            {/* Line 3: Channel Info Row - Avatar, Name, Follow button in horizontal row */}
+            <div className="flex items-center justify-between py-1">
+              <Link
+                to={`/channel/${encodeURIComponent(video.channel)}`}
+                className="flex items-center gap-3 group min-w-0"
+              >
+                <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-display font-bold text-foreground shrink-0 group-hover:ring-2 group-hover:ring-primary/50 transition overflow-hidden">
+                  {dbCreatorAvatar ? (
+                    <img src={dbCreatorAvatar} alt="Creator avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    initials
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">@{video.channel.replace(/\s+/g, '')}</p>
+                  <p className="text-[12px] text-muted-foreground">{followerCount > 0 ? `${followerCount.toLocaleString()} followers` : video.channelSubs + ' followers'}</p>
+                </div>
+              </Link>
+              {/* Check if user is watching their own video */}
+              {(() => {
+                const isOwnVideo = Boolean(
+                  user?.id && 
+                  (dbVideo?.owner_id || dbCreatorId) && 
+                  (String(user.id) === String(dbVideo?.owner_id) || String(user.id) === String(dbCreatorId))
+                );
+                if (isOwnVideo) {
+                  return (
+                    <Link
+                      to={`/studio`}
+                      className="px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-black hover:bg-white/90 transition-all"
+                    >
+                      Edit Video
+                    </Link>
+                  );
+                }
+                return (
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      if (!dbCreatorId) { toast({ title: 'Creator not found', description: 'Cannot follow this channel yet.', variant: 'destructive' }); return; }
+                      toggleFollow();
+                      toast({ title: followed ? 'Unfollowed' : `Following ${video.channel}` });
+                    }}
+                    className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                      followed
+                        ? 'bg-white/10 text-white border border-white/20'
+                        : 'bg-white text-black'
+                    }`}
+                  >
+                    {followed ? 'Following' : 'Follow'}
+                  </motion.button>
+                );
+              })()}
+            </div>
+
+            {/* Line 4: Action Buttons Row - Horizontal scrollable with compact pill-shaped buttons */}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar px-3 py-2">
+              {/* Like - Compact pill button */}
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={handleLike}
+                className={`rounded-full bg-white/10 hover:bg-white/20 px-3 py-1.5 text-xs flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+                  liked ? 'text-white' : 'text-white/70'
+                }`}
+              >
+                <ThumbsUp className={`w-4 h-4 ${liked ? 'fill-white' : ''}`} />
+                {formatLikes(likes)}
+              </motion.button>
 
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setShareOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-muted/50 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-all shrink-0"
+                className="rounded-full bg-white/10 hover:bg-white/20 px-3 py-1.5 text-xs flex items-center gap-1.5 whitespace-nowrap text-white/70 hover:text-white shrink-0"
               >
                 <Share2 className="w-4 h-4" /> Share
               </motion.button>
+
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={handleDownload}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-muted/50 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-all shrink-0"
+                className="rounded-full bg-white/10 hover:bg-white/20 px-3 py-1.5 text-xs flex items-center gap-1.5 whitespace-nowrap text-white/70 hover:text-white shrink-0"
               >
                 <Download className="w-4 h-4" /> Download
               </motion.button>
+
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={toggleSave}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs transition-all shrink-0 ${
-                  saved ? 'bg-primary/15 text-primary' : 'bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted'
+                className={`rounded-full bg-white/10 hover:bg-white/20 px-3 py-1.5 text-xs flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+                  saved ? 'text-white' : 'text-white/70'
                 }`}
               >
-                <Bookmark className={`w-4 h-4 ${saved ? 'fill-primary' : ''}`} /> {saved ? 'Saved' : 'Save'}
+                <Bookmark className={`w-4 h-4 ${saved ? 'fill-white' : ''}`} /> {saved ? 'Saved' : 'Save'}
               </motion.button>
+
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setReportOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-muted/50 text-xs text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all shrink-0"
+                className="rounded-full bg-white/10 hover:bg-white/20 px-3 py-1.5 text-xs flex items-center gap-1.5 whitespace-nowrap text-white/70 hover:text-red-400 shrink-0"
               >
                 <Flag className="w-4 h-4" /> Report
               </motion.button>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
                     aria-label="More options"
-                    className="hidden p-2 rounded-full bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted transition-all shrink-0"
+                    className="rounded-full bg-white/10 hover:bg-white/20 px-3 py-1.5 text-xs flex items-center gap-1.5 whitespace-nowrap text-white/70 hover:text-white shrink-0"
                   >
-                    <MoreHorizontal className="w-4 h-4" />
+                    <MoreHorizontal className="w-4 h-4" /> More
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
@@ -654,70 +710,15 @@ export default function Watch() {
               </DropdownMenu>
             </div>
 
-            {/* Channel Row */}
-            <div className="flex items-center justify-between py-1.5">
-              <Link
-                to={`/channel/${encodeURIComponent(video.channel)}`}
-                className="flex items-center gap-3 group min-w-0"
-              >
-                <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-xs font-display font-bold text-primary-foreground shrink-0 group-hover:ring-2 group-hover:ring-primary/50 transition overflow-hidden">
-                  {dbCreatorAvatar ? (
-                    <img src={dbCreatorAvatar} alt="Creator avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    initials
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">@{video.channel.replace(/\s+/g, '')}</p>
-                  <p className="text-xs text-muted-foreground">{followerCount > 0 ? `${followerCount.toLocaleString()} followers` : video.channelSubs + ' followers'}</p>
-                </div>
-              </Link>
-              {/* Check if user is watching their own video */}
-              {(() => {
-                const isOwnVideo = Boolean(
-                  user?.id && 
-                  (dbVideo?.owner_id || dbCreatorId) && 
-                  (String(user.id) === String(dbVideo?.owner_id) || String(user.id) === String(dbCreatorId))
-                );
-                if (isOwnVideo) {
-                  return (
-                    <Link
-                      to={`/studio`}
-                      className="px-4 py-1.5 rounded-full text-xs font-bold glass border border-primary/40 text-primary hover:bg-primary/10 transition-all"
-                    >
-                      Edit Video
-                    </Link>
-                  );
-                }
-                return (
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      if (!dbCreatorId) { toast({ title: 'Creator not found', description: 'Cannot follow this channel yet.', variant: 'destructive' }); return; }
-                      toggleFollow();
-                      toast({ title: followed ? 'Unfollowed' : `Following ${video.channel}` });
-                    }}
-                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                      followed
-                        ? 'glass border border-primary/40 text-primary'
-                        : 'gradient-primary text-primary-foreground glow-primary'
-                    }`}
-                  >
-                    {followed ? 'Following' : 'Follow'}
-                  </motion.button>
-                );
-              })()}
-            </div>
-
             {/* Description */}
             <div
-              className="bg-muted/30 rounded-xl p-2.5 cursor-pointer"
+              className="bg-white/5 rounded-xl p-3 cursor-pointer"
               onClick={() => setShowFullDesc(!showFullDesc)}
             >
-              <p className={`text-xs text-muted-foreground leading-relaxed ${showFullDesc ? '' : 'line-clamp-2'}`}>
+              <p className={`text-[13px] text-white/90 leading-relaxed ${showFullDesc ? '' : 'line-clamp-2'}`}>
                 {video.description}
               </p>
-              <span className="text-xs text-foreground font-semibold mt-1 inline-flex items-center gap-1">
+              <span className="text-[12px] text-white/70 font-medium mt-2 inline-flex items-center gap-1">
                 {showFullDesc ? 'Show less' : '...more'}
                 <ChevronDown className={`w-3 h-3 transition-transform ${showFullDesc ? 'rotate-180' : ''}`} />
               </span>
@@ -733,41 +734,41 @@ export default function Watch() {
             />
 
             {/* Comments — isolated engine: a crash here won't take down the player or feed */}
-            <EngineBoundary name="comments" fallback={<div className="text-xs text-muted-foreground/70 italic py-6">Comments temporarily unavailable.</div>}>
+            <EngineBoundary name="comments" fallback={<div className="text-xs text-white/50 italic py-6">Comments temporarily unavailable.</div>}>
               <div className="pt-2 pb-2">
                 {/* Collapsed / Preview Comment Card (Mobile Only when not expanded) */}
                 {!commentsExpandedMobile && (
                   <div
                     onClick={() => setCommentsExpandedMobile(true)}
-                    className="md:hidden bg-muted/30 hover:bg-muted/50 rounded-xl p-3 cursor-pointer transition border border-border/40 space-y-2 my-2 group"
+                    className="md:hidden bg-white/5 hover:bg-white/10 rounded-lg p-3 cursor-pointer transition space-y-2 my-2 group"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                      <div className="flex items-center gap-2 text-xs font-medium text-white">
                         <span>Comments</span>
-                        <span className="text-muted-foreground font-medium text-[11px]">• {dbComments.length}</span>
+                        <span className="text-white/60 font-medium text-[11px]">• {dbComments.length}</span>
                       </div>
-                      <div className="flex items-center gap-1 text-[11px] text-primary group-hover:underline transition-colors font-semibold">
+                      <div className="flex items-center gap-1 text-[11px] text-white/70 group-hover:text-white transition-colors font-medium">
                         <span>Read all</span>
-                        <ChevronDown className="w-4 h-4 text-primary" />
+                        <ChevronDown className="w-4 h-4" />
                       </div>
                     </div>
                     {sortedComments.length > 0 ? (
                       <div className="flex items-center gap-2.5 text-xs">
-                        <div className="w-6 h-6 rounded-full gradient-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground shrink-0 overflow-hidden">
+                        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-bold text-white shrink-0 overflow-hidden">
                           {sortedComments[0].avatarUrl ? (
                             <img src={sortedComments[0].avatarUrl} alt="Commenter avatar" className="w-full h-full object-cover" />
                           ) : (
                             sortedComments[0].user[0]
                           )}
                         </div>
-                        <p className="text-foreground/80 truncate text-xs flex-1">
-                          <span className="font-semibold text-foreground mr-1">@{sortedComments[0].userHandle}:</span>
+                        <p className="text-white/80 truncate text-xs flex-1">
+                          <span className="font-semibold text-white mr-1">@{sortedComments[0].userHandle}:</span>
                           {sortedComments[0].text}
                         </p>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground/70 italic">
-                        <div className="w-6 h-6 rounded-full bg-muted/60 flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0">
+                      <div className="flex items-center gap-2 text-xs text-white/50 italic">
+                        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
                           +
                         </div>
                         <span>Add a comment...</span>
@@ -779,7 +780,7 @@ export default function Watch() {
                 {/* Full Comments Section (Desktop always visible, Mobile when expanded) */}
                 <div className={commentsExpandedMobile ? "space-y-4 pt-2 pb-6" : "hidden md:block space-y-4 pt-2 pb-6"}>
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                       {dbComments.length} Comments
                     </h3>
                     <div className="flex items-center gap-2">
@@ -787,7 +788,7 @@ export default function Watch() {
                       {commentsExpandedMobile && (
                         <button
                           onClick={() => setCommentsExpandedMobile(false)}
-                          className="md:hidden flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-xs text-muted-foreground hover:text-foreground transition"
+                          className="md:hidden flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 text-xs text-white/70 hover:text-white transition"
                         >
                           <span>Close</span>
                           <X className="w-3.5 h-3.5" />
@@ -795,31 +796,31 @@ export default function Watch() {
                       )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full glass border border-border/40 text-xs text-foreground hover:border-primary/50 transition">
+                          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 text-xs text-white/70 hover:text-white transition">
                             <ArrowUpDown className="w-3 h-3" />
-                            Sort by: <span className="font-semibold capitalize text-primary">{sortBy}</span>
+                            Sort by: <span className="font-medium capitalize text-white">{sortBy}</span>
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
                           align="end"
                           sideOffset={8}
-                          className="w-48 glass-strong border border-primary/30 rounded-xl p-1.5 shadow-[0_20px_60px_hsla(var(--primary)/0.25)] animate-scale-in"
+                          className="w-48 bg-zinc-900/95 backdrop-blur-lg border border-white/10 rounded-lg p-1 shadow-xl"
                         >
                           <DropdownMenuItem
                             onClick={() => setSortBy('top')}
-                            className="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-xs text-foreground focus:bg-primary/15 focus:text-primary"
+                            className="flex items-center gap-2.5 px-3 py-2 rounded cursor-pointer text-xs text-white/70 hover:bg-white/10 hover:text-white"
                           >
                             <Flame className="w-3.5 h-3.5" />
                             <span className="flex-1">Top comments</span>
-                            {sortBy === 'top' && <Check className="w-3.5 h-3.5 text-primary" />}
+                            {sortBy === 'top' && <Check className="w-3.5 h-3.5 text-white" />}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => setSortBy('newest')}
-                            className="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-xs text-foreground focus:bg-primary/15 focus:text-primary"
+                            className="flex items-center gap-2.5 px-3 py-2 rounded cursor-pointer text-xs text-white/70 hover:bg-white/10 hover:text-white"
                           >
                             <Clock className="w-3.5 h-3.5" />
                             <span className="flex-1">Newest first</span>
-                            {sortBy === 'newest' && <Check className="w-3.5 h-3.5 text-primary" />}
+                            {sortBy === 'newest' && <Check className="w-3.5 h-3.5 text-white" />}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -828,7 +829,7 @@ export default function Watch() {
 
                   {/* Comment Input */}
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-xs font-bold text-primary-foreground shrink-0 overflow-hidden">
+                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold text-white shrink-0 overflow-hidden">
                       {user?.user_metadata?.avatar_url ? (
                         <img src={user.user_metadata.avatar_url} alt="Your avatar" className="w-full h-full object-cover" />
                       ) : (
@@ -844,7 +845,7 @@ export default function Watch() {
                         onFocus={() => setCommentFocused(true)}
                         onKeyDown={(e) => { if (e.key === 'Enter') handlePostComment(); }}
                         placeholder="Add a comment..."
-                        className="w-full bg-transparent border-b border-border/50 pb-1 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
+                        className="w-full bg-transparent border-b border-white/20 pb-1 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-white/40 transition-colors"
                       />
                       <AnimatePresence>
                         {(commentFocused || newComment) && (
@@ -1025,16 +1026,16 @@ export default function Watch() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35 }}
-              className="md:hidden pt-4 pb-8 border-t border-border/30 space-y-3"
+              className="md:hidden pt-3 pb-4 border-t border-border/30 space-y-3"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between px-3">
                 <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                   <span className="inline-block w-1.5 h-4 rounded-full gradient-primary glow-primary" />
                   Up Next
                 </h3>
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Recommended</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="px-3 mx-0 w-full grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {suggestedVideos.map((v, i) => (
                   <motion.div
                     key={v.id}
@@ -1052,15 +1053,15 @@ export default function Watch() {
         </div>
 
         {/* ============= Right Sidebar — Independent Recommended Feed Scroll Panel ============= */}
-        <aside className={theater ? 'hidden' : 'hidden md:block md:col-span-4 lg:col-span-4 h-full min-h-0 overflow-y-auto overscroll-contain pl-1 pr-2 scrollbar-thin scroll-gpu'}>
-          <div className="flex items-center justify-between pb-2 mb-3 border-b border-border/20 sticky top-0 bg-background/95 backdrop-blur-md z-10 pt-1">
+        <aside className={theater ? 'hidden' : 'hidden md:block md:col-span-4 lg:col-span-4 h-full min-h-0 overflow-y-auto overscroll-contain pl-0 pr-1 scrollbar-thin scroll-gpu'}>
+          <div className="flex items-center justify-between pb-2 mb-2 border-b border-border/20 sticky top-0 bg-background/95 backdrop-blur-md z-10 pt-1 px-3">
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-4 rounded-full gradient-primary glow-primary" />
               <h3 className="text-sm font-bold text-foreground">Up Next</h3>
             </div>
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Recommended</span>
           </div>
-          <div className="flex flex-col gap-3 pb-8">
+          <div className="px-3 mx-0 w-full flex flex-col gap-2 pb-4">
             {suggestedVideos.map((v, i) => (
               <motion.div
                 key={v.id}
