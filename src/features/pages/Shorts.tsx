@@ -254,8 +254,8 @@ function ShortItem({
 
   return (
     <section
-      className="relative w-full h-full snap-start snap-always bg-black select-none overflow-hidden"
-      style={{ scrollSnapStop: 'always', height: 'calc(100dvh - 56px)' }}
+      className="relative w-full h-full snap-start snap-always bg-black select-none"
+      style={{ scrollSnapStop: 'always', height: '100dvh' }}
     >
       {/* Centered vertical video container with mobile proportions */}
       <div
@@ -263,13 +263,13 @@ function ShortItem({
         style={{
           position: 'relative',
           overflow: 'hidden',
-          background: '#000'
+          background: '#000',
+          height: '100dvh'
         }}
       >
       <div
         onClick={handleVideoTap}
         className="relative w-full h-full overflow-hidden cursor-pointer"
-        style={{ height: 'calc(100dvh - 56px)' }}
       >
         <video
           ref={videoRef}
@@ -278,11 +278,8 @@ function ShortItem({
           playsInline
           preload="auto"
           muted={muted}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="w-full h-full object-cover"
           style={{ 
-            position: 'absolute',
-            top: 0,
-            left: 0,
             width: '100%', 
             height: '100%',
             objectFit: 'cover',
@@ -868,7 +865,7 @@ export default function Shorts() {
       <div
         ref={containerRef}
         className="h-[100dvh] w-full overflow-y-scroll snap-y snap-mandatory no-scrollbar overscroll-contain relative bg-black"
-        style={{ scrollSnapType: 'y mandatory', WebkitOverflowScrolling: 'touch', marginTop: '56px' }}
+        style={{ scrollSnapType: 'y mandatory', WebkitOverflowScrolling: 'touch' }}
       >
         {/* Clean Loading Spinner */}
         {isLoading && (
