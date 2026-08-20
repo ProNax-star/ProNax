@@ -255,7 +255,7 @@ function ShortItem({
   return (
     <section
       className="relative w-full h-full snap-start snap-always bg-black select-none overflow-hidden"
-      style={{ scrollSnapStop: 'always', height: '100dvh' }}
+      style={{ scrollSnapStop: 'always', height: 'calc(100dvh - 56px)' }}
     >
       {/* Centered vertical video container with mobile proportions */}
       <div
@@ -269,7 +269,7 @@ function ShortItem({
       <div
         onClick={handleVideoTap}
         className="relative w-full h-full overflow-hidden cursor-pointer"
-        style={{ height: '100dvh' }}
+        style={{ height: 'calc(100dvh - 56px)' }}
       >
         <video
           ref={videoRef}
@@ -278,8 +278,11 @@ function ShortItem({
           playsInline
           preload="auto"
           muted={muted}
-          className="w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover"
           style={{ 
+            position: 'absolute',
+            top: 0,
+            left: 0,
             width: '100%', 
             height: '100%',
             objectFit: 'cover',
@@ -821,7 +824,7 @@ export default function Shorts() {
   return (
     <div className="fixed inset-0 lg:static lg:inset-auto lg:flex-1 bg-black font-sans">
       {/* Top Fixed Feed Header Navigation (Following | For You) */}
-      <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-6 text-white/80 font-bold text-sm tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+      <div className="fixed top-0 left-0 right-0 h-14 z-50 flex items-center justify-center gap-6 text-white/80 font-bold text-sm tracking-wide bg-black/60 backdrop-blur-md border-b border-white/10">
         <button
           onClick={() => setActiveTab('following')}
           className={`relative py-1 transition-colors ${
@@ -856,7 +859,7 @@ export default function Shorts() {
       {/* Fixed Audio Mute / Unmute Button */}
       <button
         onClick={() => setMuted((m) => !m)}
-        className="fixed top-3 right-4 z-[100] w-10 h-10 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white border border-white/20 hover:scale-105 transition-all shadow-xl"
+        className="fixed top-4 right-4 z-[60] w-10 h-10 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white border border-white/20 hover:scale-105 transition-all shadow-xl"
         aria-label="Toggle sound"
       >
         {muted ? <VolumeX className="w-5 h-5 text-zinc-400" /> : <Volume2 className="w-5 h-5 text-cyan-400" />}
@@ -864,8 +867,8 @@ export default function Shorts() {
 
       <div
         ref={containerRef}
-        className="h-[100dvh] lg:h-[calc(100vh-3rem)] w-full overflow-y-scroll snap-y snap-mandatory no-scrollbar overscroll-contain relative bg-black"
-        style={{ scrollSnapType: 'y mandatory', WebkitOverflowScrolling: 'touch' }}
+        className="h-[100dvh] w-full overflow-y-scroll snap-y snap-mandatory no-scrollbar overscroll-contain relative bg-black"
+        style={{ scrollSnapType: 'y mandatory', WebkitOverflowScrolling: 'touch', marginTop: '56px' }}
       >
         {/* Clean Loading Spinner */}
         {isLoading && (
