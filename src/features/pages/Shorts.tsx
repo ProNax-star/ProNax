@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, MessageCircle, Share2, Music2, Play, Volume2, VolumeX, Plus, Check, Video as VideoIcon, Send, Sparkles, Bookmark, Flame, Zap, CheckCircle2 } from 'lucide-react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from '@tanstack/react-router';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -66,6 +66,7 @@ function ShortItem({
   const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([]);
   const [progressPct, setProgressPct] = useState(0);
   const [isBuffering, setIsBuffering] = useState(false);
+  const [videoError, setVideoError] = useState(false);
 
   // Get current user ID
   useEffect(() => {
@@ -130,8 +131,13 @@ function ShortItem({
     const v = videoRef.current;
     if (!v) return;
     if (active) {
+      setVideoError(false);
       v.currentTime = 0;
-      v.play().then(() => setPaused(false)).catch(() => {});
+      v.play().then(() => setPaused(false)).catch((err) => {
+        console.error('Video autoplay error:', err);
+        setVideoError(true);
+        setPaused(true);
+      });
     } else {
       v.pause();
     }
@@ -158,6 +164,11 @@ function ShortItem({
     const onWaiting = () => { setIsBuffering(true); };
     const onStalled = () => { setIsBuffering(true); };
     const onCanPlay = () => { setIsBuffering(false); };
+    const onError = () => {
+      console.error('Video element error:', v.error);
+      setVideoError(true);
+      setIsBuffering(false);
+    };
 
     v.addEventListener('timeupdate', onTU);
     v.addEventListener('play', onPlay);
@@ -166,6 +177,7 @@ function ShortItem({
     v.addEventListener('waiting', onWaiting);
     v.addEventListener('stalled', onStalled);
     v.addEventListener('canplay', onCanPlay);
+    v.addEventListener('error', onError);
     return () => {
       v.removeEventListener('timeupdate', onTU);
       v.removeEventListener('play', onPlay);
@@ -174,6 +186,7 @@ function ShortItem({
       v.removeEventListener('waiting', onWaiting);
       v.removeEventListener('stalled', onStalled);
       v.removeEventListener('canplay', onCanPlay);
+      v.removeEventListener('error', onError);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [short.id]);
@@ -207,7 +220,16 @@ function ShortItem({
     const v = videoRef.current;
     if (!v) return;
     setShowControls(true);
-    if (v.paused) { v.play(); setPaused(false); } else { v.pause(); setPaused(true); }
+    if (v.paused) {
+      v.play().then(() => setPaused(false)).catch((err) => {
+        console.error('Video play error:', err);
+        setVideoError(true);
+        setPaused(true);
+      });
+    } else {
+      v.pause();
+      setPaused(true);
+    }
   };
 
   const handleShare = async () => {
@@ -232,13 +254,29 @@ function ShortItem({
 
   return (
     <section
-      className="relative w-full h-full snap-start snap-always flex items-center justify-center bg-black select-none overflow-hidden"
+      className="relative w-full h-full snap-start snap-always bg-black select-none overflow-hidden flex items-center justify-center"
       style={{ scrollSnapStop: 'always' }}
     >
-      {/* 9:16 aspect ratio short video frame */}
+      {/* Centered vertical video container with mobile proportions */}
+      <div
+        className="relative"
+        style={{
+          width: '100%',
+          maxWidth: '420px',
+          height: 'calc(100vh - 80px)',
+          maxHeight: '840px',
+          aspectRatio: '9/16',
+          margin: '0 auto',
+          position: 'relative',
+          borderRadius: '16px',
+          overflow: 'hidden',
+          background: '#000',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+        }}
+      >
       <div
         onClick={handleVideoTap}
-        className="relative h-full aspect-[9/16] max-h-full overflow-hidden cursor-pointer"
+        className="relative w-full h-full overflow-hidden cursor-pointer"
       >
         <video
           ref={videoRef}
@@ -248,17 +286,37 @@ function ShortItem({
           preload="auto"
           muted={muted}
           className="absolute inset-0 w-full h-full object-cover"
+          style={{ 
+            width: '100%', 
+            height: '100%',
+            objectFit: 'cover',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            filter: 'contrast(1.02) saturate(1.05)'
+          }}
+          onError={() => {
+            console.error('Video source error for:', short.src);
+            setVideoError(true);
+          }}
         />
 
-        {/* Slow connection video buffering indicator */}
-        {isBuffering && active && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] pointer-events-none z-30 transition-opacity">
-            <div className="w-9 h-9 rounded-full border-3 border-white/20 border-t-[#FE2C55] animate-spin mb-2" />
-            <span className="text-xs font-medium text-white/90 drop-shadow">Loading...</span>
+        {/* Clean Loading Indicator */}
+        {isBuffering && active && !videoError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm pointer-events-none z-30">
+            <div className="w-8 h-8 rounded-full border-2 border-white/30 border-t-white animate-spin" />
           </div>
         )}
 
-        {/* Floating Double-Tap Heart Particles */}
+        {/* Video Error State */}
+        {videoError && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm pointer-events-none z-30">
+            <VideoIcon className="w-10 h-10 text-zinc-500 mb-2" />
+            <span className="text-sm font-medium text-zinc-400">Video unavailable</span>
+          </div>
+        )}
+
+        {/* Double-Tap Heart Particles */}
         <AnimatePresence>
           {floatingHearts.map((h) => (
             <motion.div
@@ -269,13 +327,13 @@ function ShortItem({
               transition={{ duration: 0.8, ease: 'easeOut' }}
               className="absolute z-50 pointer-events-none drop-shadow-[0_0_15px_#FE2C55]"
             >
-              <Heart className="w-16 h-16 fill-[#FE2C55] text-[#FE2C55]" />
+              <Heart className="w-14 h-14 fill-[#FE2C55] text-[#FE2C55]" />
             </motion.div>
           ))}
         </AnimatePresence>
 
-        {/* Live watching pill — subtle, top-left inside the frame */}
-        <div className="absolute top-3 left-3 z-30 pointer-events-none scale-90 origin-top-left">
+        {/* Live Watching Badge */}
+        <div className="absolute top-4 left-4 z-30">
           <LiveWatcherBadge
             videoId={short.id}
             baseViewsCount={(short as any).views_count || Math.round(short.likes * 12)}
@@ -283,150 +341,173 @@ function ShortItem({
           />
         </div>
 
+        {/* Clean Gradient Overlays */}
+        <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
 
+        {/* Play/Pause Indicator */}
+        <motion.div
+          initial={{ scale: 0.6, opacity: 0 }}
+          animate={{ scale: 1, opacity: paused ? 1 : 0 }}
+          exit={{ scale: 0.6, opacity: 0 }}
+          className="absolute inset-0 flex items-center justify-center pointer-events-none z-10"
+        >
+          <Play className="w-16 h-16 text-white/90 fill-white/90 drop-shadow-lg" />
+        </motion.div>
 
-        {/* Top Gradient & Bottom Gradient Shadow Overlays */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10" />
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-10" />
-
-        {/* Play Pause Indicator */}
-        {paused && showControls && (
-          <motion.div
-            initial={{ scale: 0.6, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.6, opacity: 0 }}
-            className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
-          >
-            <Play className="w-20 h-20 text-white/90 fill-white/90 drop-shadow-[0_4px_25px_rgba(0,0,0,0.8)]" />
-          </motion.div>
-        )}
-
-        {/* Action Rail (Right side stack) — always visible, pronax style */}
+        {/* Clean Right Action Rail */}
         <AnimatePresence>
-          {true && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.2 }}
-              className="absolute right-2.5 bottom-24 flex flex-col items-center gap-5 z-20 text-white [&_svg]:drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]"
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.2 }}
+            className="absolute right-3 bottom-12 z-40 flex flex-col items-center gap-3"
+          >
+          {/* Profile with Follow Button */}
+          <div className="relative">
+            <Link
+              to="/channel/$handle"
+              params={{ handle: short.channel.replace(/^@/, '') }}
+              onClick={(e) => e.stopPropagation()}
+              className="block w-12 h-12 rounded-full overflow-hidden transition-transform hover:scale-105"
+              style={{
+                padding: '2px',
+                background: 'linear-gradient(45deg, #FE2C55, #25F4EE)',
+                boxShadow: '0 0 20px rgba(254,44,85,0.3), 0 0 40px rgba(37,244,238,0.2)'
+              }}
             >
-              {/* Creator Avatar & Plus Follow Badge */}
-              <div className="relative group">
-                <Link
-                  to={`/channel/${encodeURIComponent(short.channel.replace(/^@/, ''))}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="block w-12 h-12 rounded-full border-2 border-white p-[2px] bg-black/40 hover:scale-105 transition-transform shadow-xl"
-                >
-                  <div className="w-full h-full rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-white overflow-hidden">
-                    {short.avatar ? (
-                      <img src={short.avatar} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      short.channel.slice(1, 3).toUpperCase()
-                    )}
-                  </div>
-                </Link>
-                {creatorId && currentUserId !== creatorId && !followed && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (!creatorId) return;
-                      toggleFollow();
-                    }}
-                    className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-[#FE2C55] flex items-center justify-center text-white shadow-lg hover:scale-110 active:scale-95 transition-transform z-30"
-                  >
-                    <Plus className="w-3 h-3 stroke-[3]" />
-                  </button>
+              <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+                {short.avatar ? (
+                  <img src={short.avatar} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-[10px] font-bold" style={{ color: '#FE2C55' }}>HisTora</span>
                 )}
               </div>
-
-              {/* Like Button */}
+            </Link>
+            {creatorId && currentUserId !== creatorId && !followed && (
               <button
                 onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
-                  toggleLike();
+                  if (!creatorId) return;
+                  toggleFollow();
                 }}
-                className="flex flex-col items-center gap-1 group active:scale-90 transition-transform"
+                className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-[#FE2C55] flex items-center justify-center text-white shadow-lg hover:scale-110 active:scale-95 transition-transform"
+                style={{ border: '2px solid white', boxShadow: '0 0 15px rgba(254,44,85,0.5)' }}
               >
-                <div className="w-10 h-10 rounded-full flex items-center justify-center">
-                  <Heart
-                    className={`w-8 h-8 transition-colors ${
-                      liked ? 'text-[#FE2C55] fill-[#FE2C55]' : 'text-white'
-                    }`}
-                  />
-                </div>
-                <span className="text-[11px] font-bold drop-shadow">{formatCount(totalLikes)}</span>
+                <Plus className="w-3 h-3 stroke-[3]" />
               </button>
+            )}
+          </div>
 
-              {/* Comment Button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenComments();
+          {/* Like Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleLike();
+            }}
+            className="flex flex-col items-center gap-1 group transition-transform active:scale-90"
+          >
+            <div className="relative bg-black/20 backdrop-blur-sm rounded-full p-1.5">
+              <Heart
+                className={`w-8 h-8 transition-all duration-300 ${
+                  liked ? 'text-[#FE2C55] fill-[#FE2C55] scale-110' : 'text-white'
+                }`}
+                style={{
+                  filter: liked ? 'drop-shadow(0 0 20px rgba(254,44,85,0.6))' : 'drop-shadow(0 2px 10px rgba(0,0,0,0.5))'
                 }}
-                className="flex flex-col items-center gap-1 group active:scale-90 transition-transform"
-              >
-                <div className="w-10 h-10 rounded-full flex items-center justify-center">
-                  <MessageCircle className="w-8 h-8 text-white fill-white/20" />
-                </div>
-                <span className="text-[11px] font-bold drop-shadow">{formatCount(totalComments)}</span>
-              </button>
+              />
+              {liked && (
+                <div className="absolute inset-0 w-8 h-8 rounded-full bg-[#FE2C55]/20 animate-ping" />
+              )}
+            </div>
+            <span className="text-[11px] font-semibold text-white">{formatCount(totalLikes)}</span>
+          </button>
 
-              {/* Bookmark / Favorites Button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleBookmark();
+          {/* Comment Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenComments();
+            }}
+            className="flex flex-col items-center gap-1 group transition-transform active:scale-90"
+          >
+            <div className="relative bg-black/20 backdrop-blur-sm rounded-full p-1.5">
+              <MessageCircle 
+                className="w-8 h-8 text-white transition-all duration-300"
+                style={{
+                  filter: 'drop-shadow(0 2px 10px rgba(0,0,0,0.5))'
                 }}
-                className="flex flex-col items-center gap-1 group active:scale-90 transition-transform"
-              >
-                <div className="w-10 h-10 rounded-full flex items-center justify-center">
-                  <Bookmark
-                    className={`w-8 h-8 transition-colors ${
-                      bookmarked ? 'text-amber-400 fill-amber-400' : 'text-white'
-                    }`}
-                  />
-                </div>
-                <span className="text-[11px] font-bold drop-shadow">{formatCount(bookmarkCount)}</span>
-              </button>
+              />
+            </div>
+            <span className="text-[11px] font-semibold text-white">{formatCount(totalComments)}</span>
+          </button>
 
-              {/* Share Button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleShare();
+          {/* Save Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleBookmark();
+            }}
+            className="flex flex-col items-center gap-1 group transition-transform active:scale-90"
+          >
+            <div className="relative bg-black/20 backdrop-blur-sm rounded-full p-1.5">
+              <Bookmark
+                className={`w-8 h-8 transition-all duration-300 ${
+                  bookmarked ? 'text-[#25F4EE] fill-[#25F4EE] scale-110' : 'text-white'
+                }`}
+                style={{
+                  filter: bookmarked ? 'drop-shadow(0 0 20px rgba(37,244,238,0.6))' : 'drop-shadow(0 2px 10px rgba(0,0,0,0.5))'
                 }}
-                className="flex flex-col items-center gap-1 group active:scale-90 transition-transform"
-              >
-                <div className="w-10 h-10 rounded-full flex items-center justify-center">
-                  <Share2 className="w-8 h-8 text-white fill-white/20" />
-                </div>
-                <span className="text-[11px] font-bold drop-shadow">{formatCount(short.shares)}</span>
-              </button>
+              />
+              {bookmarked && (
+                <div className="absolute inset-0 w-8 h-8 rounded-full bg-[#25F4EE]/20 animate-ping" />
+              )}
+            </div>
+            <span className="text-[11px] font-semibold text-white">{formatCount(bookmarkCount)}</span>
+          </button>
 
-              {/* Spinning Audio Vinyl Disc with Music Note Animations */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenSound();
+          {/* Share Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleShare();
+            }}
+            className="flex flex-col items-center gap-1 group transition-transform active:scale-90"
+          >
+            <div className="relative bg-black/20 backdrop-blur-sm rounded-full p-1.5">
+              <Share2 
+                className="w-8 h-8 text-white transition-all duration-300"
+                style={{
+                  filter: 'drop-shadow(0 2px 10px rgba(0,0,0,0.5))'
                 }}
-                className="relative mt-2 w-11 h-11 rounded-full p-[3px] bg-gradient-to-tr from-zinc-800 via-zinc-900 to-zinc-700 animate-spin-slow hover:scale-105 transition-transform shadow-[0_0_15px_rgba(0,0,0,0.8)] border border-white/40"
-              >
-                <div className="w-full h-full rounded-full bg-zinc-950 flex items-center justify-center overflow-hidden border border-zinc-700">
-                  {short.avatar ? (
-                    <img src={short.avatar} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <Music2 className="w-5 h-5 text-cyan-400 animate-pulse" />
-                  )}
-                </div>
-                {/* Floating music note icon */}
-                <div className="absolute -top-1 -left-2 animate-bounce">
-                  <Music2 className="w-3.5 h-3.5 text-cyan-300 drop-shadow-[0_0_5px_#25F4EE]" />
-                </div>
-              </button>
-            </motion.div>
-          )}
+              />
+            </div>
+            <span className="text-[11px] font-semibold text-white">{formatCount(short.shares)}</span>
+          </button>
+
+          {/* Spinning Disc */}
+          <motion.button
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenSound();
+            }}
+            className="w-10 h-10 rounded-full p-[2px] animate-spin-slow transition-transform"
+            style={{
+              padding: '2px',
+              background: 'linear-gradient(45deg, #FE2C55, #25F4EE)',
+              boxShadow: '0 0 20px rgba(254,44,85,0.3), 0 0 40px rgba(37,244,238,0.2)'
+            }}
+          >
+            <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+              {short.avatar ? (
+                <img src={short.avatar} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-[9px] font-bold" style={{ color: '#FE2C55' }}>HisTora</span>
+              )}
+            </div>
+          </motion.button>
+          </motion.div>
         </AnimatePresence>
 
         {/* Bottom Left Creator Info & Audio Marquee */}
@@ -437,16 +518,33 @@ function ShortItem({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.2 }}
-              className="absolute left-3 right-20 bottom-6 z-20 text-white space-y-2 pointer-events-auto"
+              className="absolute text-white pointer-events-auto"
+              style={{
+                position: 'absolute',
+                left: '12px',
+                bottom: '16px',
+                right: '64px',
+                zIndex: 30,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px'
+              }}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 <Link
-                  to={`/channel/${encodeURIComponent(short.channel.replace(/^@/, ''))}`}
+                  to="/channel/$handle"
+                  params={{ handle: short.channel.replace(/^@/, '') }}
                   onClick={(e) => e.stopPropagation()}
-                  className="font-bold text-base hover:underline flex items-center gap-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
+                  className="font-bold text-base hover:underline flex items-center gap-1"
+                  style={{
+                    textShadow: '0 2px 8px rgba(0,0,0,0.8), 0 0 20px rgba(37,244,238,0.3)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}
                 >
                   <span>{short.channel}</span>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 fill-cyan-400/20" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 fill-cyan-400/20" style={{ filter: 'drop-shadow(0 0 6px rgba(37,244,238,0.6))' }} />
                 </Link>
                 {creatorId && currentUserId !== creatorId && !followed ? (
                   <button
@@ -455,28 +553,41 @@ function ShortItem({
                       if (!creatorId) return;
                       toggleFollow();
                     }}
-                    className="px-3 py-0.5 rounded-full bg-[#FE2C55] text-white text-[11px] font-bold hover:bg-[#e02447] transition-colors shadow-md"
+                    className="px-3 py-0.5 rounded-full bg-[#FE2C55] text-white text-[11px] font-bold hover:bg-[#e02447] transition-colors"
+                    style={{
+                      boxShadow: '0 2px 8px rgba(254,44,85,0.4), inset 0 1px 0 rgba(255,255,255,0.2)'
+                    }}
                   >
                     Follow
                   </button>
                 ) : followed ? (
-                  <span className="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white border border-white/30">
+                  <span className="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white border border-white/30" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>
                     Following
                   </span>
                 ) : null}
               </div>
 
               {short.title && (
-                <p className="text-sm font-semibold leading-snug line-clamp-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+                <p className="text-sm font-semibold leading-snug line-clamp-2" style={{ 
+                  textShadow: '0 2px 8px rgba(0,0,0,0.8)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
                   {short.title}
                 </p>
               )}
 
               {/* Description with Hashtags highlighted in Cyan */}
-              <p className="text-xs text-zinc-200 line-clamp-2 leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+              <p className="text-xs text-zinc-200 line-clamp-2 leading-relaxed" style={{ 
+                textShadow: '0 1px 4px rgba(0,0,0,0.7)',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
                 {short.description.split(' ').map((word, i) =>
                   word.startsWith('#') ? (
-                    <span key={i} className="text-[#25F4EE] font-bold mr-1 hover:underline cursor-pointer">
+                    <span key={i} className="text-[#25F4EE] font-bold mr-1 hover:underline cursor-pointer" style={{ textShadow: '0 0 10px rgba(37,244,238,0.5)' }}>
                       {word}{' '}
                     </span>
                   ) : (
@@ -491,7 +602,13 @@ function ShortItem({
                   e.stopPropagation();
                   onOpenSound();
                 }}
-                className="flex items-center gap-2 text-xs font-semibold text-white/90 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 max-w-[85%] hover:border-cyan-400/50 transition-colors"
+                className="flex items-center gap-2 text-xs font-semibold text-white/90 bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 hover:border-cyan-400/50 transition-colors"
+                style={{
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}
               >
                 <Music2 className="w-3.5 h-3.5 text-cyan-400 animate-spin-slow shrink-0" />
                 <div className="overflow-hidden whitespace-nowrap w-full">
@@ -504,13 +621,7 @@ function ShortItem({
           )}
         </AnimatePresence>
 
-        {/* Bottom Video Seeking Progress Bar */}
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-30">
-          <div
-            className="h-full bg-[#FE2C55] transition-all duration-100 shadow-[0_0_8px_#FE2C55]"
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
+      </div>
       </div>
     </section>
   );
@@ -580,7 +691,6 @@ function CommentsSheet({ short, onClose }: { short: Short | null; onClose: () =>
 }
 
 export default function Shorts() {
-  const { id: shortIdFromUrl } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -596,27 +706,12 @@ export default function Shorts() {
       try {
         let rows: any[] | null = null;
 
-        if (shortIdFromUrl) {
-          const { data: specificShort } = await supabase
-            .from('videos')
-            .select('id,title,description,video_url,thumb_url,owner_id,tags')
-            .eq('id', shortIdFromUrl)
-            .eq('is_short', true)
-            .eq('is_removed', false)
-            .eq('is_shadow_banned', false)
-            .eq('visibility', 'public')
-            .single();
-          if (specificShort) {
-            rows = [specificShort];
-          }
-        }
-
-        if (!rows) {
-          const { data: ranked, error: rankedErr } = await supabase.rpc('get_shorts_feed', {
-            p_limit: 30,
-            p_offset: 0,
-          });
-          if (!rankedErr && ranked?.length) rows = ranked;
+        const { data: ranked, error: rankedErr } = await supabase.rpc('get_shorts_feed', {
+          p_limit: 30,
+          p_offset: 0,
+        });
+        if (!rankedErr && ranked?.length) {
+          rows = ranked;
         }
 
         if (!rows) {
@@ -660,23 +755,36 @@ export default function Shorts() {
           });
         }
 
-        const mapped: Short[] = rows.map((v: any) => {
-          const prof = profileMap.get(v.owner_id) || {};
-          const channelHandle = prof.handle || prof.display_name || 'creator';
-          return {
-            id: v.id,
-            src: v.video_url,
-            title: v.title,
-            channel: '@' + channelHandle,
-            avatar: prof.avatar_url,
-            description: v.description || '',
-            likes: likesMap.get(v.id) ?? 0,
-            comments: 0,
-            shares: 0,
-            music: 'Original Sound — ' + (prof.display_name || 'creator'),
-            tags: Array.isArray(v.tags) ? v.tags : [],
-          };
-        });
+        const mapped: Short[] = rows
+          .filter((v: any) => v.video_url && typeof v.video_url === 'string' && v.video_url.startsWith('http'))
+          .map((v: any) => {
+            const prof = profileMap.get(v.owner_id) || {};
+            const channelHandle = prof.handle || prof.display_name || 'creator';
+            
+            // Fix URL encoding for special characters in filenames
+            const videoUrl = v.video_url;
+            const encodedVideoUrl = videoUrl.split('/').map((part, index) => {
+              // Only encode the filename part (last segment) if it contains special characters
+              if (index === videoUrl.split('/').length - 1) {
+                return part.replace(/#/g, '%23');
+              }
+              return part;
+            }).join('/');
+            
+            return {
+              id: v.id,
+              src: encodedVideoUrl,
+              title: v.title,
+              channel: '@' + channelHandle,
+              avatar: prof.avatar_url,
+              description: v.description || '',
+              likes: likesMap.get(v.id) ?? 0,
+              comments: 0,
+              shares: 0,
+              music: 'Original Sound — ' + (prof.display_name || 'creator'),
+              tags: Array.isArray(v.tags) ? v.tags : [],
+            };
+          });
 
         const rankedProNaxShorts = rankShortsByProNaxFYP(mapped);
         setLiveShorts(rankedProNaxShorts);
@@ -685,7 +793,7 @@ export default function Shorts() {
       }
       setIsLoading(false);
     })();
-  }, [shortIdFromUrl]);
+  }, []);
 
   const allShorts: Short[] = useMemo(() => liveShorts, [liveShorts]);
 
@@ -721,7 +829,7 @@ export default function Shorts() {
 
 
   return (
-    <div className="fixed inset-0 lg:static lg:inset-auto lg:flex-1 bg-black flex items-center justify-center font-sans">
+    <div className="fixed inset-0 lg:static lg:inset-auto lg:flex-1 bg-black font-sans">
       {/* Top Fixed Feed Header Navigation (Following | For You) */}
       <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-6 text-white/80 font-bold text-sm tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
         <button
@@ -766,40 +874,40 @@ export default function Shorts() {
 
       <div
         ref={containerRef}
-        className="h-[100dvh] lg:h-[calc(100vh-3rem)] w-full overflow-y-scroll snap-y snap-mandatory no-scrollbar overscroll-contain relative"
+        className="h-[100dvh] lg:h-[calc(100vh-3rem)] w-full overflow-y-scroll snap-y snap-mandatory no-scrollbar overscroll-contain relative bg-black"
+        style={{ scrollSnapType: 'y mandatory' }}
       >
-        <div className="mx-auto h-full flex items-center justify-center lg:max-w-[440px]">
-          {/* Clean Loading Spinner */}
-          {isLoading && (
-            <div className="h-[100dvh] lg:h-[calc(100vh-3rem)] w-full flex items-center justify-center">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-10 h-10 rounded-full border-3 border-white/20 border-t-[#FE2C55] animate-spin" />
-                <p className="text-xs font-medium text-zinc-300 tracking-wider">Loading...</p>
-              </div>
+        {/* Clean Loading Spinner */}
+        {isLoading && (
+          <div className="h-[100dvh] lg:h-[calc(100vh-3rem)] w-full flex items-center justify-center bg-black">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 rounded-full border-3 border-white/20 border-t-[#FE2C55] animate-spin" />
+              <p className="text-xs font-medium text-zinc-300 tracking-wider">Loading...</p>
             </div>
-          )}
-          {!isLoading && allShorts.length === 0 && (
-            <div className="h-[100dvh] lg:h-[calc(100vh-3rem)] w-full flex items-center justify-center px-6 text-center">
-              <div className="space-y-3">
-                <div className="w-16 h-16 mx-auto rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center">
-                  <VideoIcon className="w-8 h-8 text-cyan-400" />
-                </div>
-                <h2 className="text-white font-bold text-lg">No Shorts on FYP</h2>
-                <p className="text-xs text-zinc-400 max-w-xs">
-                  Upload a vertical short video to start the ProNax Viral Cohort.
-                </p>
-                <Button asChild size="sm" className="rounded-full bg-[#FE2C55] text-white font-bold">
-                  <Link to="/upload">Upload First Short</Link>
-                </Button>
+          </div>
+        )}
+        {!isLoading && allShorts.length === 0 && (
+          <div className="h-[100dvh] lg:h-[calc(100vh-3rem)] w-full flex items-center justify-center px-6 text-center bg-black">
+            <div className="space-y-3">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+                <VideoIcon className="w-8 h-8 text-cyan-400" />
               </div>
+              <h2 className="text-white font-bold text-lg">No Shorts on FYP</h2>
+              <p className="text-xs text-zinc-400 max-w-xs">
+                Upload a vertical short video to start the ProNax Viral Cohort.
+              </p>
+              <Button asChild size="sm" className="rounded-full bg-[#FE2C55] text-white font-bold">
+                <Link to="/upload">Upload First Short</Link>
+              </Button>
             </div>
-          )}
-          {feedItems.map((item, i) => (
+          </div>
+        )}
+        {feedItems.map((item, i) => (
             <div
               key={item.kind === 'short' ? item.short.id : item.key}
               data-short-item
               data-idx={i}
-              className="h-[100dvh] lg:h-[calc(100vh-3rem)] w-full flex items-center justify-center snap-start snap-always"
+              className="h-[100dvh] lg:h-[calc(100vh-3rem)] w-full snap-start snap-always relative overflow-hidden"
               style={{ scrollSnapStop: 'always' }}
             >
               {item.kind === 'short' ? (
@@ -807,7 +915,7 @@ export default function Shorts() {
                   short={item.short}
                   active={i === activeIdx}
                   muted={muted}
-                  onOpenSound={() => navigate(`/sound/${item.short.id}`)}
+                  onOpenSound={() => navigate({ to: '/sound/$id', params: { id: item.short.id } })}
                   onOpenComments={() => setCommentsFor(item.short)}
                 />
               ) : (
@@ -824,11 +932,10 @@ export default function Shorts() {
               )}
             </div>
           ))}
-        </div>
       </div>
-
 
       <CommentsSheet short={commentsFor} onClose={() => setCommentsFor(null)} />
     </div>
   );
 }
+                                                                  
