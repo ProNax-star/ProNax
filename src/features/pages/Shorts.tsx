@@ -254,19 +254,14 @@ function ShortItem({
 
   return (
     <section
-      className="relative w-full h-full snap-start snap-always bg-black select-none overflow-hidden flex items-center justify-center"
-      style={{ scrollSnapStop: 'always' }}
+      className="relative w-full h-full snap-start snap-always bg-black select-none overflow-hidden"
+      style={{ scrollSnapStop: 'always', height: '100dvh' }}
     >
       {/* Centered vertical video container with mobile proportions */}
       <div
-        className="relative"
+        className="relative w-full h-full"
         style={{
-          width: '100%',
-          maxWidth: '100%',
-          height: '100%',
-          margin: '0 auto',
           position: 'relative',
-          borderRadius: '0',
           overflow: 'hidden',
           background: '#000'
         }}
@@ -274,6 +269,7 @@ function ShortItem({
       <div
         onClick={handleVideoTap}
         className="relative w-full h-full overflow-hidden cursor-pointer"
+        style={{ height: '100dvh' }}
       >
         <video
           ref={videoRef}
@@ -282,14 +278,11 @@ function ShortItem({
           playsInline
           preload="auto"
           muted={muted}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="w-full h-full object-cover"
           style={{ 
             width: '100%', 
             height: '100%',
             objectFit: 'cover',
-            position: 'absolute',
-            top: 0,
-            left: 0,
             filter: 'contrast(1.02) saturate(1.05)'
           }}
           onError={() => {
