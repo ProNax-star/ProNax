@@ -262,16 +262,13 @@ function ShortItem({
         className="relative"
         style={{
           width: '100%',
-          maxWidth: '420px',
-          height: 'calc(100vh - 80px)',
-          maxHeight: '840px',
-          aspectRatio: '9/16',
+          maxWidth: '100%',
+          height: '100%',
           margin: '0 auto',
           position: 'relative',
-          borderRadius: '16px',
+          borderRadius: '0',
           overflow: 'hidden',
-          background: '#000',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+          background: '#000'
         }}
       >
       <div
@@ -285,11 +282,11 @@ function ShortItem({
           playsInline
           preload="auto"
           muted={muted}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-contain"
           style={{ 
             width: '100%', 
             height: '100%',
-            objectFit: 'cover',
+            objectFit: 'contain',
             position: 'absolute',
             top: 0,
             left: 0,
@@ -694,7 +691,7 @@ export default function Shorts() {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
   const [activeTab, setActiveTab] = useState<'following' | 'fyp'>('fyp');
   const [commentsFor, setCommentsFor] = useState<Short | null>(null);
   const [liveShorts, setLiveShorts] = useState<Short[]>([]);
@@ -875,7 +872,7 @@ export default function Shorts() {
       <div
         ref={containerRef}
         className="h-[100dvh] lg:h-[calc(100vh-3rem)] w-full overflow-y-scroll snap-y snap-mandatory no-scrollbar overscroll-contain relative bg-black"
-        style={{ scrollSnapType: 'y mandatory' }}
+        style={{ scrollSnapType: 'y mandatory', WebkitOverflowScrolling: 'touch' }}
       >
         {/* Clean Loading Spinner */}
         {isLoading && (
