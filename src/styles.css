@@ -412,6 +412,7 @@ body::-webkit-scrollbar,
 @media (max-width: 768px) {
   body {
     -webkit-tap-highlight-color: transparent;
+    touch-action: pan-y;
   }
   
   .mobile-touch-friendly {
@@ -427,6 +428,22 @@ body::-webkit-scrollbar,
   p, span, div {
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
+  }
+  
+  /* Improved video handling on mobile */
+  video {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+  
+  /* Ensure proper touch scrolling for shorts */
+  .touch-pan-y {
+    touch-action: pan-y;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
   }
 }
 

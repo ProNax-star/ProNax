@@ -157,26 +157,66 @@ function ShortItem({
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
+    
+    // Clean up any existing play promises to avoid race conditions
+    let playPromise: Promise<void> | undefined = undefined;
+    
     if (active) {
       setVideoError(false);
-      v.currentTime = 0;
-      // Try autoplay, but handleNotAllowedError gracefully
-      const playPromise = v.play();
-      if (playPromise !== undefined) {
-        playPromise.then(() => setPaused(false)).catch((err) => {
-          // Silently handle autoplay restriction - this is expected behavior
-          if (err.name === 'NotAllowedError') {
-            setPaused(true);
-            // Don't set videoError for autoplay restriction - it's not a real error
-          } else {
-            console.error('Video playback error:', err);
-            setVideoError(true);
-            setPaused(true);
-          }
-        });
+      // Only reset time if significantly different to avoid jarring resets
+      if (Math.abs(v.currentTime - 0) > 0.5) {
+        v.currentTime = 0;
       }
+      
+      // Small delay to ensure clean state
+      const timeoutId = setTimeout(() => {
+        // Ensure video is paused before playing to avoid conflicts
+        if (!v.paused) {
+          try {
+            v.pause();
+          } catch (e) {
+            // Ignore pause errors
+          }
+        }
+        
+        // Try autoplay, but handleNotAllowedError gracefully
+        try {
+          const result = v.play();
+          if (result instanceof Promise) {
+            playPromise = result;
+            playPromise.then(() => setPaused(false)).catch((err) => {
+              // Silently handle autoplay restriction and abort errors
+              if (err.name === 'NotAllowedError' || err.name === 'AbortError') {
+                setPaused(true);
+                // Don't set videoError for these expected errors
+              } else {
+                console.error('Video playback error:', err);
+                setVideoError(true);
+                setPaused(true);
+              }
+            });
+          } else {
+            setPaused(false);
+          }
+        } catch (e) {
+          console.error('Play error:', e);
+          setPaused(true);
+        }
+      }, 50);
+      
+      return () => {
+        clearTimeout(timeoutId);
+        if (playPromise) {
+          playPromise.catch(() => {});
+        }
+      };
     } else {
-      v.pause();
+      // Pause when inactive
+      try {
+        v.pause();
+      } catch (e) {
+        // Ignore pause errors
+      }
     }
   }, [active, hasInteracted]);
 
@@ -258,16 +298,30 @@ function ShortItem({
     if (!v) return;
     setShowControls(true);
     if (v.paused) {
-      v.play().then(() => setPaused(false)).catch((err) => {
-        // Only log serious errors, not autoplay restrictions
-        if (err.name !== 'NotAllowedError') {
-          console.error('Video play error:', err);
+      try {
+        const result = v.play();
+        if (result instanceof Promise) {
+          result.then(() => setPaused(false)).catch((err) => {
+            // Only log serious errors, not autoplay restrictions or abort errors
+            if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
+              console.error('Video play error:', err);
+              setVideoError(true);
+            }
+            setPaused(true);
+          });
+        } else {
+          setPaused(false);
         }
-        setVideoError(true);
+      } catch (e) {
+        console.error('Play error:', e);
         setPaused(true);
-      });
+      }
     } else {
-      v.pause();
+      try {
+        v.pause();
+      } catch (e) {
+        // Ignore pause errors
+      }
       setPaused(true);
     }
   };
@@ -281,27 +335,53 @@ function ShortItem({
 
   return (
     <section
-      className="relative w-full h-full snap-start snap-always bg-black select-none"
-      style={{ scrollSnapStop: 'always', height: '100dvh' }}
+      className="relative w-full h-full snap-start snap-always bg-black select-none touch-pan-y"
+      style={{ 
+        scrollSnapStop: 'always', 
+        height: '100dvh',
+        minHeight: '100dvh',
+        maxHeight: '100dvh',
+        touchAction: 'pan-y',
+        aspectRatio: '9/16'
+      }}
     >
-      <div className="relative h-full w-full overflow-hidden bg-black md:rounded-2xl">
-        <div className="absolute inset-0 flex items-center justify-center bg-black" onClick={handleVideoTap}>
+      <div className="relative h-full w-full overflow-hidden bg-black md:rounded-2xl" style={{ aspectRatio: '9/16' }}>
+        <div className="absolute inset-0 flex items-center justify-center bg-black" onClick={handleVideoTap} style={{ aspectRatio: '9/16' }}>
           <video
             ref={videoRef}
             src={short.src}
             loop
             playsInline
-            preload="metadata"
+            preload="auto"
             muted={muted}
             className="h-full w-full object-cover"
             style={{ 
               objectFit: 'cover',
-              maxHeight: '100%',
-              maxWidth: '100%'
+              aspectRatio: '9/16',
+              width: '100%',
+              height: '100%',
+              opacity: isBuffering ? 0.5 : 1,
+              transition: 'opacity 0.3s ease'
             }}
             onError={(e) => {
               console.error('Video source error for:', short.src, e);
               setVideoError(true);
+              setIsBuffering(false);
+            }}
+            onLoadStart={() => {
+              setIsBuffering(true);
+            }}
+            onCanPlay={() => {
+              setIsBuffering(false);
+            }}
+            onLoadedData={() => {
+              setIsBuffering(false);
+            }}
+            onWaiting={() => {
+              setIsBuffering(true);
+            }}
+            onPlaying={() => {
+              setIsBuffering(false);
             }}
           />
         </div>
@@ -830,8 +910,13 @@ export default function Shorts() {
 
       <div
         ref={containerRef}
-        className="h-[100dvh] w-full overflow-y-scroll snap-y snap-mandatory no-scrollbar overscroll-contain relative bg-black"
-        style={{ scrollSnapType: 'y mandatory', WebkitOverflowScrolling: 'touch' }}
+        className="h-[100dvh] w-full overflow-y-scroll snap-y snap-mandatory no-scrollbar overscroll-contain relative bg-black touch-pan-y"
+        style={{ 
+          scrollSnapType: 'y mandatory', 
+          WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-y',
+          overscrollBehavior: 'contain'
+        }}
       >
         {/* Clean Loading Spinner */}
         {isLoading && (
@@ -863,8 +948,14 @@ export default function Shorts() {
             key={item.kind === 'short' ? item.short.id : item.key}
             data-short-item
             data-idx={i}
-            className="h-[100dvh] w-full snap-start snap-always relative overflow-hidden"
-            style={{ scrollSnapStop: 'always' }}
+            className="h-[100dvh] w-full snap-start snap-always relative overflow-hidden touch-pan-y"
+            style={{ 
+              scrollSnapStop: 'always',
+              minHeight: '100dvh',
+              maxHeight: '100dvh',
+              touchAction: 'pan-y',
+              aspectRatio: '9/16'
+            }}
           >
             {item.kind === 'short' ? (
               <ShortItem
