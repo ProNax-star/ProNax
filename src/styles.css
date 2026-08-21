@@ -413,6 +413,7 @@ body::-webkit-scrollbar,
   body {
     -webkit-tap-highlight-color: transparent;
     touch-action: pan-y;
+    padding-bottom: env(safe-area-inset-bottom, 0);
   }
   
   .mobile-touch-friendly {
@@ -444,6 +445,15 @@ body::-webkit-scrollbar,
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+  }
+  
+  /* Safe area padding for mobile notches */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+  }
+  
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 20px);
   }
 }
 

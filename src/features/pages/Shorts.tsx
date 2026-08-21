@@ -342,7 +342,8 @@ function ShortItem({
         minHeight: '100dvh',
         maxHeight: '100dvh',
         touchAction: 'pan-y',
-        aspectRatio: '9/16'
+        aspectRatio: '9/16',
+        paddingBottom: 'env(safe-area-inset-bottom, 20px)'
       }}
     >
       <div className="relative h-full w-full overflow-hidden bg-black md:rounded-2xl" style={{ aspectRatio: '9/16' }}>
@@ -437,7 +438,7 @@ function ShortItem({
         )}
 
         {/* Clean Right Action Rail */}
-        <div className="absolute right-2.5 bottom-16 z-30 flex flex-col items-center gap-2">
+        <div className="absolute right-2.5 bottom-20 z-30 flex flex-col items-center gap-2">
           {/* Profile with Follow Button */}
           <div className="relative">
             <Link
@@ -559,7 +560,7 @@ function ShortItem({
         </div>
 
         {/* Bottom Left Creator Info */}
-        <div className="absolute bottom-24 left-3 max-w-[calc(100%-5.5rem)]">
+        <div className="absolute bottom-28 left-3 max-w-[calc(100%-5.5rem)] z-20">
           <div className="flex flex-col gap-1">
             {/* Creator Info */}
             <div className="flex items-center gap-2">
@@ -626,7 +627,7 @@ function ShortItem({
             e.stopPropagation();
             onOpenSound();
           }}
-          className="absolute bottom-16 left-3 flex items-center gap-2 text-[11px] font-semibold text-white/90 bg-black/30 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 transition-colors max-w-[calc(100%-5.5rem)]"
+          className="absolute bottom-20 left-3 flex items-center gap-2 text-[11px] font-semibold text-white/90 bg-black/30 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 transition-colors max-w-[calc(100%-5.5rem)] z-20"
           style={{
             boxShadow: '0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)',
             whiteSpace: 'nowrap',
@@ -644,7 +645,7 @@ function ShortItem({
         </div>
 
         {/* Progress Bar */}
-        <div className="absolute inset-x-0 bottom-12 h-1 bg-white/15">
+        <div className="absolute inset-x-0 bottom-16 h-1 bg-white/15 z-20">
           <div className="h-full bg-gradient-to-r from-[#FE2C55] to-[#25F4EE] transition-[width]" style={{ width: `${progressPct}%` }} />
         </div>
       </div>

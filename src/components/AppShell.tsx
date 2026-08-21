@@ -92,7 +92,7 @@ export function AppShell() {
                 className="fixed bottom-0 left-0 right-0 z-40 my-0 border-t border-cyan-500/30 bg-black/95 backdrop-blur-md shadow-2xl"
               />
             )}
-            {!isStudioRoute && <MobileNav />}
+            {!isStudioRoute && !isShortsRoute && <MobileNav />}
           </div>
         </div>
       </SidebarProvider>
