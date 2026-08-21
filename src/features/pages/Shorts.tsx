@@ -1,18 +1,23 @@
+// src/pages/Shorts.tsx
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, MessageCircle, Music2, Play, Volume2, VolumeX, Plus, Check, Video as VideoIcon, Send, Sparkles, Bookmark, Flame, Zap, CheckCircle2, Home, Compass, User } from 'lucide-react';
-import { Link, useParams, useNavigate } from '@tanstack/react-router';
+import {
+  Heart, MessageCircle, Music2, Play, VolumeX, Plus, Check, Send,
+  Sparkles, Bookmark, CheckCircle2, User, Radio, VideoIcon,
+} from 'lucide-react';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/loose';
 import { useLike, useComments, useFollow, useSave, recordView, recordShare } from '@/hooks/useInteractions';
 import { useWatchHeartbeat } from '@/hooks/useWatchHeartbeat';
 import { analyticsBus } from '@/lib/analyticsBus';
 import { ShortsAdSlide } from '@/components/ShortsAdSlide';
-import { rankShortsByProNaxFYP, recordProNaxViewerSignal, calculateProNaxFYPScore, FYPRankingResult } from '@/lib/pronaxShortsAlgorithm';
-import { LiveWatcherBadge } from '@/components/LiveWatcherBadge';
+import { rankShortsByProNaxFYP, recordProNaxViewerSignal, FYPRankingResult } from '@/lib/pronaxShortsAlgorithm';
 import ShareButton from '@/components/ShareButton';
+
+/* ---------- layout constants ---------- */
+const BOTTOM_NAV_H = 56; // apni bottom nav ki height yahan set karein
 
 const AD_EVERY_N_SHORTS = 4;
 type FeedItem = { kind: 'short'; short: Short } | { kind: 'ad'; attributeShortId: string | null; key: string };
@@ -34,26 +39,19 @@ interface Short {
   views_count?: number;
 }
 
+interface FloatingHeart { id: number; x: number; y: number }
+
 function formatCount(n: number) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
   if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
   return String(n);
 }
 
-interface FloatingHeart {
-  id: number;
-  x: number;
-  y: number;
-}
-
+/* =========================================================
+   SHORT ITEM
+   ========================================================= */
 function ShortItem({
-  short,
-  active,
-  muted,
-  onOpenSound,
-  onOpenComments,
-  hasInteracted,
-  onToggleMute,
+  short, active, muted, onOpenSound, onOpenComments, hasInteracted, onToggleMute,
 }: {
   short: Short;
   active: boolean;
@@ -63,7 +61,7 @@ function ShortItem({
   hasInteracted: boolean;
   onToggleMute: () => void;
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const [paused, setPaused] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -73,33 +71,28 @@ function ShortItem({
   const [videoError, setVideoError] = useState(false);
   const [watchingCount, setWatchingCount] = useState(0);
 
-  // Get current user ID
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
+    supabase.auth.getUser().then(({ data }: any) => setCurrentUserId(data.user?.id ?? null));
   }, []);
 
-  // Auto-hide controls when playing
   useEffect(() => {
     if (!paused && active) {
-      const timer = setTimeout(() => setShowControls(false), 2500);
-      return () => clearTimeout(timer);
-    } else {
-      setShowControls(true);
+      const t = setTimeout(() => setShowControls(false), 2500);
+      return () => clearTimeout(t);
     }
+    setShowControls(true);
+    return;
   }, [paused, active]);
 
-  // Real backend hooks for this short
   const [creatorId, setCreatorId] = useState<string | null>(null);
-  useEffect(() => {
-    setCreatorId(short.owner_id ?? null);
-  }, [short.owner_id]);
+  useEffect(() => { setCreatorId(short.owner_id ?? null); }, [short.owner_id]);
 
   const { liked, count: likeCount, toggle: toggleLike } = useLike(short.id, creatorId);
   const { following: followed, toggle: toggleFollow } = useFollow(creatorId);
   const { comments } = useComments(short.id, creatorId);
   const { saved: bookmarked, count: bookmarkCount, toggle: toggleBookmark } = useSave(short.id);
 
-  // Track cumulative watched seconds
+  /* ---- watch time ---- */
   const watchedRef = useRef(0);
   const lastTickRef = useRef<number | null>(null);
   const flushWatch = () => {
@@ -120,33 +113,22 @@ function ShortItem({
     lastTickRef.current = null;
   };
 
-  // Dynamic watching count logic
   useEffect(() => {
     if (active && !paused) {
-      // Start with at least 1 when playing, then simulate based on views
-      const baseViewers = Math.max(1, Math.floor((short as any).views_count / 10) || 1);
-      setWatchingCount(baseViewers);
-      
-      // Simulate live fluctuations
-      const interval = setInterval(() => {
-        setWatchingCount(prev => {
-          const variation = Math.floor(Math.random() * 3) - 1; // -1, 0, or +1
-          return Math.max(1, prev + variation);
-        });
+      const base = Math.max(1, Math.floor((short.views_count ?? 0) / 10) || 1);
+      setWatchingCount(base);
+      const iv = setInterval(() => {
+        setWatchingCount((p) => Math.max(1, p + (Math.floor(Math.random() * 3) - 1)));
       }, 3000);
-      
-      return () => clearInterval(interval);
-    } else {
-      setWatchingCount(0);
+      return () => clearInterval(iv);
     }
-  }, [active, paused, (short as any).views_count]);
+    setWatchingCount(0);
+    return;
+  }, [active, paused, short.views_count]);
 
   useEffect(() => {
-    if (active) {
-      recordView(short.id, 0).catch(() => {});
-    } else {
-      flushWatch();
-    }
+    if (active) recordView(short.id, 0).catch(() => {});
+    else flushWatch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, short.id]);
 
@@ -154,72 +136,35 @@ function ShortItem({
 
   useWatchHeartbeat({ videoId: active ? short.id : null, isPlaying: active && !paused });
 
+  /* ---- autoplay ---- */
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    
-    // Clean up any existing play promises to avoid race conditions
-    let playPromise: Promise<void> | undefined = undefined;
-    
+    let playPromise: Promise<void> | undefined;
+
     if (active) {
       setVideoError(false);
-      // Only reset time if significantly different to avoid jarring resets
-      if (Math.abs(v.currentTime - 0) > 0.5) {
-        v.currentTime = 0;
-      }
-      
-      // Small delay to ensure clean state
+      if (Math.abs(v.currentTime) > 0.5) v.currentTime = 0;
       const timeoutId = setTimeout(() => {
-        // Ensure video is paused before playing to avoid conflicts
-        if (!v.paused) {
-          try {
-            v.pause();
-          } catch (e) {
-            // Ignore pause errors
-          }
-        }
-        
-        // Try autoplay, but handleNotAllowedError gracefully
+        if (!v.paused) { try { v.pause(); } catch {} }
         try {
           const result = v.play();
           if (result instanceof Promise) {
             playPromise = result;
-            playPromise.then(() => setPaused(false)).catch((err) => {
-              // Silently handle autoplay restriction and abort errors
-              if (err.name === 'NotAllowedError' || err.name === 'AbortError') {
-                setPaused(true);
-                // Don't set videoError for these expected errors
-              } else {
-                console.error('Video playback error:', err);
-                setVideoError(true);
-                setPaused(true);
-              }
+            playPromise.then(() => setPaused(false)).catch((err: any) => {
+              if (err?.name === 'NotAllowedError' || err?.name === 'AbortError') setPaused(true);
+              else { setVideoError(true); setPaused(true); }
             });
-          } else {
-            setPaused(false);
-          }
-        } catch (e) {
-          console.error('Play error:', e);
-          setPaused(true);
-        }
+          } else setPaused(false);
+        } catch { setPaused(true); }
       }, 50);
-      
-      return () => {
-        clearTimeout(timeoutId);
-        if (playPromise) {
-          playPromise.catch(() => {});
-        }
-      };
-    } else {
-      // Pause when inactive
-      try {
-        v.pause();
-      } catch (e) {
-        // Ignore pause errors
-      }
+      return () => { clearTimeout(timeoutId); playPromise?.catch(() => {}); };
     }
+    try { v.pause(); } catch {}
+    return;
   }, [active, hasInteracted]);
 
+  /* ---- media events ---- */
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -227,32 +172,23 @@ function ShortItem({
       if (v.paused) return;
       setIsBuffering(false);
       const now = performance.now();
-      if (lastTickRef.current != null) {
-        watchedRef.current += (now - lastTickRef.current) / 1000;
-      }
+      if (lastTickRef.current != null) watchedRef.current += (now - lastTickRef.current) / 1000;
       lastTickRef.current = now;
-      if (v.duration) {
-        setProgressPct((v.currentTime / v.duration) * 100);
-      }
+      if (v.duration) setProgressPct((v.currentTime / v.duration) * 100);
     };
     const onPlay = () => { lastTickRef.current = performance.now(); setIsBuffering(false); };
     const onPause = () => { lastTickRef.current = null; setIsBuffering(false); };
     const onEnded = () => { flushWatch(); setIsBuffering(false); };
-    const onWaiting = () => { setIsBuffering(true); };
-    const onStalled = () => { setIsBuffering(true); };
-    const onCanPlay = () => { setIsBuffering(false); };
-    const onError = () => {
-      console.error('Video element error:', v.error);
-      setVideoError(true);
-      setIsBuffering(false);
-    };
+    const onWaiting = () => setIsBuffering(true);
+    const onCanPlay = () => setIsBuffering(false);
+    const onError = () => { setVideoError(true); setIsBuffering(false); };
 
     v.addEventListener('timeupdate', onTU);
     v.addEventListener('play', onPlay);
     v.addEventListener('pause', onPause);
     v.addEventListener('ended', onEnded);
     v.addEventListener('waiting', onWaiting);
-    v.addEventListener('stalled', onStalled);
+    v.addEventListener('stalled', onWaiting);
     v.addEventListener('canplay', onCanPlay);
     v.addEventListener('error', onError);
     return () => {
@@ -261,37 +197,12 @@ function ShortItem({
       v.removeEventListener('pause', onPause);
       v.removeEventListener('ended', onEnded);
       v.removeEventListener('waiting', onWaiting);
-      v.removeEventListener('stalled', onStalled);
+      v.removeEventListener('stalled', onWaiting);
       v.removeEventListener('canplay', onCanPlay);
       v.removeEventListener('error', onError);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [short.id]);
-
-  // Double tap to like feature
-  const lastTapRef = useRef(0);
-  const handleVideoTap = (e: React.MouseEvent) => {
-    const now = Date.now();
-    const DOUBLE_TAP_DELAY = 300;
-    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      // Trigger double tap heart burst
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const heartId = Date.now();
-      setFloatingHearts((prev) => [...prev.slice(-5), { id: heartId, x, y }]);
-      setTimeout(() => {
-        setFloatingHearts((prev) => prev.filter((h: FloatingHeart) => h.id !== heartId));
-      }, 900);
-
-      if (!liked) {
-        toggleLike();
-      }
-    } else {
-      togglePlay();
-    }
-    lastTapRef.current = now;
-  };
 
   const togglePlay = () => {
     const v = videoRef.current;
@@ -299,450 +210,368 @@ function ShortItem({
     setShowControls(true);
     if (v.paused) {
       try {
-        const result = v.play();
-        if (result instanceof Promise) {
-          result.then(() => setPaused(false)).catch((err) => {
-            // Only log serious errors, not autoplay restrictions or abort errors
-            if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
-              console.error('Video play error:', err);
-              setVideoError(true);
-            }
-            setPaused(true);
-          });
-        } else {
-          setPaused(false);
-        }
-      } catch (e) {
-        console.error('Play error:', e);
-        setPaused(true);
-      }
+        const r = v.play();
+        if (r instanceof Promise) r.then(() => setPaused(false)).catch(() => setPaused(true));
+        else setPaused(false);
+      } catch { setPaused(true); }
     } else {
-      try {
-        v.pause();
-      } catch (e) {
-        // Ignore pause errors
-      }
+      try { v.pause(); } catch {}
       setPaused(true);
     }
   };
 
-  const handleBookmarkToggle = () => {
-    toggleBookmark();
+  const lastTapRef = useRef(0);
+  const handleVideoTap = (e: React.MouseEvent) => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const heartId = Date.now();
+      setFloatingHearts((prev) => [...prev.slice(-5), { id: heartId, x: e.clientX - rect.left, y: e.clientY - rect.top }]);
+      setTimeout(() => setFloatingHearts((prev) => prev.filter((h) => h.id !== heartId)), 900);
+      if (!liked) toggleLike();
+    } else togglePlay();
+    lastTapRef.current = now;
   };
 
-  const totalLikes = likeCount;
+  const handle = short.channel.replace(/^@/, '');
   const totalComments = comments.length;
 
   return (
-    <section
-      className="relative w-full h-full snap-start snap-always bg-black select-none touch-pan-y"
-      style={{ 
-        scrollSnapStop: 'always', 
-        height: '100dvh',
-        minHeight: '100dvh',
-        maxHeight: '100dvh',
-        touchAction: 'pan-y',
-        aspectRatio: '9/16',
-        paddingBottom: 'env(safe-area-inset-bottom, 20px)'
-      }}
-    >
-      <div className="relative h-full w-full overflow-hidden bg-black md:rounded-2xl" style={{ aspectRatio: '9/16' }}>
-        <div className="absolute inset-0 flex items-center justify-center bg-black" onClick={handleVideoTap} style={{ aspectRatio: '9/16' }}>
-          <video
-            ref={videoRef}
-            src={short.src}
-            loop
-            playsInline
-            preload="auto"
-            muted={muted}
-            className="h-full w-full object-cover"
-            style={{ 
-              objectFit: 'cover',
-              aspectRatio: '9/16',
-              width: '100%',
-              height: '100%',
-              opacity: isBuffering ? 0.5 : 1,
-              transition: 'opacity 0.3s ease'
-            }}
-            onError={(e) => {
-              console.error('Video source error for:', short.src, e);
-              setVideoError(true);
-              setIsBuffering(false);
-            }}
-            onLoadStart={() => {
-              setIsBuffering(true);
-            }}
-            onCanPlay={() => {
-              setIsBuffering(false);
-            }}
-            onLoadedData={() => {
-              setIsBuffering(false);
-            }}
-            onWaiting={() => {
-              setIsBuffering(true);
-            }}
-            onPlaying={() => {
-              setIsBuffering(false);
-            }}
-          />
-        </div>
+    /* ---------- 9:16 STAGE: mobile = full bleed, tablet/desktop = centered frame ---------- */
+    <div className="relative h-full w-full bg-black flex items-center justify-center">
+      <div
+        className="relative w-full h-full overflow-hidden bg-black sm:h-full sm:w-auto sm:rounded-2xl sm:ring-1 sm:ring-white/10"
+        style={{ aspectRatio: '9 / 16' }}
+      >
+        {/* video */}
+        <video
+          ref={videoRef}
+          src={short.src}
+          poster={undefined}
+          muted={muted}
+          loop
+          playsInline
+          preload="metadata"
+          onClick={handleVideoTap}
+          onLoadStart={() => setIsBuffering(true)}
+          onCanPlay={() => setIsBuffering(false)}
+          onLoadedData={() => setIsBuffering(false)}
+          onPlaying={() => setIsBuffering(false)}
+          onError={() => { setVideoError(true); setIsBuffering(false); }}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
 
-        {/* Clean Loading Indicator */}
+        {/* buffering */}
         {isBuffering && active && !videoError && (
           <div className="pointer-events-none absolute inset-0 grid place-items-center">
-            <div className="relative">
-              <span className="size-12 animate-spin rounded-full border-3 border-white/30 border-t-[#FE2C55]" />
-              <div className="absolute inset-0 bg-black/20 blur-xl rounded-full" />
-            </div>
+            <div className="size-10 animate-spin rounded-full border-2 border-white/20 border-t-primary" />
           </div>
         )}
 
-        {/* Video Error State */}
+        {/* error */}
         {videoError && (
-          <div className="pointer-events-none absolute inset-0 grid place-items-center gap-2 text-center">
-            <div>
-              <VideoIcon className="mx-auto size-8 text-zinc-500" />
-              <p className="mt-2 text-sm text-zinc-400">Video unavailable</p>
+          <div className="absolute inset-0 grid place-items-center bg-black/70">
+            <div className="flex flex-col items-center gap-2 text-white/80">
+              <VideoIcon className="size-7" />
+              <p className="text-xs font-semibold">Video unavailable</p>
             </div>
           </div>
         )}
 
-        {/* Double-Tap Heart Particles */}
-        {floatingHearts.map((h: FloatingHeart) => (
-          <Heart
-            key={h.id}
-            style={{ left: h.x, top: h.y }}
-            className="pointer-events-none absolute size-20 fill-[#FE2C55] text-[#FE2C55] drop-shadow-xl animate-heart-pop"
-          />
-        ))}
+        {/* double-tap hearts */}
+        <AnimatePresence>
+          {floatingHearts.map((h) => (
+            <motion.div
+              key={h.id}
+              initial={{ opacity: 1, scale: 0.4, x: h.x - 24, y: h.y - 24 }}
+              animate={{ opacity: 0, scale: 1.6, y: h.y - 140 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.9, ease: 'easeOut' }}
+              className="pointer-events-none absolute left-0 top-0 z-30"
+            >
+              <Heart className="size-12 fill-primary text-primary drop-shadow-lg" />
+            </motion.div>
+          ))}
+        </AnimatePresence>
 
-        {/* Live Watching Badge */}
+        {/* gradients */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/60 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-black/80 to-transparent" />
+
+        {/* live watching badge — top-left, below tabs */}
         {active && watchingCount > 0 && (
-          <div className="absolute top-4 left-3 z-30 flex items-center gap-1.5 rounded-full bg-black/30 backdrop-blur-md px-2.5 py-1 text-xs font-semibold">
-            <span className="size-1.5 animate-pulse rounded-full bg-[#FE2C55]" />
+          <div className="absolute left-3 top-14 z-20 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-md">
+            <Radio className="size-3 animate-pulse text-primary" />
             {formatCount(watchingCount)} watching
           </div>
         )}
 
-        {/* Clean Gradient Overlays */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/50 to-transparent" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/70 to-transparent" />
+        {/* play indicator */}
+        <AnimatePresence>
+          {paused && !videoError && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.7 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              onClick={togglePlay}
+              aria-label="Play"
+              className="absolute left-1/2 top-1/2 z-20 grid size-[68px] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/15 backdrop-blur-md"
+            >
+              <Play className="size-8 fill-white text-white" />
+            </motion.button>
+          )}
+        </AnimatePresence>
 
-        {/* Play/Pause Indicator */}
-        {paused && !videoError && (
-          <div className="pointer-events-none absolute inset-0 grid place-items-center">
-            <div className="w-14 h-14 rounded-full bg-black/30 backdrop-blur-md border border-white/20 shadow-[0_8px_20px_rgba(0,0,0,0.4)] flex items-center justify-center transition-all active:scale-90">
-              <Play className="text-white text-xl ml-0.5 drop-shadow-md" />
-            </div>
-          </div>
-        )}
-
-        {/* Clean Right Action Rail */}
-        <div className="absolute right-2.5 bottom-20 z-30 flex flex-col items-center gap-2">
-          {/* Profile with Follow Button */}
-          <div className="relative">
+        {/* ---------- RIGHT ACTION RAIL ---------- */}
+        <div
+          className="absolute right-2 z-20 flex flex-col items-center gap-4 sm:right-3"
+          style={{ bottom: `calc(${BOTTOM_NAV_H}px + env(safe-area-inset-bottom, 0px) + 24px)` }}
+        >
+          {/* avatar + follow */}
+          <div className="relative mb-1">
             <Link
               to="/channel/$handle"
-              params={{ handle: short.channel.replace(/^@/, '') }}
+              params={{ handle }}
               onClick={(e) => e.stopPropagation()}
-              className="block w-7 h-7 rounded-full border-2 border-white/30 overflow-hidden flex-shrink-0 transition-transform hover:scale-105 bg-transparent drop-shadow-lg"
+              className="block size-11 overflow-hidden rounded-full border-2 border-white/70 bg-black"
             >
               {short.avatar ? (
-                <img src={short.avatar} alt="" className="w-full h-full object-cover" />
+                <img src={short.avatar} alt={handle} className="size-full object-cover" loading="lazy" />
               ) : (
-                <span className="grid w-full h-full place-items-center text-white text-xs font-bold">
-                  {short.channel[0]?.toUpperCase()}
+                <span className="grid size-full place-items-center bg-primary text-sm font-bold text-primary-foreground">
+                  {handle[0]?.toUpperCase()}
                 </span>
               )}
             </Link>
             {creatorId && currentUserId !== creatorId && !followed && (
               <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (!creatorId) return;
-                  toggleFollow();
-                }}
-                className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-gradient-to-r from-[#FE2C55] to-[#25F4EE] flex items-center justify-center text-white shadow-lg hover:scale-110 active:scale-95 transition-transform"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (creatorId) toggleFollow(); }}
+                aria-label="Follow"
+                className="absolute -bottom-2 left-1/2 grid size-5 -translate-x-1/2 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform active:scale-90"
               >
-                <Plus className="size-2.5" />
+                <Plus className="size-3.5" />
               </button>
+            )}
+            {followed && (
+              <span className="absolute -bottom-2 left-1/2 grid size-5 -translate-x-1/2 place-items-center rounded-full bg-white text-black shadow-lg">
+                <Check className="size-3" />
+              </span>
             )}
           </div>
 
-          {/* Like Button */}
+          {/* like */}
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleLike();
-            }}
-            className="flex flex-col items-center gap-1.5 group transition-transform active:scale-90 relative bg-transparent"
+            onClick={(e) => { e.stopPropagation(); toggleLike(); }}
+            className="flex flex-col items-center gap-1 transition-transform active:scale-90"
+            aria-label="Like"
           >
-            <div className="relative drop-shadow-lg">
-              <Heart className={`size-6 ${liked ? "fill-[#FE2C55] text-[#FE2C55]" : "fill-white text-white"}`} />
-              {liked && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -inset-2 rounded-full bg-[#FE2C55]/20"
-                />
-              )}
-            </div>
-            <span className="text-[10px] font-semibold text-white/90 drop-shadow-md">{formatCount(totalLikes)}</span>
+            <Heart className={`size-8 drop-shadow-lg ${liked ? 'fill-primary text-primary' : 'text-white'}`} />
+            <span className="text-[11px] font-bold text-white drop-shadow">{formatCount(likeCount)}</span>
           </button>
 
-          {/* Comment Button */}
+          {/* comment */}
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenComments();
-            }}
-            className="flex flex-col items-center gap-1.5 group transition-transform active:scale-90 relative bg-transparent"
+            onClick={(e) => { e.stopPropagation(); onOpenComments(); }}
+            className="flex flex-col items-center gap-1 transition-transform active:scale-90"
+            aria-label="Comments"
           >
-            <MessageCircle className="size-6 fill-white text-white drop-shadow-lg" />
-            <span className="text-[10px] font-semibold text-white/90 drop-shadow-md">{formatCount(totalComments)}</span>
+            <MessageCircle className="size-8 text-white drop-shadow-lg" />
+            <span className="text-[11px] font-bold text-white drop-shadow">{formatCount(totalComments)}</span>
           </button>
 
-          {/* Save Button */}
+          {/* save */}
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleBookmarkToggle();
-            }}
-            className="flex flex-col items-center gap-1.5 group transition-transform active:scale-90 relative bg-transparent"
+            onClick={(e) => { e.stopPropagation(); toggleBookmark(); }}
+            className="flex flex-col items-center gap-1 transition-transform active:scale-90"
+            aria-label="Save"
           >
-            <div className="relative drop-shadow-lg">
-              <Bookmark className={`size-6 ${bookmarked ? "fill-[#25F4EE] text-[#25F4EE]" : "fill-white text-white"}`} />
-              {bookmarked && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -inset-2 rounded-full bg-[#25F4EE]/20"
-                />
-              )}
-            </div>
-            <span className="text-[10px] font-semibold text-white/90 drop-shadow-md">{formatCount(bookmarkCount)}</span>
+            <Bookmark className={`size-8 drop-shadow-lg ${bookmarked ? 'fill-amber-300 text-amber-300' : 'text-white'}`} />
+            <span className="text-[11px] font-bold text-white drop-shadow">{formatCount(bookmarkCount)}</span>
           </button>
 
-          {/* Share Button - TikTok Style */}
+          {/* share */}
           <ShareButton
+            url={typeof window !== 'undefined' ? `${window.location.origin}/shorts/${short.id}` : ''}
             title={short.title}
-            text={short.description}
-            url={`${window.location.origin}/shorts#${short.id}`}
-            variant="tiktok"
             shareCount={short.shares}
             onShareClick={() => recordShare(short.id, 'link').catch(() => {})}
             formatCount={formatCount}
+            variant="pronax"
           />
 
-          {/* Spinning Audio Disc - Last Item in Right Action Bar */}
-          <div
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleMute();
-            }}
-            className="w-7 h-7 rounded-full border-2 border-white/30 overflow-hidden bg-transparent drop-shadow-lg transition-transform animate-spin-slow cursor-pointer relative mb-0"
+          {/* spinning audio disc / mute toggle */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleMute(); }}
+            aria-label={muted ? 'Unmute' : 'Mute'}
+            className="relative mt-1 size-10 overflow-hidden rounded-full border-2 border-white/40 animate-spin-slow"
           >
             {short.avatar ? (
-              <img src={short.avatar} alt="" className="w-full h-full object-cover" />
+              <img src={short.avatar} alt="" className="size-full object-cover" loading="lazy" />
             ) : (
-              <span className="grid w-full h-full place-items-center text-white text-xs font-bold">
-                {short.channel[0]?.toUpperCase()}
+              <span className="grid size-full place-items-center bg-black/60 text-white">
+                <Music2 className="size-4" />
               </span>
             )}
-            {/* Mute indicator overlay */}
             {muted && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                <VolumeX className="w-3 h-3 text-white" />
-              </div>
+              <span className="absolute inset-0 grid place-items-center bg-black/55">
+                <VolumeX className="size-4 text-white" />
+              </span>
             )}
-          </div>
+          </button>
         </div>
 
-        {/* Bottom Left Creator Info */}
-        <div className="absolute bottom-28 left-3 max-w-[calc(100%-5.5rem)] z-20">
-          <div className="flex flex-col gap-1">
-            {/* Creator Info */}
-            <div className="flex items-center gap-2">
-              <Link
-                to="/channel/$handle"
-                params={{ handle: short.channel.replace(/^@/, '') }}
-                onClick={(e) => e.stopPropagation()}
-                className="shrink-0"
-              >
-                <div className="w-7 h-7 rounded-full border-2 border-white/30 overflow-hidden bg-transparent drop-shadow-lg">
-                  {short.avatar ? (
-                    <img src={short.avatar} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="grid w-full h-full place-items-center text-white text-xs font-bold">
-                      {short.channel[0]?.toUpperCase()}
-                    </span>
-                  )}
-                </div>
-              </Link>
-              <div className="flex flex-col gap-0.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-shadow-feed text-xs font-bold text-white">@{short.channel.replace(/^@/, '')}</span>
-                  <CheckCircle2 className="size-3 shrink-0 fill-white text-white" />
-                </div>
-                {creatorId && currentUserId !== creatorId && !followed ? (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!creatorId) return;
-                      toggleFollow();
-                    }}
-                    className="shrink-0 rounded-full bg-white px-2.5 py-0.5 text-[10px] font-bold text-black transition active:scale-95"
-                  >
-                    Follow
-                  </button>
-                ) : followed ? (
-                  <span className="shrink-0 text-[11px] font-bold text-zinc-400">Following</span>
-                ) : null}
-              </div>
-            </div>
-
-            {short.title && (
-              <p className="text-shadow-feed line-clamp-1 text-xs text-white">{short.title}</p>
-            )}
-
-            {/* Description with Hashtags highlighted in Cyan */}
-            {short.description && (
-              <p className="text-shadow-feed line-clamp-1 text-xs text-white">
-                {short.description.split(' ').map((word, i) =>
-                  word.startsWith('#') ? (
-                    <span key={i} className="text-[#25F4EE] font-semibold">{word}{' '}</span>
-                  ) : (
-                    word + ' '
-                  )
-                )}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Scrolling Sound Ticker Marquee */}
+        {/* ---------- BOTTOM LEFT CREATOR INFO ---------- */}
         <div
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpenSound();
-          }}
-          className="absolute bottom-20 left-3 flex items-center gap-2 text-[11px] font-semibold text-white/90 bg-black/30 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 transition-colors max-w-[calc(100%-5.5rem)] z-20"
-          style={{
-            boxShadow: '0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}
+          className="absolute left-3 z-20 max-w-[calc(100%-5.5rem)] space-y-2"
+          style={{ bottom: `calc(${BOTTOM_NAV_H}px + env(safe-area-inset-bottom, 0px) + 52px)` }}
         >
-          <Music2 className="size-3 shrink-0 text-white flex-shrink-0" />
-          <div className="min-w-0 overflow-hidden flex-1">
-            <div className="flex w-max gap-8 text-[11px] font-semibold whitespace-nowrap text-white animate-marquee">
-              <span>🎵 {short.music} — ProNax Original Audio Track</span>
-              <span>🎵 {short.music} — ProNax Original Audio Track</span>
-            </div>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/channel/$handle"
+              params={{ handle }}
+              onClick={(e) => e.stopPropagation()}
+              className="text-sm font-extrabold text-white drop-shadow"
+            >
+              @{handle}
+            </Link>
+            <CheckCircle2 className="size-4 text-primary" />
+            {creatorId && currentUserId !== creatorId && !followed ? (
+              <button
+                onClick={(e) => { e.stopPropagation(); if (creatorId) toggleFollow(); }}
+                className="rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-bold text-primary-foreground active:scale-95"
+              >
+                Follow
+              </button>
+            ) : followed ? (
+              <span className="rounded-full border border-white/40 px-2.5 py-0.5 text-[10px] font-bold text-white/80">
+                Following
+              </span>
+            ) : null}
           </div>
+
+          {short.title && (
+            <p className="line-clamp-1 text-sm font-semibold text-white drop-shadow">{short.title}</p>
+          )}
+
+          {short.description && (
+            <p className="line-clamp-2 text-xs text-white/85 drop-shadow">
+              {short.description.split(' ').map((w, i) =>
+                w.startsWith('#') ? (
+                  <span key={i} className="font-semibold text-primary">{w} </span>
+                ) : (
+                  <span key={i}>{w} </span>
+                )
+              )}
+            </p>
+          )}
+
+          {/* sound ticker marquee */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onOpenSound(); }}
+            className="flex max-w-full items-center gap-2 overflow-hidden rounded-full border border-white/20 bg-black/35 px-2.5 py-1 backdrop-blur-md"
+          >
+            <Music2 className="size-3.5 shrink-0 text-white" />
+            <span className="relative block w-40 overflow-hidden sm:w-56">
+              <span className="flex w-[200%] animate-marquee whitespace-nowrap text-[11px] font-semibold text-white/90">
+                <span className="pr-8">🎵 {short.music}</span>
+                <span className="pr-8">🎵 {short.music}</span>
+              </span>
+            </span>
+          </button>
         </div>
 
-        {/* Progress Bar */}
-        <div className="absolute inset-x-0 bottom-16 h-1 bg-white/15 z-20">
-          <div className="h-full bg-gradient-to-r from-[#FE2C55] to-[#25F4EE] transition-[width]" style={{ width: `${progressPct}%` }} />
+        {/* ---------- PROGRESS BAR (above bottom nav) ---------- */}
+        <div
+          className="absolute inset-x-0 z-20 h-[3px] bg-white/20"
+          style={{ bottom: `calc(${BOTTOM_NAV_H}px + env(safe-area-inset-bottom, 0px))` }}
+        >
+          <div className="h-full bg-white transition-[width] duration-150" style={{ width: `${progressPct}%` }} />
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 
+/* =========================================================
+   COMMENTS SHEET
+   ========================================================= */
 function CommentsSheet({ short, onClose }: { short: Short | null; onClose: () => void }) {
   const [text, setText] = useState('');
   const { comments, post } = useComments(short?.id ?? 'none', null);
   if (!short) return null;
   return (
     <Sheet open={!!short} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="bottom" className="h-[80vh] rounded-t-3xl border-zinc-800 bg-zinc-950">
-        <SheetHeader className="border-b border-zinc-800 pb-4">
+      <SheetContent side="bottom" className="h-[72dvh] border-white/10 bg-zinc-950 p-4 text-white">
+        <SheetHeader>
           <SheetTitle className="text-white">{comments.length} Comments</SheetTitle>
-          <SheetDescription className="text-zinc-400">{short.title}</SheetDescription>
+          <SheetDescription className="line-clamp-1 text-white/60">{short.title}</SheetDescription>
         </SheetHeader>
-        <div className="no-scrollbar flex-1 space-y-4 overflow-y-auto py-4">
+
+        <div className="mt-4 h-[calc(72dvh-11rem)] space-y-3 overflow-y-auto pr-1">
           {comments.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-10 text-center">
-              <MessageCircle className="mb-3 size-8 text-zinc-500" />
-              <p className="text-sm text-zinc-400">No comments yet. Be the first to start the conversation!</p>
+            <div className="flex flex-col items-center gap-2 py-10 text-white/50">
+              <Sparkles className="size-6" />
+              <p className="text-xs">No comments yet. Be the first!</p>
             </div>
           )}
-          {comments.map((c) => (
-            <article key={c.id} className="flex gap-3">
-              <div className="grid size-9 shrink-0 place-items-center rounded-full p-[2px]" style={{ background: 'linear-gradient(45deg, #FE2C55, #25F4EE)' }}>
-                <span className="grid size-full place-items-center rounded-full bg-zinc-900 text-xs font-bold text-cyan-400">
-                  {(c.author?.display_name || c.author?.email || '?')[0]?.toUpperCase()}
-                </span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-semibold text-zinc-400">
-                  {c.author?.display_name || c.author?.email || 'user'} · {new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          {comments.map((c: any) => (
+            <div key={c.id} className="flex gap-3 rounded-2xl bg-white/5 p-3">
+              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                {(c.author?.display_name || c.author?.email || '?')[0]?.toUpperCase()}
+              </span>
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold text-white/70">
+                  {c.author?.display_name || c.author?.email || 'user'} ·{' '}
+                  {new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>
-                <p className="mt-0.5 text-sm break-words text-white">{c.text}</p>
+                <p className="text-sm text-white/90">{c.text}</p>
               </div>
-            </article>
+            </div>
           ))}
         </div>
-        <div className="flex items-center gap-2 border-t border-zinc-800 p-3">
+
+        <div className="mt-3 flex items-center gap-2">
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && text.trim()) {
-                post(text);
-                setText('');
-              }
+              if (e.key === 'Enter' && text.trim()) { post(text); setText(''); }
             }}
             placeholder="Add comment..."
             maxLength={1000}
-            className="flex-1 bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#FE2C55]"
+            className="flex-1 rounded-full border border-white/10 bg-zinc-900 px-4 py-2 text-xs text-white placeholder-zinc-500 focus:border-primary focus:outline-none"
           />
-          <button
-            onClick={() => {
-              post(text);
-              setText('');
-            }}
-            className="rounded-full bg-[#FE2C55] hover:bg-[#e02447] text-white font-bold px-4"
+          <Button
+            onClick={() => { if (text.trim()) { post(text); setText(''); } }}
+            className="rounded-full bg-primary px-4 font-bold text-primary-foreground"
           >
             <Send className="size-4" />
-          </button>
+          </Button>
         </div>
       </SheetContent>
     </Sheet>
   );
 }
 
+/* =========================================================
+   FEED
+   ========================================================= */
 export default function Shorts() {
   const navigate = useNavigate();
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const [activeIdx, setActiveIdx] = useState(0);
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(true);
   const [activeTab, setActiveTab] = useState<'following' | 'fyp'>('fyp');
   const [commentsFor, setCommentsFor] = useState<Short | null>(null);
   const [liveShorts, setLiveShorts] = useState<Short[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasInteracted, setHasInteracted] = useState(false);
 
-  // Track user interaction to enable autoplay
   useEffect(() => {
-    const handleInteraction = () => {
-      setHasInteracted(true);
-    };
-
+    const handler = () => setHasInteracted(true);
     const events = ['click', 'touchstart', 'keydown', 'scroll'];
-    events.forEach(event => {
-      document.addEventListener(event, handleInteraction, { once: true });
-    });
-
-    return () => {
-      events.forEach(event => {
-        document.removeEventListener(event, handleInteraction);
-      });
-    };
+    events.forEach((e) => document.addEventListener(e, handler, { once: true }));
+    return () => events.forEach((e) => document.removeEventListener(e, handler));
   }, []);
 
   useEffect(() => {
@@ -750,19 +579,13 @@ export default function Shorts() {
       setIsLoading(true);
       try {
         let rows: any[] | null = null;
-
-        const { data: ranked, error: rankedErr } = await supabase.rpc('get_shorts_feed', {
-          p_limit: 30,
-          p_offset: 0,
-        });
-        if (!rankedErr && ranked?.length) {
-          rows = ranked;
-        }
+        const { data: ranked, error: rankedErr } = await supabase.rpc('get_shorts_feed', { p_limit: 30, p_offset: 0 });
+        if (!rankedErr && ranked?.length) rows = ranked;
 
         if (!rows) {
           const { data } = await supabase
             .from('videos')
-            .select('id,title,description,video_url,thumb_url,owner_id,tags')
+            .select('id,title,description,video_url,thumb_url,owner_id,tags,views_count')
             .eq('is_short', true)
             .eq('is_removed', false)
             .eq('is_shadow_banned', false)
@@ -771,51 +594,29 @@ export default function Shorts() {
             .limit(20);
           rows = data ?? [];
         }
-
-        if (!rows.length) {
-          setIsLoading(false);
-          return;
-        }
+        if (!rows.length) { setIsLoading(false); return; }
 
         const ownerIds = Array.from(new Set(rows.map((v: any) => v.owner_id).filter(Boolean)));
         const videoIds = rows.map((v: any) => v.id);
-        const profileMap = new Map<string, { display_name?: string; avatar_url?: string; handle?: string }>();
+        const profileMap = new Map<string, any>();
         const likesMap = new Map<string, number>();
 
         if (ownerIds.length) {
-          const { data: profs } = await supabase
-            .from('profiles')
-            .select('id,display_name,avatar_url,handle')
-            .in('id', ownerIds);
+          const { data: profs } = await supabase.from('profiles').select('id,display_name,avatar_url,handle').in('id', ownerIds);
           (profs ?? []).forEach((p: any) => profileMap.set(p.id, p));
         }
-
         if (videoIds.length) {
-          const { data: likes } = await supabase
-            .from('video_likes')
-            .select('video_id')
-            .in('video_id', videoIds);
-          (likes ?? []).forEach((r: any) => {
-            likesMap.set(r.video_id, (likesMap.get(r.video_id) ?? 0) + 1);
-          });
+          const { data: likes } = await supabase.from('video_likes').select('video_id').in('video_id', videoIds);
+          (likes ?? []).forEach((r: any) => likesMap.set(r.video_id, (likesMap.get(r.video_id) ?? 0) + 1));
         }
 
         const mapped: Short[] = rows
-          .filter((v: any) => v.video_url && typeof v.video_url === 'string' && v.video_url.startsWith('http'))
+          .filter((v: any) => typeof v.video_url === 'string' && v.video_url.startsWith('http'))
           .map((v: any) => {
             const prof = profileMap.get(v.owner_id) || {};
             const channelHandle = prof.handle || prof.display_name || 'creator';
-            
-            // Fix URL encoding for special characters in filenames
-            const videoUrl = v.video_url;
-            const encodedVideoUrl = videoUrl.split('/').map((part, index) => {
-              // Only encode the filename part (last segment) if it contains special characters
-              if (index === videoUrl.split('/').length - 1) {
-                return part.replace(/#/g, '%23');
-              }
-              return part;
-            }).join('/');
-            
+            const parts = String(v.video_url).split('/');
+            const encodedVideoUrl = parts.map((p, i) => (i === parts.length - 1 ? p.replace(/#/g, '%23') : p)).join('/');
             return {
               id: v.id,
               src: encodedVideoUrl,
@@ -827,29 +628,25 @@ export default function Shorts() {
               comments: 0,
               shares: 0,
               music: 'Original Sound — ' + (prof.display_name || 'creator'),
+              owner_id: v.owner_id,
               tags: Array.isArray(v.tags) ? v.tags : [],
               views_count: v.views_count || 0,
-            };
+            } as Short;
           });
 
-        const rankedProNaxShorts = rankShortsByProNaxFYP(mapped);
-        setLiveShorts(rankedProNaxShorts);
-      } catch {
-        /* silent */
-      }
+        setLiveShorts(rankShortsByProNaxFYP(mapped));
+      } catch { /* silent */ }
       setIsLoading(false);
     })();
   }, []);
 
-  const allShorts: Short[] = useMemo(() => liveShorts, [liveShorts]);
+  const allShorts = useMemo(() => liveShorts, [liveShorts]);
 
   const feedItems: FeedItem[] = useMemo(() => {
     const out: FeedItem[] = [];
     allShorts.forEach((s, i) => {
       out.push({ kind: 'short', short: s });
-      if ((i + 1) % AD_EVERY_N_SHORTS === 0) {
-        out.push({ kind: 'ad', attributeShortId: s.id, key: `ad-${i}-${s.id}` });
-      }
+      if ((i + 1) % AD_EVERY_N_SHORTS === 0) out.push({ kind: 'ad', attributeShortId: s.id, key: `ad-${i}-${s.id}` });
     });
     return out;
   }, [allShorts]);
@@ -857,13 +654,12 @@ export default function Shorts() {
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const items = Array.from(el.querySelectorAll<HTMLElement>('[data-short-item]'));
+    const items = Array.from(el.querySelectorAll('[data-short-item]'));
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting && entry.intersectionRatio >= 0.7) {
-            const idx = Number(entry.target.getAttribute('data-idx'));
-            setActiveIdx(idx);
+            setActiveIdx(Number(entry.target.getAttribute('data-idx')));
           }
         });
       },
@@ -874,89 +670,64 @@ export default function Shorts() {
   }, [feedItems.length]);
 
   return (
-    <div className="fixed inset-0 lg:static lg:inset-auto lg:flex-1 bg-black font-sans">
-      {/* Clean Floating Tabs */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-5 z-30 text-white font-semibold text-sm">
-        <button
-          onClick={() => setActiveTab('following')}
-          className={`relative py-1 transition-colors ${
-            activeTab === 'following' ? 'text-white font-bold' : 'text-white/70 hover:text-white'
-          }`}
-          style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}
-        >
-          Following
-          {activeTab === 'following' && (
-            <motion.div
-              layoutId="shortsTab"
-              className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FE2C55] rounded-full shadow-[0_0_8px_#FE2C55]"
-            />
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('fyp')}
-          className={`relative py-1 transition-colors ${
-            activeTab === 'fyp' ? 'text-white font-bold' : 'text-white/70 hover:text-white'
-          }`}
-          style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}
-        >
-          For You
-          {activeTab === 'fyp' && (
-            <motion.div
-              layoutId="shortsTab"
-              className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#25F4EE] rounded-full shadow-[0_0_8px_#25F4EE]"
-            />
-          )}
-        </button>
+    <div className="fixed inset-0 overflow-hidden bg-black text-white">
+      {/* top tabs */}
+      <div
+        className="absolute inset-x-0 top-0 z-30 flex items-center justify-center gap-6 text-sm"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 10px)' }}
+      >
+        {(['following', 'fyp'] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setActiveTab(t)}
+            className={`relative py-1 transition-colors ${activeTab === t ? 'font-bold text-white' : 'text-white/70'}`}
+            style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}
+          >
+            {t === 'following' ? 'Following' : 'For You'}
+            {activeTab === t && (
+              <span className="absolute -bottom-1 left-1/2 h-[3px] w-6 -translate-x-1/2 rounded-full bg-white" />
+            )}
+          </button>
+        ))}
       </div>
 
+      {/* snap scroller — har slide poori height, 9:16 stage andar center */}
       <div
         ref={containerRef}
-        className="h-[100dvh] w-full overflow-y-scroll snap-y snap-mandatory no-scrollbar overscroll-contain relative bg-black touch-pan-y"
-        style={{ 
-          scrollSnapType: 'y mandatory', 
-          WebkitOverflowScrolling: 'touch',
-          touchAction: 'pan-y',
-          overscrollBehavior: 'contain'
-        }}
+        className="h-[100dvh] w-full snap-y snap-mandatory overflow-y-scroll overscroll-y-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {/* Clean Loading Spinner */}
         {isLoading && (
-          <div className="h-[100dvh] w-full flex items-center justify-center bg-black">
+          <div className="grid h-[100dvh] place-items-center">
             <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 rounded-full border-3 border-white/20 border-t-[#FE2C55] animate-spin" />
-              <p className="text-xs font-medium text-zinc-300 tracking-wider">Loading...</p>
+              <div className="size-10 animate-spin rounded-full border-2 border-white/20 border-t-primary" />
+              <p className="text-xs text-white/60">Loading...</p>
             </div>
           </div>
         )}
+
         {!isLoading && allShorts.length === 0 && (
-          <div className="h-[100dvh] w-full flex items-center justify-center px-6 text-center bg-black">
-            <div className="space-y-3">
-              <div className="w-16 h-16 mx-auto rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center">
-                <VideoIcon className="w-8 h-8 text-cyan-400" />
-              </div>
-              <h2 className="text-white font-bold text-lg">No Shorts on FYP</h2>
-              <p className="text-xs text-zinc-400 max-w-xs">
+          <div className="grid h-[100dvh] place-items-center px-8 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <span className="grid size-14 place-items-center rounded-2xl bg-white/10">
+                <VideoIcon className="size-6" />
+              </span>
+              <p className="text-base font-bold">No Shorts on FYP</p>
+              <p className="max-w-xs text-xs text-white/60">
                 Upload a vertical short video to start the ProNax Viral Cohort.
               </p>
-              <Button asChild size="sm" className="rounded-full bg-[#FE2C55] text-white font-bold">
-                <Link to="/upload">Upload First Short</Link>
+              <Button onClick={() => navigate({ to: '/upload' })} className="rounded-full bg-primary font-bold text-primary-foreground">
+                Upload First Short
               </Button>
             </div>
           </div>
         )}
+
         {feedItems.map((item, i) => (
           <div
             key={item.kind === 'short' ? item.short.id : item.key}
             data-short-item
             data-idx={i}
-            className="h-[100dvh] w-full snap-start snap-always relative overflow-hidden touch-pan-y"
-            style={{ 
-              scrollSnapStop: 'always',
-              minHeight: '100dvh',
-              maxHeight: '100dvh',
-              touchAction: 'pan-y',
-              aspectRatio: '9/16'
-            }}
+            className="h-[100dvh] w-full snap-start snap-always"
           >
             {item.kind === 'short' ? (
               <ShortItem
@@ -974,9 +745,7 @@ export default function Shorts() {
                 attributeToVideoId={item.attributeShortId}
                 onAdFinished={() => {
                   const el = containerRef.current;
-                  if (!el) return;
-                  const next = el.querySelector<HTMLElement>(`[data-idx="${i + 1}"]`);
-                  next?.scrollIntoView({ behavior: 'smooth' });
+                  el?.querySelector(`[data-idx="${i + 1}"]`)?.scrollIntoView({ behavior: 'smooth' });
                 }}
               />
             )}
