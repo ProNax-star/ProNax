@@ -17,7 +17,15 @@ const TAB_SESSION_KEY = 'pn_tab_session';
 function getTabSession(): string {
   let id = sessionStorage.getItem(TAB_SESSION_KEY);
   if (!id) {
-    id = crypto.randomUUID();
+    // Browser-compatible unique ID generation
+    const generateId = () => {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+      // Fallback for older browsers
+      return `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    };
+    id = generateId();
     sessionStorage.setItem(TAB_SESSION_KEY, id);
   }
   return id;
@@ -45,8 +53,7 @@ export function useWatchHeartbeat(opts: {
       // Off-main-thread: worker fires the RPC via keepalive fetch.
       analyticsBus.rpc('record_heartbeat', {
         p_video: videoId,
-        p_session_id: sessionId,
-        p_watch_seconds: seconds,
+        p_seconds: seconds,
       });
       // Also persist cumulative progress off-thread.
       analyticsBus.rpc('record_watch_progress', {

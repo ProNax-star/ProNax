@@ -176,10 +176,10 @@ export function StudioShell({
   };
 
   return (
-    <div className="min-h-screen bg-[#06080c] text-zinc-100 font-sans flex flex-col selection:bg-red-500 selection:text-white relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#06080c] text-zinc-100 font-sans flex flex-col selection:bg-cyan-500 selection:text-white relative overflow-x-hidden">
       {/* 3D Glowing Top Ambient Accents */}
-      <div className="fixed top-0 left-1/4 w-[500px] h-[500px] bg-red-600/10 rounded-full blur-[140px] pointer-events-none z-0" />
-      <div className="fixed top-1/3 right-10 w-[450px] h-[450px] bg-rose-600/10 rounded-full blur-[140px] pointer-events-none z-0" />
+      <div className="fixed top-0 left-1/4 w-[500px] h-[500px] bg-cyan-600/10 rounded-full blur-[140px] pointer-events-none z-0" />
+      <div className="fixed top-1/3 right-10 w-[450px] h-[450px] bg-purple-600/10 rounded-full blur-[140px] pointer-events-none z-0" />
 
       {/* Top Glassmorphic Creator Header Bar */}
       <header className="sticky top-0 z-40 h-16 bg-[#0b0e14]/90 backdrop-blur-2xl border-b border-white/10 px-4 lg:px-6 flex items-center justify-between gap-4 shadow-2xl">
@@ -189,7 +189,7 @@ export function StudioShell({
             className="md:hidden p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 transition"
             aria-label="Toggle mobile menu"
           >
-            {mobileOpen ? <X className="w-5 h-5 text-red-400" /> : <Menu className="w-5 h-5" />}
+            {mobileOpen ? <X className="w-5 h-5 text-cyan-400" /> : <Menu className="w-5 h-5" />}
           </button>
 
           <button
@@ -198,7 +198,7 @@ export function StudioShell({
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {collapsed ? (
-              <PanelLeftOpen className="w-4 h-4 text-red-400 group-hover:scale-110 transition-transform" />
+              <PanelLeftOpen className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
             ) : (
               <PanelLeftClose className="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors" />
             )}
@@ -206,9 +206,9 @@ export function StudioShell({
 
           {/* Logo & Studio Title */}
           <Link to="/studio" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-red-600 via-rose-500 to-amber-500 p-[1px] shadow-lg shadow-red-500/25 group-hover:shadow-red-500/40 transition-all">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-600 via-blue-500 to-purple-500 p-[1px] shadow-lg shadow-cyan-500/25 group-hover:shadow-cyan-500/40 transition-all">
               <div className="w-full h-full bg-[#0b0e14] rounded-[11px] flex items-center justify-center">
-                <Play className="w-4 h-4 text-red-400 fill-red-400 ml-0.5 group-hover:scale-110 transition-transform" />
+                <Play className="w-4 h-4 text-cyan-400 fill-cyan-400 ml-0.5 group-hover:scale-110 transition-transform" />
               </div>
             </div>
             <div className="hidden sm:block">
@@ -216,7 +216,7 @@ export function StudioShell({
                 <span className="font-extrabold text-sm tracking-tight text-white font-display">
                   PRO CREATOR STUDIO
                 </span>
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-red-500/15 border border-red-500/30 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
                   ENTERPRISE
                 </span>
               </div>
@@ -250,10 +250,10 @@ export function StudioShell({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-zinc-200 transition cursor-pointer">
-                <Layers className="w-3.5 h-3.5 text-red-400" />
+                <Layers className="w-3.5 h-3.5 text-cyan-400" />
                 <span className="max-w-[130px] truncate">{activeChannel.name}</span>
                 {activeChannel.verified && (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                 )}
                 <ChevronDown className="w-3 h-3 text-zinc-400" />
               </button>
@@ -267,7 +267,7 @@ export function StudioShell({
                   key={ch.id}
                   onClick={() => handleSwitchChannel(ch)}
                   className={`cursor-pointer p-2 rounded-xl flex items-center justify-between text-xs transition ${
-                    activeChannel.id === ch.id ? 'bg-red-500/15 text-white font-bold border border-red-500/30' : 'hover:bg-white/5'
+                    activeChannel.id === ch.id ? 'bg-cyan-500/15 text-white font-bold border border-cyan-500/30' : 'hover:bg-white/5'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -275,7 +275,7 @@ export function StudioShell({
                     <div className="min-w-0">
                       <p className="text-xs truncate flex items-center gap-1">
                         <span>{ch.name}</span>
-                        {ch.verified && <CheckCircle2 className="w-3 h-3 text-blue-400 inline" />}
+                        {ch.verified && <CheckCircle2 className="w-3 h-3 text-cyan-400 inline" />}
                       </p>
                       <p className="text-[10px] text-zinc-400 font-mono">{ch.handle}</p>
                     </div>
@@ -286,7 +286,7 @@ export function StudioShell({
               <DropdownMenuSeparator className="bg-white/10" />
               <DropdownMenuItem
                 onClick={() => toast.info('Link additional Pro Nax creator accounts')}
-                className="cursor-pointer p-2 text-xs text-red-400 hover:bg-white/5 flex items-center gap-2"
+                className="cursor-pointer p-2 text-xs text-cyan-400 hover:bg-white/5 flex items-center gap-2"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add Channel Account</span>
@@ -297,7 +297,7 @@ export function StudioShell({
           {/* Quick "CREATE" Action Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-9 px-4 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-extrabold inline-flex items-center gap-2 shadow-lg shadow-red-600/25 transition cursor-pointer active:scale-95">
+              <button className="h-9 px-4 rounded-xl bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-extrabold inline-flex items-center gap-2 shadow-lg shadow-cyan-600/25 transition cursor-pointer active:scale-95">
                 <Plus className="w-4 h-4 stroke-[3]" />
                 <span className="hidden sm:inline">CREATE</span>
                 <ChevronDown className="w-3.5 h-3.5 opacity-80" />
@@ -308,21 +308,21 @@ export function StudioShell({
                 onClick={() => handleCreateAction('upload')}
                 className="cursor-pointer flex items-center gap-2.5 text-xs py-2 px-3 rounded-lg hover:bg-white/10 transition"
               >
-                <Video className="w-4 h-4 text-red-400" />
+                <Video className="w-4 h-4 text-cyan-400" />
                 <span>Upload Video</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => handleCreateAction('short')}
                 className="cursor-pointer flex items-center gap-2.5 text-xs py-2 px-3 rounded-lg hover:bg-white/10 transition"
               >
-                <Sparkles className="w-4 h-4 text-amber-400" />
+                <Sparkles className="w-4 h-4 text-purple-400" />
                 <span>Create Short</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => handleCreateAction('stream')}
                 className="cursor-pointer flex items-center gap-2.5 text-xs py-2 px-3 rounded-lg hover:bg-white/10 transition"
               >
-                <Radio className="w-4 h-4 text-rose-400" />
+                <Radio className="w-4 h-4 text-blue-400" />
                 <span>Schedule Live Stream</span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -343,7 +343,7 @@ export function StudioShell({
           >
             <Bell className="w-4 h-4" />
             {unreadNotices > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-600 text-white text-[9px] font-bold flex items-center justify-center animate-pulse shadow-[0_0_8px_#ef4444]">
+              <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-cyan-600 text-white text-[9px] font-bold flex items-center justify-center animate-pulse shadow-[0_0_8px_#06b6d4]">
                 {unreadNotices > 9 ? '9+' : unreadNotices}
               </span>
             )}
@@ -364,7 +364,7 @@ export function StudioShell({
               <button className="flex items-center gap-2 p-1 pl-2 rounded-xl hover:bg-white/5 transition border border-white/10 cursor-pointer">
                 <Avatar className="w-7 h-7 border border-white/15">
                   <AvatarImage src={avatarUrl ?? undefined} />
-                  <AvatarFallback className="bg-red-600 text-white text-xs font-bold">{initials}</AvatarFallback>
+                  <AvatarFallback className="bg-cyan-600 text-white text-xs font-bold">{initials}</AvatarFallback>
                 </Avatar>
                 <ChevronDown className="w-3.5 h-3.5 text-zinc-400 hidden sm:block" />
               </button>
@@ -373,14 +373,14 @@ export function StudioShell({
               <div className="p-2.5 rounded-xl bg-white/5 border border-white/5">
                 <p className="text-xs font-bold text-white flex items-center gap-1.5">
                   <span>{channelName}</span>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-400" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />
                 </p>
                 <p className="text-[10px] text-zinc-400 font-mono mt-0.5">{channelHandle}</p>
               </div>
               <div className="space-y-1 text-xs">
                 <DropdownMenuItem asChild>
                   <Link to={`/channel/${channelHandle}`} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10">
-                    <User className="w-3.5 h-3.5 text-red-400" />
+                    <User className="w-3.5 h-3.5 text-cyan-400" />
                     <span>View Public Channel</span>
                   </Link>
                 </DropdownMenuItem>
@@ -409,7 +409,7 @@ export function StudioShell({
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className="bg-gradient-to-r from-amber-950/90 via-red-950/80 to-zinc-950 border-b border-amber-500/30 px-4 py-2.5 flex items-center justify-between gap-4 relative z-30 text-xs shadow-lg"
+          className="bg-gradient-to-r from-amber-950/90 via-cyan-950/80 to-zinc-950 border-b border-amber-500/30 px-4 py-2.5 flex items-center justify-between gap-4 relative z-30 text-xs shadow-lg"
         >
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
@@ -475,7 +475,7 @@ export function StudioShell({
                     onMouseLeave={() => setActiveTooltip(null)}
                     className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-xs font-semibold transition relative group cursor-pointer ${
                       isActive
-                        ? 'text-white bg-gradient-to-r from-red-600/20 via-rose-600/10 to-transparent border border-red-500/40 shadow-[0_0_20px_rgba(239,68,68,0.15)]'
+                        ? 'text-white bg-gradient-to-r from-cyan-600/20 via-blue-600/10 to-transparent border border-cyan-500/40 shadow-[0_0_20px_rgba(6,182,212,0.15)]'
                         : 'text-zinc-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
@@ -483,7 +483,7 @@ export function StudioShell({
                     {isActive && (
                       <motion.div
                         layoutId="studioActiveBar"
-                        className="absolute left-0 top-2 bottom-2 w-1.5 rounded-r-full bg-red-500 shadow-[0_0_12px_#ef4444]"
+                        className="absolute left-0 top-2 bottom-2 w-1.5 rounded-r-full bg-cyan-500 shadow-[0_0_12px_#06b6d4]"
                         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                       />
                     )}
@@ -491,7 +491,7 @@ export function StudioShell({
                     <Icon
                       className={`w-4 h-4 shrink-0 transition-all duration-200 ${
                         isActive
-                          ? 'text-red-400 scale-110 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]'
+                          ? 'text-cyan-400 scale-110 drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]'
                           : 'text-zinc-400 group-hover:text-zinc-100 group-hover:scale-105'
                       }`}
                     />
@@ -499,7 +499,7 @@ export function StudioShell({
                     {!collapsed && <span className="truncate">{item.label}</span>}
 
                     {item.badge && !collapsed && (
-                      <span className="ml-auto px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-red-500/20 text-red-300 border border-red-500/30">
+                      <span className="ml-auto px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
                         {item.badge}
                       </span>
                     )}
@@ -507,7 +507,7 @@ export function StudioShell({
 
                   {/* Tooltip on Collapsed Sidebar Hover */}
                   {collapsed && activeTooltip === item.id && (
-                    <div className="fixed left-20 z-50 px-3 py-1.5 rounded-xl bg-[#101522] border border-red-500/40 text-white text-xs font-bold shadow-2xl pointer-events-none flex items-center gap-2 whitespace-nowrap backdrop-blur-xl">
+                    <div className="fixed left-20 z-50 px-3 py-1.5 rounded-xl bg-[#101522] border border-cyan-500/40 text-white text-xs font-bold shadow-2xl pointer-events-none flex items-center gap-2 whitespace-nowrap backdrop-blur-xl">
                       <span>{item.label}</span>
                     </div>
                   )}
@@ -520,7 +520,7 @@ export function StudioShell({
           {!collapsed && (
             <div className="p-3 border-t border-white/10 bg-[#07090e]/60">
               <div className="flex items-center gap-2.5 p-2.5 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-600 to-rose-600 flex items-center justify-center font-bold text-xs text-white shadow-md shadow-red-600/20">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-600 to-blue-600 flex items-center justify-center font-bold text-xs text-white shadow-md shadow-cyan-600/20">
                   PN
                 </div>
                 <div className="flex-1 min-w-0">

@@ -53,6 +53,9 @@
   --animate-accordion-up: accordion-up 0.2s ease-out;
   --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
   --animate-float: float 3s ease-in-out infinite;
+  --animate-heart-pop: heart-pop 0.9s ease-out forwards;
+  --animate-marquee: marquee 20s linear infinite;
+  --animate-spin-slow: spin-slow 8s linear infinite;
 
   @keyframes accordion-down {
     from { height: 0; }
@@ -69,6 +72,19 @@
   @keyframes float {
     0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(-6px); }
+  }
+  @keyframes heart-pop {
+    0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+    50% { transform: scale(1.2) rotate(-45deg); opacity: 1; }
+    100% { transform: scale(1) rotate(-45deg) translateY(-100px); opacity: 0; }
+  }
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 }
 
@@ -297,27 +313,27 @@ body::-webkit-scrollbar,
   --card-foreground: 0 0% 7%;
   --popover: 0 0% 100%;
   --popover-foreground: 0 0% 7%;
-  --primary: 210 100% 40%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 0 0% 96%;
-  --secondary-foreground: 0 0% 7%;
+  --primary: 190 100% 50%;
+  --primary-foreground: 220 20% 4%;
+  --secondary: 270 80% 60%;
+  --secondary-foreground: 210 40% 98%;
   --muted: 0 0% 96%;
   --muted-foreground: 0 0% 40%;
-  --accent: 210 100% 95%;
-  --accent-foreground: 210 100% 35%;
-  --destructive: 0 84% 50%;
+  --accent: 330 80% 55%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
   --border: 0 0% 88%;
   --input: 0 0% 93%;
-  --ring: 210 100% 40%;
+  --ring: 190 100% 50%;
   --sidebar-background: 0 0% 100%;
   --sidebar-foreground: 0 0% 7%;
-  --sidebar-primary: 210 100% 40%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 210 100% 95%;
-  --sidebar-accent-foreground: 210 100% 35%;
+  --sidebar-primary: 190 100% 50%;
+  --sidebar-primary-foreground: 220 20% 4%;
+  --sidebar-accent: 220 15% 12%;
+  --sidebar-accent-foreground: 210 40% 90%;
   --sidebar-border: 0 0% 90%;
-  --sidebar-ring: 210 100% 40%;
+  --sidebar-ring: 190 100% 50%;
   font-family: 'Roboto', 'Inter', system-ui, sans-serif;
   color: hsl(var(--foreground));
   background: hsl(var(--background));
@@ -335,16 +351,16 @@ body::-webkit-scrollbar,
 }
 
 .studio-nav-active {
-  background: #e8f0fe;
-  color: #065fd4;
+  background: #e0f2fe;
+  color: #06b6d4;
 }
 
 .studio-btn-create {
-  background: #cc0000;
+  background: #06b6d4;
   color: white;
 }
 .studio-btn-create:hover {
-  background: #b30000;
+  background: #0891b2;
 }
 
 @keyframes holo-sweep {
@@ -412,4 +428,21 @@ body::-webkit-scrollbar,
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
   }
+}
+
+/* Shorts-specific utilities */
+.text-shadow-feed {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
+}
+
+.animate-heart-pop {
+  animation: heart-pop 0.9s ease-out forwards;
+}
+
+.animate-marquee {
+  animation: marquee 20s linear infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
 }

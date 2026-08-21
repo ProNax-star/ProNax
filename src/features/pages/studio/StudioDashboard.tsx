@@ -119,7 +119,7 @@ export default function StudioDashboard() {
               <p className="text-sm text-[#606060] mb-3">Upload your first video to get started</p>
               <Link
                 to="/upload"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#065fd4] text-white text-sm font-medium"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500 text-white text-sm font-medium"
               >
                 <Upload className="w-4 h-4" /> Upload videos
               </Link>
@@ -131,7 +131,7 @@ export default function StudioDashboard() {
               ))}
               <Link
                 to="/studio/content"
-                className="block text-sm text-[#065fd4] font-medium mt-3 hover:underline"
+                className="block text-sm text-cyan-500 font-medium mt-3 hover:underline"
               >
                 Go to channel content →
               </Link>

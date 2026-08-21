@@ -139,7 +139,7 @@ function MobileVirtualList({ items }: { items: (GridVideo | { __ad: true; key: s
                 width: '100%',
                 transform: `translateY(${row.start}px)`,
               }}
-              className="pb-2"
+              className="pb-6 px-4 sm:px-6 lg:px-8"
             >
               {'__ad' in it ? (
                 <EngineBoundary name="ad-feed-row" silent>
@@ -177,7 +177,7 @@ export function VideoGrid({ videos, empty }: { videos: GridVideo[]; empty?: stri
   }
 
   // Desktop → responsive grid with `content-visibility: auto` per card.
-  const gridCls = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2 px-0 sm:px-0';
+  const gridCls = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-4 sm:px-6 lg:px-8';
   if (!freq) {
     return (
       <div className={gridCls}>

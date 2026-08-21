@@ -150,7 +150,7 @@ export default function StudioVideoEditor() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-2 border-[#065fd4] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -191,7 +191,7 @@ export default function StudioVideoEditor() {
           <button
             onClick={save}
             disabled={saving}
-            className="inline-flex items-center gap-1 px-4 py-2 rounded-full bg-[#065fd4] text-white text-sm font-medium hover:bg-[#0550b3] disabled:opacity-50 transition"
+            className="inline-flex items-center gap-1 px-4 py-2 rounded-full bg-cyan-500 text-white text-sm font-medium hover:bg-cyan-600 disabled:opacity-50 transition"
           >
             <Save className="w-4 h-4" /> {saving ? 'Saving…' : 'Save'}
           </button>
@@ -230,7 +230,7 @@ export default function StudioVideoEditor() {
                     )}
                   </div>
                   <p className="text-xs text-[#606060] mt-2">Video link</p>
-                  <p className="text-xs text-[#065fd4] break-all">{window.location.origin}/watch/{id}</p>
+                  <p className="text-xs text-cyan-500 break-all">{window.location.origin}/watch/{id}</p>
                 </div>
                 <div className="flex-1 space-y-4">
                   <div>
@@ -291,7 +291,7 @@ export default function StudioVideoEditor() {
               <p className="text-sm text-[#606060] mb-4">Manage comments on the watch page</p>
               <Link
                 to={`/watch/${id}#comments`}
-                className="inline-flex px-4 py-2 rounded-full bg-[#065fd4] text-white text-sm font-medium"
+                className="inline-flex px-4 py-2 rounded-full bg-cyan-500 text-white text-sm font-medium"
               >
                 Open comments
               </Link>
@@ -338,11 +338,11 @@ export default function StudioVideoEditor() {
                     onClick={() => setVisibility(opt.v)}
                     className={`w-full flex items-start gap-3 p-4 rounded-lg border text-left transition ${
                       visibility === opt.v
-                        ? 'border-[#065fd4] bg-[#e8f0fe]'
+                        ? 'border-cyan-500 bg-[#e0f2fe]'
                         : 'border-[#e5e5e5] hover:bg-[#fafafa]'
                     }`}
                   >
-                    <opt.icon className={`w-5 h-5 mt-0.5 ${visibility === opt.v ? 'text-[#065fd4]' : 'text-[#606060]'}`} />
+                    <opt.icon className={`w-5 h-5 mt-0.5 ${visibility === opt.v ? 'text-cyan-500' : 'text-[#606060]'}`} />
                     <div>
                       <p className="text-sm font-medium text-[#0f0f0f]">{opt.label}</p>
                       <p className="text-xs text-[#606060]">{opt.desc}</p>
@@ -368,7 +368,7 @@ export default function StudioVideoEditor() {
             <AlertDialogAction
               onClick={(e) => { e.preventDefault(); confirmDelete(); }}
               disabled={deleting}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive hover:bg-destructive/90"
             >
               {deleting ? 'Deleting…' : 'Delete forever'}
             </AlertDialogAction>

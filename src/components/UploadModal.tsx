@@ -375,7 +375,7 @@ export function UploadModal({
                           .from('videos')
                           .select('id, title, owner_id')
                           .eq('sha256', fp.replace('PRX-FP-SHA256-', '')) // Extract actual hash from fingerprint string
-                          .single();
+                          .maybeSingle();
 
                         if (!hashError && hashDuplicate) {
                           console.warn('Duplicate video detected via SHA-256 hash:', hashDuplicate);

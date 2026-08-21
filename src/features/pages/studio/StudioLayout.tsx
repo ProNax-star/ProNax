@@ -57,7 +57,7 @@ function NoticesDialog({
                   notice.is_read
                     ? 'bg-[#f9f9f9] border-[#e5e5e5] opacity-70'
                     : notice.severity === 'critical'
-                      ? 'bg-red-50 border-red-200'
+                      ? 'bg-cyan-50 border-cyan-200'
                       : notice.severity === 'warning'
                         ? 'bg-amber-50 border-amber-200'
                         : 'bg-blue-50 border-blue-200'
@@ -66,7 +66,7 @@ function NoticesDialog({
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5">
                     {notice.severity === 'critical' ? (
-                      <XCircle className="w-4 h-4 text-red-600" />
+                      <XCircle className="w-4 h-4 text-cyan-600" />
                     ) : notice.severity === 'warning' ? (
                       <AlertCircle className="w-4 h-4 text-amber-600" />
                     ) : (
@@ -83,7 +83,7 @@ function NoticesDialog({
                             if (notice.action_url) window.open(notice.action_url, '_blank');
                             else if (notice.related_video_id) navigate(`/watch/${notice.related_video_id}`);
                           }}
-                          className="text-xs px-3 py-1 rounded-full bg-[#065fd4] text-white font-medium"
+                          className="text-xs px-3 py-1 rounded-full bg-cyan-500 text-white font-medium"
                         >
                           {notice.action_label}
                         </button>
@@ -121,7 +121,7 @@ export default function StudioLayout() {
   if (authLoading) {
     return (
       <div className="studio-theme min-h-screen flex items-center justify-center bg-[#f9f9f9]">
-        <div className="w-8 h-8 border-2 border-[#065fd4] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -130,7 +130,7 @@ export default function StudioLayout() {
     return (
       <div className="studio-theme min-h-screen flex items-center justify-center bg-[#f9f9f9] p-4">
         <div className="bg-white rounded-xl border border-[#e5e5e5] p-8 max-w-md w-full text-center shadow-sm">
-          <div className="w-12 h-12 rounded-full bg-[#ff0000] mx-auto mb-4 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-full bg-cyan-500 mx-auto mb-4 flex items-center justify-center">
             <span className="text-white font-bold text-lg">▶</span>
           </div>
           <h2 className="text-xl font-medium text-[#0f0f0f] mb-2">Sign in to Studio</h2>
@@ -139,7 +139,7 @@ export default function StudioLayout() {
           </p>
           <Link
             to="/auth"
-            className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-[#065fd4] text-white text-sm font-medium hover:bg-[#0550b3] transition"
+            className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-cyan-500 text-white text-sm font-medium hover:bg-cyan-600 transition"
           >
             Sign in
           </Link>

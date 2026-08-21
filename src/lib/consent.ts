@@ -27,7 +27,15 @@ export function anonId(): string {
   if (typeof window === "undefined") return "ssr";
   let id = localStorage.getItem(ANON_KEY);
   if (!id) {
-    id = crypto.randomUUID();
+    // Browser-compatible unique ID generation
+    const generateId = () => {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+      // Fallback for older browsers
+      return `anon-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    };
+    id = generateId();
     localStorage.setItem(ANON_KEY, id);
   }
   return id;

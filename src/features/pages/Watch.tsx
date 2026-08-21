@@ -553,12 +553,12 @@ export default function Watch() {
           {/* Video Details, Actions, Channel & Comments Content */}
           <div className="px-2 md:px-0 py-3 space-y-3">
             {/* Line 1: Video Title - Bold, prominent typography */}
-            <h1 className="text-lg md:text-xl font-bold text-foreground leading-tight">
+            <h1 className="text-[15px] sm:text-base font-bold text-white leading-tight mt-3 mb-1">
               {video.title}
             </h1>
 
             {/* Line 2: Compact stats row with pill tags */}
-            <div className="flex flex-wrap items-center gap-2 text-[13px] text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 font-medium mt-1.5">
               <span className="font-medium">{Number(dbVideo?.views_count || 0).toLocaleString()} views</span>
               <span className="text-muted-foreground/50">•</span>
               <span>{video.time}</span>
@@ -569,7 +569,7 @@ export default function Watch() {
             </div>
 
             {/* Line 3: Channel Info Row - Avatar, Name, Follow button in horizontal row */}
-            <div className="flex items-center justify-between py-1">
+            <div className="flex items-center justify-between mt-3 mb-2">
               <Link
                 to={`/channel/${encodeURIComponent(video.channel)}`}
                 className="flex items-center gap-3 group min-w-0"
@@ -1035,7 +1035,7 @@ export default function Watch() {
                 </h3>
                 <span className="text-[10px] uppercase tracking-wider text-gray-400 font-medium">Recommended</span>
               </div>
-              <div className="px-0 mx-0 w-full grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="px-0 mx-0 w-full grid grid-cols-1 sm:grid-cols-2 gap-5">
                 {suggestedVideos.map((v, i) => (
                   <motion.div
                     key={v.id}
@@ -1061,7 +1061,7 @@ export default function Watch() {
             </div>
             <span className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Recommended</span>
           </div>
-          <div className="px-3 mx-0 w-full flex flex-col gap-2 pb-4">
+          <div className="px-3 mx-0 w-full flex flex-col gap-5 pb-4">
             {suggestedVideos.map((v, i) => (
               <motion.div
                 key={v.id}

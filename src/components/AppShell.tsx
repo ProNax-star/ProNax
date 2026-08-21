@@ -43,7 +43,7 @@ export function AppShell() {
         <div className="min-h-screen flex w-full">
           {!isStudioRoute && <AppSidebar />}
           <div className="flex-1 flex flex-col min-w-0">
-            {!isStudioRoute && (
+            {!isStudioRoute && !isShortsRoute && (
               <div className="lg:hidden sticky top-0 z-50 bg-background/95 backdrop-blur-lg border-b border-border/20 h-14 flex items-center justify-between px-3 gap-2">
                 <div className="flex items-center gap-2 shrink-0">
                   <SidebarTrigger aria-label="Toggle menu" className="text-foreground p-2 rounded-full hover:bg-muted/20 transition-colors">
@@ -63,7 +63,7 @@ export function AppShell() {
               </div>
             )}
 
-            {!isStudioRoute && (
+            {!isStudioRoute && !isShortsRoute && (
               <div className="hidden lg:flex sticky top-0 z-40 h-12 items-center justify-between px-4 gap-2 border-b border-border/20 glass-strong">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   <SidebarTrigger aria-label="Toggle sidebar" className="text-foreground shrink-0">
@@ -92,7 +92,7 @@ export function AppShell() {
                 className="fixed bottom-0 left-0 right-0 z-40 my-0 border-t border-cyan-500/30 bg-black/95 backdrop-blur-md shadow-2xl"
               />
             )}
-            {!isShortsRoute && !isStudioRoute && <MobileNav />}
+            {!isStudioRoute && <MobileNav />}
           </div>
         </div>
       </SidebarProvider>

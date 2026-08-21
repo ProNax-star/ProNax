@@ -94,7 +94,7 @@ export default function StudioComments() {
                   </div>
                   <Link
                     to={`/watch/${c.video_id}#comments`}
-                    className="shrink-0 inline-flex items-center gap-1 text-xs text-[#065fd4] hover:underline"
+                    className="shrink-0 inline-flex items-center gap-1 text-xs text-cyan-500 hover:underline"
                   >
                     Reply <ExternalLink className="w-3 h-3" />
                   </Link>

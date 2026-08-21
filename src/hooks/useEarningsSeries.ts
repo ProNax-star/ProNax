@@ -32,8 +32,9 @@ export function useEarningsSeries(userId: string | undefined) {
         .select('created_at,amount_earned,gross_revenue,cpm,views_count,ad_network')
         .eq('user_id', userId).gte('created_at', sinceIso)),
       safe(supabase.from('creator_earnings')
-        .select('created_at,amount,gross_amount,cpm,impressions,source')
-        .eq('user_id', userId).gte('created_at', sinceIso)),
+        .select('created_at,total_earned,gross_amount,cpm,impressions,source')
+        .or(`user_id.eq.${userId},creator_id.eq.${userId}`)
+        .gte('created_at', sinceIso)),
       safe(supabase.from('analytics_events')
         .select('created_at,event_type,revenue,gross_revenue,cpm')
         .eq('user_id', userId).gte('created_at', sinceIso)),
@@ -50,8 +51,8 @@ export function useEarningsSeries(userId: string | undefined) {
       })),
       ...earn.map((r: any) => ({
         created_at: r.created_at,
-        amount_earned: r.amount,
-        gross_revenue: r.gross_amount ?? r.amount,
+        amount_earned: r.total_earned,
+        gross_revenue: r.gross_amount ?? r.total_earned,
         cpm: r.cpm,
         views_count: r.impressions ?? 1,
         ad_network: r.source ?? 'ledger',
@@ -80,6 +81,7 @@ export function useEarningsSeries(userId: string | undefined) {
       .channel(`earnings-${userId}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'revenue_logs', filter: `user_id=eq.${userId}` }, fetchAll)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'creator_earnings', filter: `user_id=eq.${userId}` }, fetchAll)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'creator_earnings', filter: `creator_id=eq.${userId}` }, fetchAll)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'analytics_events', filter: `user_id=eq.${userId}` }, fetchAll)
       .subscribe();
     return () => { supabase.removeChannel(ch); };

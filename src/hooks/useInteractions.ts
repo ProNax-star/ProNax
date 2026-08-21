@@ -92,11 +92,20 @@ export function useLike(videoId: string, creatorId?: string | null) {
 // ---------- SAVES ----------
 export function useSave(videoId: string) {
   const [saved, setSaved] = useState(false);
+  const [count, setCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const isTogglingRef = useRef(false);
 
-  useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  const refresh = useCallback(async () => {
+    // Skip refresh if we're in the middle of a toggle to avoid double updates
+    if (isTogglingRef.current) return;
+    const { count: total } = await supabase
+      .from('video_saves')
+      .select('id', { count: 'exact', head: true })
+      .eq('video_id', videoId);
+    setCount(total ?? 0);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
       const { data } = await supabase
         .from('video_saves')
         .select('id')
@@ -104,20 +113,53 @@ export function useSave(videoId: string) {
         .eq('user_id', user.id)
         .maybeSingle();
       setSaved(!!data);
-    })();
+    }
   }, [videoId]);
+
+  // Periodic refresh to ensure sync across different accounts/sessions
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refresh();
+    }, 5000); // Refresh every 5 seconds
+    return () => clearInterval(interval);
+  }, [refresh]);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  // Realtime
+  useEffect(() => {
+    const ch = supabase
+      .channel(`saves:${videoId}:${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'video_saves', filter: `video_id=eq.${videoId}` }, refresh)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [videoId, refresh]);
 
   const toggle = useCallback(async () => {
     const uid = await requireAuth();
     if (!uid) return;
-    setSaved((p) => !p);
+    if (loading) return; // Prevent double clicks
+    setLoading(true);
+    isTogglingRef.current = true;
+    
+    // Capture current state before optimistic update
+    const wasSaved = saved;
+    
+    // Optimistic update
+    setSaved(!wasSaved);
+    setCount((c) => c + (wasSaved ? -1 : 1));
+    
     const { data, error } = await supabase.rpc('toggle_save', { p_video: videoId });
-    if (error) { toast.error(error.message); return; }
-    setSaved((data as { saved: boolean }).saved);
-    toast.success((data as { saved: boolean }).saved ? 'Saved' : 'Removed from saved');
-  }, [videoId]);
+    setLoading(false);
+    isTogglingRef.current = false;
+    if (error) { toast.error(error.message); refresh(); return; }
+    const res = data as { saved: boolean; saves: number };
+    setSaved(res.saved);
+    setCount(res.saves);
+    toast.success(res.saved ? 'Saved' : 'Removed from saved');
+  }, [videoId, saved, loading, refresh]);
 
-  return { saved, toggle };
+  return { saved, count, loading, toggle };
 }
 
 // ---------- FOLLOWS ----------

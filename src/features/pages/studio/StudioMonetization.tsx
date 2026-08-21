@@ -60,7 +60,7 @@ export default function StudioMonetization() {
             <span className="text-xs text-[#606060]">Withdrawn</span>
           </div>
           <p className="text-2xl font-medium text-[#0f0f0f]">${wallet.total_withdrawn.toFixed(2)}</p>
-          <Link to="/wallet" className="text-xs text-[#065fd4] mt-2 inline-block hover:underline">
+          <Link to="/wallet" className="text-xs text-cyan-500 mt-2 inline-block hover:underline">
             Go to wallet →
           </Link>
         </div>

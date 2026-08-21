@@ -41,8 +41,17 @@ function connect(videoId: string, store: Store) {
   const existing = supabase.getChannels().find((c) => c.topic === `realtime:${channelName}`);
   if (existing) supabase.removeChannel(existing);
 
+  // Browser-compatible unique ID generation
+  const generateId = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    // Fallback for older browsers
+    return `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  };
+
   const channel = supabase.channel(channelName, {
-    config: { presence: { key: crypto.randomUUID() } },
+    config: { presence: { key: generateId() } },
   });
   store.channel = channel;
 

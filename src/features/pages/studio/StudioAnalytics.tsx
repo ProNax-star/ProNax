@@ -140,8 +140,8 @@ export default function StudioAnalytics() {
             <AreaChart data={viewsSeries}>
               <defs>
                 <linearGradient id="viewsGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#065fd4" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#065fd4" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
@@ -150,7 +150,7 @@ export default function StudioAnalytics() {
               <Tooltip
                 contentStyle={{ background: '#fff', border: '1px solid #e5e5e5', borderRadius: 8, fontSize: 12 }}
               />
-              <Area type="monotone" dataKey="views" stroke="#065fd4" fill="url(#viewsGrad)" strokeWidth={2} />
+              <Area type="monotone" dataKey="views" stroke="#06b6d4" fill="url(#viewsGrad)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -189,13 +189,13 @@ export default function StudioAnalytics() {
                 <AreaChart data={channelAnalytics.realTimeViews.timestamps}>
                   <defs>
                     <linearGradient id="realtimeGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#065fd4" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#065fd4" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
-                  <XAxis 
-                    dataKey="label" 
+                  <XAxis
+                    dataKey="label"
                     tick={{ fontSize: 10, fill: '#606060' }}
                     interval="preserveStartEnd"
                   />
@@ -205,7 +205,7 @@ export default function StudioAnalytics() {
                     formatter={(value: number) => [value, 'Views']}
                     labelFormatter={(label) => `Time: ${label}`}
                   />
-                  <Area type="monotone" dataKey="views" stroke="#065fd4" fill="url(#realtimeGrad)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="views" stroke="#06b6d4" fill="url(#realtimeGrad)" strokeWidth={2} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>

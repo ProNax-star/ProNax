@@ -98,6 +98,27 @@ export async function uploadVideoWithCopyrightDetection(
           confidence: recognitionResult.confidence
         }
       };
+    } else if (!recognitionResult.success) {
+      // Audio fingerprinting service unavailable - proceed without copyright check
+      console.warn('Audio fingerprinting service unavailable, proceeding without copyright check:', recognitionResult.error);
+      const videoId = await createVideoRecord({
+        ...params,
+        r2VideoKey: presignedUrlResult.fileKey ?? '',
+        videoUrl: presignedUrlResult.publicUrl ?? '',
+        status: 'ready'
+      });
+
+      return {
+        success: true,
+        videoId,
+        status: 'ready',
+        message: 'Video uploaded successfully (copyright check unavailable)',
+        copyrightMatch: {
+          matched: false,
+          songName: undefined,
+          confidence: undefined
+        }
+      };
     } else {
       // No copyright match - register the audio and publish
       const fingerprintResult = await audioFingerprintService.fingerprintAudio(
@@ -105,6 +126,29 @@ export async function uploadVideoWithCopyrightDetection(
         params.title,
         params.ownerId
       );
+
+      if (!fingerprintResult.success) {
+        console.warn('Audio fingerprinting failed, proceeding without registration:', fingerprintResult.error);
+        // Proceed with video creation even if fingerprinting fails
+        const videoId = await createVideoRecord({
+          ...params,
+          r2VideoKey: presignedUrlResult.fileKey ?? '',
+          videoUrl: presignedUrlResult.publicUrl ?? '',
+          status: 'ready'
+        });
+
+        return {
+          success: true,
+          videoId,
+          status: 'ready',
+          message: 'Video uploaded successfully (fingerprinting unavailable)',
+          copyrightMatch: {
+            matched: false,
+            songName: undefined,
+            confidence: undefined
+          }
+        };
+      }
 
       const videoId = await createVideoRecord({
         ...params,

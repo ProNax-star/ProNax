@@ -23,7 +23,10 @@
       'app-init-liveness',
       'background-liveness',
       'r2.example.com',
-      'ERR_NAME_NOT_RESOLVED'
+      'ERR_NAME_NOT_RESOLVED',
+      'Video autoplay error',
+      'NotAllowedError',
+      'play() failed'
     ];
     
     return suppressPatterns.some(pattern => fullMessage.includes(pattern));

@@ -369,7 +369,7 @@ export default function Index() {
       {/* Grid */}
       <div className="px-0 lg:px-6 pb-4 perspective-container w-full">
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
             {Array.from({ length: 9 }).map((_, i) => (
               <div key={i} className="flex flex-col gap-2 w-full">
                 <div className="aspect-video rounded-none sm:rounded-xl bg-gray-800 animate-pulse w-full" />
@@ -407,7 +407,7 @@ export default function Index() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
             {filtered.map((v, i) => (
               <ImpressionCard
                 key={v.id}

@@ -27,12 +27,12 @@ export default function StudioCustomization() {
 
       {/* Channel preview */}
       <div className="studio-card overflow-hidden">
-        <div className="h-32 bg-gradient-to-r from-[#065fd4] to-[#cc0000]" />
+        <div className="h-32 bg-gradient-to-r from-cyan-500 to-blue-500" />
         <div className="px-6 pb-6">
           <div className="flex items-end gap-4 -mt-8">
             <Avatar className="w-20 h-20 border-4 border-white">
               <AvatarImage src={profile?.avatar_url ?? undefined} />
-              <AvatarFallback className="bg-[#065fd4] text-white text-xl">{initials}</AvatarFallback>
+              <AvatarFallback className="bg-cyan-500 text-white text-xl">{initials}</AvatarFallback>
             </Avatar>
             <div className="pb-1">
               <h2 className="text-xl font-medium text-[#0f0f0f]">{channelName}</h2>
@@ -74,7 +74,7 @@ export default function StudioCustomization() {
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-medium text-[#0f0f0f]">{item.title}</h3>
               <p className="text-xs text-[#606060] mt-1">{item.desc}</p>
-              <Link to={item.to} className="text-xs text-[#065fd4] mt-2 inline-block hover:underline">
+              <Link to={item.to} className="text-xs text-cyan-500 mt-2 inline-block hover:underline">
                 {item.action} →
               </Link>
             </div>

@@ -64,7 +64,7 @@ export default function StudioContent() {
           </button>
           <Link
             to="/upload"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#065fd4] text-white text-sm font-medium hover:bg-[#0550b3] transition"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500 text-white text-sm font-medium hover:bg-cyan-600 transition"
           >
             <Upload className="w-4 h-4" /> Upload videos
           </Link>

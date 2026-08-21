@@ -97,7 +97,15 @@ export const moderationQueue = {
    */
   enqueue(name: string, args: Record<string, unknown> = {}): Promise<unknown> {
     if (!worker) boot();
-    const id = crypto.randomUUID();
+    // Browser-compatible unique ID generation
+    const generateId = () => {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+      // Fallback for older browsers
+      return `mod-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    };
+    const id = generateId();
     return new Promise((resolve, reject) => {
       pending.set(id, { resolve, reject });
       const send = () => worker?.postMessage({ type: "enqueue", id, name, args });
