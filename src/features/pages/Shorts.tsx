@@ -238,10 +238,13 @@ function ShortItem({
 
   return (
     /* ---------- 9:16 STAGE: mobile = full bleed, tablet/desktop = centered frame ---------- */
-    <div className="relative h-full w-full bg-black flex items-center justify-center">
+    <div className="relative h-full w-full bg-black flex items-center justify-center touch-pan-y">
       <div
         className="relative w-full h-full overflow-hidden bg-black sm:h-full sm:w-auto sm:rounded-2xl sm:ring-1 sm:ring-white/10"
-        style={{ aspectRatio: '9 / 16' }}
+        style={{ 
+          aspectRatio: '9 / 16',
+          paddingBottom: 'env(safe-area-inset-bottom, 20px)'
+        }}
       >
         {/* video */}
         <video
@@ -324,8 +327,7 @@ function ShortItem({
 
         {/* ---------- RIGHT ACTION RAIL ---------- */}
         <div
-          className="absolute right-2 z-20 flex flex-col items-center gap-4 sm:right-3"
-          style={{ bottom: `calc(${BOTTOM_NAV_H}px + env(safe-area-inset-bottom, 0px) + 24px)` }}
+          className="absolute right-4 bottom-5 z-30 flex flex-col items-center gap-1.5"
         >
           {/* avatar + follow */}
           <div className="relative mb-1">
@@ -422,8 +424,7 @@ function ShortItem({
 
         {/* ---------- BOTTOM LEFT CREATOR INFO ---------- */}
         <div
-          className="absolute left-3 z-20 max-w-[calc(100%-5.5rem)] space-y-2"
-          style={{ bottom: `calc(${BOTTOM_NAV_H}px + env(safe-area-inset-bottom, 0px) + 52px)` }}
+          className="absolute bottom-14 left-3 z-30 max-w-[calc(100%-5.5rem)] space-y-2"
         >
           <div className="flex items-center gap-2">
             <Link
@@ -465,25 +466,25 @@ function ShortItem({
             </p>
           )}
 
-          {/* sound ticker marquee */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onOpenSound(); }}
-            className="flex max-w-full items-center gap-2 overflow-hidden rounded-full border border-white/20 bg-black/35 px-2.5 py-1 backdrop-blur-md"
-          >
-            <Music2 className="size-3.5 shrink-0 text-white" />
-            <span className="relative block w-40 overflow-hidden sm:w-56">
-              <span className="flex w-[200%] animate-marquee whitespace-nowrap text-[11px] font-semibold text-white/90">
-                <span className="pr-8">🎵 {short.music}</span>
-                <span className="pr-8">🎵 {short.music}</span>
-              </span>
-            </span>
-          </button>
         </div>
+
+        {/* ---------- MUSIC TICKER ---------- */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onOpenSound(); }}
+          className="absolute bottom-5 left-3 z-30 flex max-w-[calc(100%-5.5rem)] items-center gap-2 overflow-hidden rounded-full border border-white/20 bg-black/35 px-2.5 py-1 backdrop-blur-md"
+        >
+          <Music2 className="size-3.5 shrink-0 text-white" />
+          <span className="relative block w-40 overflow-hidden sm:w-56">
+            <span className="flex w-[200%] animate-marquee whitespace-nowrap text-[11px] font-semibold text-white/90">
+              <span className="pr-8">🎵 {short.music}</span>
+              <span className="pr-8">🎵 {short.music}</span>
+            </span>
+          </span>
+        </button>
 
         {/* ---------- PROGRESS BAR (above bottom nav) ---------- */}
         <div
-          className="absolute inset-x-0 z-20 h-[3px] bg-white/20"
-          style={{ bottom: `calc(${BOTTOM_NAV_H}px + env(safe-area-inset-bottom, 0px))` }}
+          className="absolute inset-x-0 bottom-1.5 h-1 z-30 bg-white/20"
         >
           <div className="h-full bg-white transition-[width] duration-150" style={{ width: `${progressPct}%` }} />
         </div>
@@ -694,7 +695,12 @@ export default function Shorts() {
       {/* snap scroller — har slide poori height, 9:16 stage andar center */}
       <div
         ref={containerRef}
-        className="h-[100dvh] w-full snap-y snap-mandatory overflow-y-scroll overscroll-y-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="h-[100dvh] w-full snap-y snap-mandatory overflow-y-scroll overscroll-y-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden touch-pan-y"
+        style={{ 
+          touchAction: 'pan-y',
+          overscrollBehavior: 'contain',
+          WebkitOverflowScrolling: 'touch'
+        }}
       >
         {isLoading && (
           <div className="grid h-[100dvh] place-items-center">
@@ -727,7 +733,11 @@ export default function Shorts() {
             key={item.kind === 'short' ? item.short.id : item.key}
             data-short-item
             data-idx={i}
-            className="h-[100dvh] w-full snap-start snap-always"
+            className="h-[100dvh] w-full snap-start snap-always touch-pan-y"
+            style={{ 
+              touchAction: 'pan-y',
+              paddingBottom: 'env(safe-area-inset-bottom, 20px)'
+            }}
           >
             {item.kind === 'short' ? (
               <ShortItem
