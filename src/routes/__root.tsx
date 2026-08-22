@@ -67,7 +67,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppConfigProvider } from "@/hooks/useAppConfig";
 import { WalletProvider } from "@/contexts/WalletContext";
-import { AppShell } from "@/components/AppShell";
+import { MainLayout } from "@/components/MainLayout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { CookieConsent } from "@/components/security/CookieConsent";
 import { errorMonitor } from "@/lib/errorMonitoring";
@@ -168,7 +168,7 @@ function RootComponent() {
             {/* Required: nested routes render inside the shell's <Outlet />. */}
             <ClientOnly fallback={<div className="min-h-screen bg-background" />}>
               <ErrorBoundary>
-                <AppShell />
+                <MainLayout />
               </ErrorBoundary>
               <CookieConsent />
             </ClientOnly>

@@ -10,9 +10,10 @@ interface ShareButtonProps {
   shareCount?: number;
   onShareClick?: () => void;
   formatCount?: (n: number) => string;
+  shortId?: string;
 }
 
-export default function ShareButton({ title, text, url, className, variant = 'default', shareCount, onShareClick, formatCount }: ShareButtonProps) {
+export default function ShareButton({ title, text, url, className, variant = 'default', shareCount, onShareClick, formatCount, shortId }: ShareButtonProps) {
   const [shared, setShared] = useState(false);
   const shareUrl = url || (typeof window !== "undefined" ? window.location.href : "");
 

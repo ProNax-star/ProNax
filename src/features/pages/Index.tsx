@@ -28,7 +28,7 @@ interface FeedVideo {
   preview_sprite_url?: string | null;
   preview_sprite_frames?: number | null;
   ownerName?: string;
-  ownerAvatar?: string;
+  ownerAvatar?: string | null;
   views?: number;
   likes?: number;
 }
@@ -339,7 +339,7 @@ export default function Index() {
 
       {hero && (
         <div className="hidden md:block px-4 lg:px-6 pb-4">
-          <Link to={`/watch/${hero.id}`}>
+          <a href={`/watch/${hero.id}`}>
             <GlassCard className="p-6 perspective-container">
               <div className="relative z-10 flex items-center gap-6">
                 {hero.thumb_url ? (
@@ -362,7 +362,7 @@ export default function Index() {
                 </div>
               </div>
             </GlassCard>
-          </Link>
+          </a>
         </div>
       )}
 
@@ -415,7 +415,7 @@ export default function Index() {
                 className="card-vis animate-[fadeUp_.35s_ease-out_both] w-full"
                 style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
               >
-                <Link to={`/watch/${v.id}`} className="block group w-full">
+                <a href={`/watch/${v.id}`} className="block group w-full">
                   <div className="relative aspect-video rounded-none sm:rounded-xl overflow-hidden bg-gray-800 w-full">
                     {v.thumb_url ? (
                       <img src={v.thumb_url} alt={v.title} loading={i < 3 ? 'eager' : 'lazy'} decoding="async" fetchPriority={i === 0 ? 'high' : 'auto'} className="absolute inset-0 w-full h-full object-cover" />
@@ -449,13 +449,13 @@ export default function Index() {
                       <div className="mt-1 flex items-center gap-1 text-[12px] text-gray-400">
                         <span className="truncate">@{(v.ownerName || 'creator').replace(/\s+/g, '')}</span>
                         <span>•</span>
-                        <span className="shrink-0">{v.views > 0 ? <AnimatedCounter value={v.views} format={compactFormat} /> + ' views' : '0 views'}</span>
+                        <span className="shrink-0">{(v.views ?? 0) > 0 ? <AnimatedCounter value={v.views ?? 0} format={compactFormat} /> + ' views' : '0 views'}</span>
                         <span>•</span>
                         <span className="shrink-0">{timeAgo(v.created_at)}</span>
                       </div>
                     </div>
                   </div>
-                </Link>
+                </a>
               </ImpressionCard>
             ))}
           </div>

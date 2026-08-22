@@ -396,7 +396,7 @@ export function UploadModal({
                       try {
                         // Also check for duplicate fingerprint using Supabase RPC as backup
                         const { data: duplicateCheck, error: duplicateError } = await supabase
-                          .rpc('check_and_handle_duplicate_fingerprint', {
+                          .rpc('check_and_handle_duplicate_fingerprint' as any, {
                             p_fingerprint: fp,
                             p_video_id: null, // No video ID yet since we're in Step 2
                             p_video_title: title || file.name,
@@ -405,7 +405,7 @@ export function UploadModal({
                         
                         if (duplicateError) {
                           console.error('Duplicate check RPC failed:', duplicateError);
-                        } else if (duplicateCheck && duplicateCheck.length > 0) {
+                        } else if (Array.isArray(duplicateCheck) && duplicateCheck.length > 0) {
                           const checkResult = duplicateCheck[0];
                           if (checkResult.is_duplicate) {
                             console.warn('Duplicate content detected in Step 2 via fingerprint:', checkResult);
@@ -847,9 +847,9 @@ export function UploadModal({
             >
               {/* ================= STEP 1: Details & Media Setup ================= */}
               {step === 1 && (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 sm:gap-6">
                   {/* Live Video Player Preview (Natural flow on Mobile/Tablet, Right Column on Desktop) */}
-                  <div className="order-1 lg:order-2 lg:col-span-5 space-y-3">
+                  <div className="order-1 xl:order-2 xl:col-span-5 space-y-3">
                     <div className="bg-[#0f121d]/90 border border-cyan-500/30 rounded-2xl p-3.5 sm:p-4 space-y-3 shadow-[0_0_25px_rgba(6,182,212,0.12)]">
                       <div className="flex items-center justify-between">
                         <Label className="text-xs font-bold text-cyan-300 uppercase tracking-wider block">
@@ -894,7 +894,7 @@ export function UploadModal({
                   </div>
 
                   {/* Metadata Form Inputs (Scrollable beneath preview on Mobile, Left Column on Desktop) */}
-                  <div className="order-2 lg:order-1 lg:col-span-7 space-y-5">
+                  <div className="order-2 xl:order-1 xl:col-span-7 space-y-5">
                     {/* Video File Upload Dropzone */}
                     {!file ? (
                       <div 

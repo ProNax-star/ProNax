@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
-
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { CheckCircle2, MoreVertical } from 'lucide-react';
 
 interface VideoCardProps {
   id: string;
@@ -16,93 +16,140 @@ interface VideoCardProps {
   is_short?: boolean;
 }
 
-export function VideoCard({ id, title, channel, views, time, thumbnail, duration, monetized = true, channelAvatar, layout = 'grid', is_short = false }: VideoCardProps) {
+export function VideoCard({
+  id,
+  title,
+  channel,
+  views,
+  time,
+  thumbnail,
+  duration,
+  monetized = true,
+  channelAvatar,
+  layout = 'grid',
+  is_short = false,
+}: VideoCardProps) {
   const navigate = useNavigate();
-  const initials = channel.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
-  // Route to shorts page if video is a short
+  const initials = channel
+    ? channel.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
+    : 'PN';
+
   const handleClick = () => {
-    if (is_short) {
-      navigate(`/shorts/${id}`);
-    } else {
-      navigate(`/watch/${id}`);
-    }
+    navigate(is_short ? `/shorts/${id}` : `/watch/${id}`);
   };
 
+  /* ---------------- LIST LAYOUT (Search / Sidebar) ---------------- */
   if (layout === 'list') {
     return (
-      <motion.div
-        whileHover={{ scale: 1.01 }}
-        className="cursor-pointer group flex gap-2"
+      <div
         onClick={handleClick}
+        className="group flex w-full cursor-pointer gap-3 px-3 py-1.5 active:bg-white/5 transition-colors"
       >
-        <div className="relative w-40 sm:w-44 shrink-0 aspect-video rounded-xl overflow-hidden bg-gray-800">
-          {thumbnail && <img src={thumbnail} alt={title} className="w-full h-full object-cover" />}
-          <span className="absolute bottom-1 right-1 rounded bg-black/80 px-1 py-0.5 text-[11px] font-medium text-white">
+        <div className="relative aspect-video w-36 sm:w-40 shrink-0 overflow-hidden rounded-xl bg-neutral-900">
+          {thumbnail && (
+            <img
+              src={thumbnail}
+              alt={title}
+              loading="lazy"
+              className="h-full w-full object-cover"
+            />
+          )}
+          <span className="absolute bottom-1 right-1 rounded bg-black/80 px-1 py-0.5 text-[10px] font-semibold text-white">
             {duration}
           </span>
         </div>
-        <div className="flex-1 min-w-0 py-0">
-          <h3 className="text-sm font-semibold text-white line-clamp-2 leading-tight">
+
+        <div className="flex min-w-0 flex-1 flex-col justify-start pt-0.5">
+          <h3 className="line-clamp-2 text-xs font-medium leading-tight text-white">
             {title}
           </h3>
-          <Link
-            to={`/channel/${encodeURIComponent(channel)}`}
-            onClick={(e) => e.stopPropagation()}
-            className="text-xs text-gray-400 mt-1 hover:text-gray-300 transition-colors inline-block"
-          >
-            @{channel.replace(/\s+/g, '')}
-          </Link>
-          <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
+          <div className="mt-1 flex items-center gap-1 text-[11px] text-neutral-400">
+            <span className="truncate">@{channel.replace(/\s+/g, '')}</span>
+            {monetized && (
+              <CheckCircle2 className="h-3 w-3 shrink-0 text-cyan-400 fill-cyan-400/20" />
+            )}
+          </div>
+          <div className="flex items-center gap-1 text-[11px] text-neutral-400 mt-0.5">
             <span>{views} views</span>
             <span>•</span>
             <span>{time}</span>
           </div>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
+  /* ---------------- GRID LAYOUT (Authentic YouTube Mobile Style) ---------------- */
   return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-      className="cursor-pointer group w-full min-w-0"
+    <div
       onClick={handleClick}
+      className="group w-full cursor-pointer mb-5 active:opacity-90 transition-opacity"
     >
-      {/* Thumbnail 16:9 */}
-      <div className="relative aspect-video w-full rounded-none sm:rounded-xl overflow-hidden bg-gray-800">
-        {thumbnail && <img src={thumbnail} alt={title} className="w-full h-full object-cover" />}
-        <span className="absolute bottom-1 right-1 rounded bg-black/80 px-1 py-0.5 text-[11px] font-medium text-white">
-          {duration}
-        </span>
+      {/* Thumbnail Container: Rounded Corners + Side Margins */}
+      <div className="px-3">
+        <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-neutral-900 shadow-sm">
+          {thumbnail && (
+            <img
+              src={thumbnail}
+              alt={title}
+              loading="lazy"
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            />
+          )}
+
+          {/* YouTube Duration Badge */}
+          <span className="absolute bottom-2 right-2 rounded-md bg-black/80 backdrop-blur-xs px-1.5 py-0.5 text-[11px] font-medium text-white">
+            {duration}
+          </span>
+        </div>
       </div>
 
-      {/* Info Row */}
-      <div className="flex gap-3 mt-3 px-3 w-full">
-        <div className="h-9 w-9 shrink-0 rounded-full bg-gray-700 overflow-hidden">
+      {/* Metadata Row: Avatar + Title + Meta + 3 Dots */}
+      <div className="flex gap-3 px-3 pt-2.5 items-start">
+        {/* Channel Avatar */}
+        <div className="shrink-0 pt-0.5">
           {channelAvatar ? (
-            <img src={channelAvatar} alt={channel} className="w-full h-full object-cover" />
+            <img
+              src={channelAvatar}
+              alt={channel}
+              className="h-9 w-9 rounded-full object-cover"
+            />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gray-600 text-[10px] font-bold text-white">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-800 text-[11px] font-bold text-white">
               {initials}
             </div>
           )}
         </div>
-        <div className="min-w-0 flex-1 w-full">
-          <h3 className="line-clamp-2 text-[14px] font-semibold leading-[18px] text-white">
+
+        {/* Title & Stats */}
+        <div className="min-w-0 flex-1">
+          <h3 className="line-clamp-2 text-[14px] font-normal leading-[18px] text-white">
             {title}
           </h3>
-          <div className="mt-1 flex items-center gap-1 text-[12px] text-gray-400">
+
+          <div className="mt-1 flex flex-wrap items-center gap-x-1 text-[12px] text-neutral-400 leading-none">
             <span className="truncate">@{channel.replace(/\s+/g, '')}</span>
+            {monetized && (
+              <CheckCircle2 className="h-3 w-3 shrink-0 text-cyan-400 fill-cyan-400/20" />
+            )}
             <span>•</span>
-            <span className="shrink-0">{views} views</span>
+            <span>{views} views</span>
             <span>•</span>
-            <span className="shrink-0">{time}</span>
+            <span>{time}</span>
           </div>
         </div>
+
+        {/* YouTube Style 3-Dots Menu Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+          className="shrink-0 p-1 text-neutral-400 hover:text-white rounded-full active:bg-white/10"
+        >
+          <MoreVertical className="h-4 w-4" />
+        </button>
       </div>
-    </motion.div>
+    </div>
   );
 }
-
