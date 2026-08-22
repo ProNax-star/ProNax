@@ -13,19 +13,19 @@ export function MobileNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-14 md:hidden flex justify-around items-center bg-black/95 backdrop-blur-lg border-t border-zinc-800/80 z-50 px-2 pb-safe">
+    <nav className="fixed bottom-0 left-0 right-0 h-16 md:hidden flex justify-around items-center bg-black/95 backdrop-blur-lg border-t border-zinc-800/80 z-50 px-2 pb-safe">
       {navItems.map(({ icon: Icon, label, to }) => {
         const isActive = location.pathname === to;
         return (
           <Link
             key={to}
             to={to}
-            className={`flex flex-col items-center justify-center gap-1 py-1 min-w-[50px] transition-colors ${
-              isActive ? 'text-cyan-400 font-medium' : 'text-zinc-400 hover:text-zinc-200'
+            className={`flex flex-col items-center justify-center gap-1.5 py-2 min-w-[55px] transition-colors ${
+              isActive ? 'text-cyan-400 font-bold' : 'text-zinc-300 hover:text-white font-semibold'
             }`}
           >
-            <Icon className="w-5 h-5" />
-            <span className="text-[10px] leading-none">{label}</span>
+            <Icon className="w-6 h-6" />
+            <span className="text-[11px] leading-none font-semibold">{label}</span>
           </Link>
         );
       })}

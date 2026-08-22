@@ -110,29 +110,29 @@ export function AppHeader({ onSidebarToggle }: { onSidebarToggle: () => void }) 
             </Button>
           </form>
         ) : (
-          <div className="flex items-center justify-between h-10 px-3">
+          <div className="flex items-center justify-between h-12 px-4">
             {!isShortsPage && (
               <Link to="/" className="flex items-center gap-1">
-                <div className="text-lg font-black bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">
+                <div className="text-xl font-black bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">
                   ProNax
                 </div>
               </Link>
             )}
 
-            <div className="flex items-center gap-1.5 ml-auto">
+            <div className="flex items-center gap-2 ml-auto">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowMobileSearch(true)}
-                className={`h-8 w-8 rounded-full ${isShortsPage ? 'bg-black/50 text-white backdrop-blur-md border border-white/20' : 'text-zinc-200'}`}
+                className={`h-10 w-10 rounded-full ${isShortsPage ? 'bg-black/50 text-white backdrop-blur-md border border-white/20' : 'text-zinc-200'}`}
               >
-                <Search className="h-4 w-4" />
+                <Search className="h-5 w-5" />
               </Button>
 
               {!isShortsPage && (
-                <Button variant="ghost" size="icon" className="relative h-8 w-8 text-zinc-200">
-                  <Bell className="h-4 w-4" />
-                  <span className="absolute top-2 right-2 h-1.5 w-1.5 bg-cyan-400 rounded-full shadow-[0_0_6px_#22d3ee]" />
+                <Button variant="ghost" size="icon" className="relative h-10 w-10 text-zinc-200">
+                  <Bell className="h-5 w-5" />
+                  <span className="absolute top-2 right-2 h-2 w-2 bg-cyan-400 rounded-full shadow-[0_0_6px_#22d3ee]" />
                 </Button>
               )}
             </div>
