@@ -467,11 +467,11 @@ export default function Profile() {
   ];
 
   return (
-    <div className="flex-1 pb-24 lg:pb-8 relative">
+    <div className="flex-1 pb-24 lg:pb-8 px-4 relative">
       <OrbBackground variant="aurora" />
 
       {/* Banner — K2 x Paradise panoramic */}
-      <div className="relative w-full h-48 sm:h-64 lg:h-96 overflow-hidden group">
+      <div className="relative w-full h-28 sm:h-64 lg:h-96 overflow-hidden group">
         <img
           src={banner || paradiseBanner}
           alt="Profile banner"
@@ -566,10 +566,10 @@ export default function Profile() {
         )}
       </div>
 
-      <div className="max-w-[1100px] mx-auto px-4 lg:px-6 perspective-container">
+      <div className="max-w-[1100px] mx-auto lg:px-6 perspective-container">
         {/* Hero — avatar floats over banner (no glass strip background) */}
-        <div className="relative z-10 -mt-8 sm:-mt-12 flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-5">
-          <div className="relative w-24 h-24 sm:w-32 sm:h-32 shrink-0">
+        <div className="relative z-10 -translate-y-8 flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-5">
+          <div className="relative w-24 h-24 sm:w-32 sm:h-32 shrink-0 -translate-y-8">
             <div className="relative w-full h-full rounded-full flex items-center justify-center text-2xl sm:text-3xl font-display font-bold text-primary-foreground overflow-hidden gradient-primary">
               {avatar ? <img src={avatar} alt="Avatar" className="w-full h-full object-cover object-center" /> : name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}
             </div>
@@ -646,9 +646,9 @@ export default function Profile() {
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-1 mt-6 overflow-x-auto no-scrollbar border-b border-border/30">
+        <div className="flex items-center gap-6 mt-6 overflow-x-auto no-scrollbar border-b border-border/30">
           {(['videos', ...(isOwnProfile ? ['liked', 'saved'] : []), 'following', 'followers'] as Tab[]).map((t) => (
-            <button key={t} onClick={() => setTab(t)} className={`px-4 py-2.5 text-xs font-semibold capitalize whitespace-nowrap border-b-2 transition ${tab === t ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-foreground'}`}>
+            <button key={t} onClick={() => setTab(t)} className={`px-4 py-2.5 text-xs font-semibold capitalize whitespace-nowrap border-b-2 transition ${tab === t ? 'text-cyan-400 border-cyan-400' : 'text-muted-foreground border-transparent hover:text-foreground'}`}>
               {t}
             </button>
           ))}

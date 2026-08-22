@@ -37,7 +37,7 @@ export function MainLayout() {
           {/* Main Content Area */}
           <SidebarInset 
             className={`flex-1 min-w-0 h-full overflow-y-auto bg-black !m-0 !rounded-none ${
-              isShortsPage ? '!p-0' : 'p-4 md:p-6 pb-16 md:pb-6'
+              isShortsPage ? '!p-0' : 'p-4 md:p-6 pb-20 md:pb-6'
             }`}
           >
             <div className={`w-full h-full ${isShortsPage ? 'max-w-none' : 'max-w-[1600px] mx-auto'}`}>

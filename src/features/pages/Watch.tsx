@@ -486,7 +486,7 @@ export default function Watch() {
   const formatLikes = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
 
   return (
-    <div className="shrink-0 min-h-0 h-[calc(100dvh-3.25rem)] max-h-[calc(100dvh-3.25rem)] overflow-hidden flex flex-col bg-background">
+    <div className="shrink-0 min-h-0 h-[calc(100dvh-3.25rem)] max-h-[calc(100dvh-3.25rem)] overflow-hidden flex flex-col bg-background px-4">
       <div className={theater ? 'w-full h-full min-h-0 overflow-y-auto scrollbar-thin max-w-[1700px] mx-auto px-2 py-2' : 'w-full h-full min-h-0 max-w-[1600px] mx-auto px-1 lg:px-2 py-1 md:grid md:grid-cols-12 md:gap-6 md:items-stretch overflow-hidden'}>
         {/* ============= Left Column: Video + Info + Comments (Independent Scroll Panel) ============= */}
         <div className="min-w-0 min-h-0 flex flex-col md:col-span-8 lg:col-span-8 h-full overflow-y-auto overscroll-contain pr-0 md:pr-2 scrollbar-thin space-y-3.5 scroll-gpu">
@@ -495,7 +495,7 @@ export default function Watch() {
           <div className="relative md:rounded-2xl overflow-hidden bg-black aspect-video w-full max-h-[70vh] md:max-h-[580px] shrink-0 shadow-2xl sticky top-0 z-30 md:relative">
 
             {/* Live watching badge — inside the player, top-right corner */}
-            <div className="absolute top-1 right-2 z-20 pointer-events-none">
+            <div className="absolute top-2 right-2 z-20 pointer-events-none">
               <LiveWatcherBadge videoId={videoId} baseViewsCount={Number(dbVideo?.views_count || 500)} variant="3d-overlay" showText={false} />
             </div>
 
@@ -553,12 +553,12 @@ export default function Watch() {
           {/* Video Details, Actions, Channel & Comments Content */}
           <div className="px-2 md:px-0 py-3 space-y-3">
             {/* Line 1: Video Title - Bold, prominent typography */}
-            <h1 className="text-[15px] sm:text-base font-bold text-white leading-tight mt-3 mb-1">
+            <h1 className="text-[15px] sm:text-base font-bold text-white leading-tight mt-3 mb-3">
               {video.title}
             </h1>
 
             {/* Line 2: Compact stats row with pill tags */}
-            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 font-medium mt-1.5">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 font-medium mt-3 mb-3">
               <span className="font-medium">{Number(dbVideo?.views_count || 0).toLocaleString()} views</span>
               <span className="text-muted-foreground/50">•</span>
               <span>{video.time}</span>
@@ -569,7 +569,7 @@ export default function Watch() {
             </div>
 
             {/* Line 3: Channel Info Row - Avatar, Name, Follow button in horizontal row */}
-            <div className="flex items-center justify-between mt-3 mb-2">
+            <div className="flex items-center justify-between mt-3 mb-3">
               <Link
                 to={`/channel/${encodeURIComponent(video.channel)}`}
                 className="flex items-center gap-3 group min-w-0"

@@ -146,6 +146,7 @@
     color: hsl(var(--foreground));
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
+    line-height: 1.625;
   }
 }
 

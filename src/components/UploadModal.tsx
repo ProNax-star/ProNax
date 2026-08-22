@@ -850,7 +850,7 @@ export function UploadModal({
                 <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 sm:gap-6">
                   {/* Live Video Player Preview (Natural flow on Mobile/Tablet, Right Column on Desktop) */}
                   <div className="order-1 xl:order-2 xl:col-span-5 space-y-3">
-                    <div className="bg-[#0f121d]/90 border border-cyan-500/30 rounded-2xl p-3.5 sm:p-4 space-y-3 shadow-[0_0_25px_rgba(6,182,212,0.12)]">
+                    <div className="bg-[#0f121d]/90 border border-cyan-500/30 rounded-2xl p-4 space-y-3 shadow-[0_0_25px_rgba(6,182,212,0.12)]">
                       <div className="flex items-center justify-between">
                         <Label className="text-xs font-bold text-cyan-300 uppercase tracking-wider block">
                           Live Video Player Preview
@@ -860,7 +860,7 @@ export function UploadModal({
                         </Badge>
                       </div>
 
-                      <div className="aspect-video bg-black/90 rounded-xl overflow-hidden border border-cyan-500/30 relative group flex items-center justify-center shadow-inner">
+                      <div className="h-64 aspect-video bg-black/90 rounded-xl overflow-hidden border border-cyan-500/30 relative group flex items-center justify-center shadow-inner p-4">
                         {videoPreviewUrl ? (
                           <video 
                             src={videoPreviewUrl} 

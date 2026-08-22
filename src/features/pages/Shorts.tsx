@@ -472,7 +472,7 @@ function ShortItem({
       {/* Responsive 9:16 TikTok-style media card. The source video is never stretched. */}
       <div
         ref={mediaCardRef}
-        className="absolute left-1/2 top-1/2 z-0 h-[min(100dvh,177.7778vw)] w-[min(100vw,56.25dvh)] -translate-x-1/2 -translate-y-1/2 overflow-hidden bg-black"
+        className="absolute left-1/2 top-1/2 z-0 h-screen w-full -translate-x-1/2 -translate-y-1/2 overflow-hidden bg-black"
       >
         <video
           ref={videoRef}
@@ -570,8 +570,8 @@ function ShortItem({
 
       {/* One, and only one, creator avatar in the action rail. */}
       <div
-        className="absolute right-3 z-30 flex flex-col items-center gap-4"
-        style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_H + 80}px)` }}
+        className="absolute right-3 z-30 flex flex-col items-center space-y-4"
+        style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_H + 60}px)` }}
       >
         <div className="relative mb-1">
           <Link
@@ -620,7 +620,7 @@ function ShortItem({
       {/* Bottom metadata is kept inside the visible safe area and never clipped by the 9:16 card. */}
       <div
         className="absolute bottom-0 left-0 z-30 w-full pb-1 pl-3 pr-[82px]"
-        style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_H + 10}px)` }}
+        style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_H + 30}px)` }}
       >
         <div className="pointer-events-none absolute inset-x-0 -top-32 bottom-0 -z-10 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
         <Link
@@ -661,7 +661,7 @@ function ShortItem({
         </button>
       </div>
 
-      <div className="absolute inset-x-0 z-30 h-[2px] bg-white/20" style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_H}px)` }}>
+      <div className="absolute inset-x-0 z-30 h-[2px] bg-white/20" style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_H + 20}px)` }}>
         <div className="h-full bg-rose-500 transition-[width] duration-100" style={{ width: `${progressPct}%` }} />
       </div>
 
@@ -804,7 +804,7 @@ export default function Shorts() {
   ] as const;
 
   return (
-    <div className="flex-1 h-full flex flex-col items-center justify-center overflow-y-auto overflow-x-hidden snap-y snap-mandatory bg-black text-white">
+    <div className="flex-1 h-full flex flex-col items-center justify-center overflow-y-auto overflow-x-hidden snap-y snap-mandatory bg-black text-white pb-20">
       {/* Tab Header - Centered */}
       <header className="mx-auto max-w-md w-full flex justify-center items-center gap-4 px-4 py-3 border-b border-white/10 flex-shrink-0">
         {tabs.map((tab) => <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`relative px-4 py-2 text-[15px] transition-colors ${activeTab === tab.key ? 'font-bold text-white' : 'font-medium text-white/60'}`}>{tab.label}{activeTab === tab.key && <span className="absolute bottom-0 left-1/2 h-[3px] w-8 -translate-x-1/2 rounded-full bg-white" />}</button>)}
@@ -843,7 +843,7 @@ export default function Shorts() {
             key={item.kind === 'short' ? item.short.id : item.key} 
             data-feed-item 
             data-idx={index} 
-            className="w-full max-w-[420px] md:max-w-[380px] lg:max-w-[420px] h-[calc(100vh-80px)] flex-shrink-0 snap-start flex items-center justify-center relative mx-auto my-2"
+            className="w-full max-w-[420px] md:max-w-[380px] lg:max-w-[420px] h-screen flex-shrink-0 snap-start flex items-center justify-center relative mx-auto my-2"
             style={{ touchAction: 'pan-y' }}
           >
             {item.kind === 'short' ? (

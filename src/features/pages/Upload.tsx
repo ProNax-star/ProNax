@@ -13,7 +13,7 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#07080c] text-white p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center relative overflow-hidden [perspective:1000px]">
+    <div className="min-h-screen bg-[#07080c] text-white px-4 pb-20 sm:p-6 md:p-8 flex flex-col items-center justify-center relative overflow-hidden [perspective:1000px]">
       {/* Background Ambient Neon Glows */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-1/4 left-1/3 w-[400px] h-[400px] bg-red-600/10 rounded-full blur-[100px] pointer-events-none" />

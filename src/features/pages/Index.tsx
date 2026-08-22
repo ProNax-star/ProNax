@@ -310,7 +310,7 @@ export default function Index() {
   const filtered = cat === 'All' ? videos : videos.filter(v => (v.category || '').toLowerCase() === cat.toLowerCase());
 
   return (
-    <div className="flex-1 min-h-screen relative pb-16 md:pb-0">
+    <div className="flex-1 min-h-screen relative px-4 pb-20 md:pb-0">
       <OrbBackground variant="aurora" />
 
       {/* Feed kind toggle */}
@@ -407,12 +407,12 @@ export default function Index() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-4 w-full">
             {filtered.map((v, i) => (
               <ImpressionCard
                 key={v.id}
                 videoId={String(v.id)}
-                className="card-vis animate-[fadeUp_.35s_ease-out_both] w-full"
+                className="card-vis animate-[fadeUp_.35s_ease-out_both] w-full p-3"
                 style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
               >
                 <a href={`/watch/${v.id}`} className="block group w-full">
@@ -432,7 +432,7 @@ export default function Index() {
                       </span>
                     )}
                   </div>
-                  <div className="flex gap-3 mt-3 px-3 w-full">
+                  <div className="flex gap-3 mt-3 w-full">
                     <div className="w-9 h-9 rounded-full shrink-0 bg-gray-700 overflow-hidden">
                       {v.ownerAvatar ? (
                         <img src={v.ownerAvatar} alt={v.ownerName || 'Creator'} className="w-full h-full object-cover" />

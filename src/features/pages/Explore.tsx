@@ -111,10 +111,10 @@ export default function Explore() {
   }, [q, tag, cat]);
 
   return (
-    <div className="flex-1 min-h-screen pb-24 lg:pb-8">
+    <div className="flex-1 min-h-screen px-4 pb-24 lg:pb-8">
       {/* Explore header */}
       <header className="relative overflow-hidden border-b border-border/30 bg-aurora">
-        <div className="relative px-4 lg:px-6 py-6 lg:py-10">
+        <div className="relative lg:px-6 py-6 lg:py-10">
           <div className="flex items-center gap-2 mb-3">
             <Compass className="w-5 h-5 text-primary" />
             <span className="text-xs font-display tracking-widest uppercase text-primary">Explore</span>
@@ -138,7 +138,7 @@ export default function Explore() {
         </div>
       </header>
 
-      <div className="px-3 lg:px-6 py-6 space-y-10">
+      <div className="lg:px-6 py-6 space-y-10">
         {/* Trending Tags */}
         <section>
           <div className="flex items-center gap-2 mb-3">
@@ -266,9 +266,9 @@ function Grid({ items, showTrendingScore }: { items: V[]; showTrendingScore?: bo
   }, [items, showTrendingScore]);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6 mb-4">
       {rankedItems.map((v, i) => (
-        <motion.div key={v.id} className="card-vis relative" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 6) * 0.04 }}>
+        <motion.div key={v.id} className="card-vis relative p-3" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 6) * 0.04 }}>
           <Link to={`/watch/${v.id}`} className="block group">
             <div className="relative aspect-video rounded-xl overflow-hidden bg-muted/20 border border-white/5 shadow-md">
               {v.thumb_url
