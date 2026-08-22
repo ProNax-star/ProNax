@@ -755,7 +755,7 @@ export function UploadModal({
       }}
     >
       <div 
-        className="w-full max-w-5xl h-[92vh] max-h-[880px] p-0 overflow-hidden flex flex-col bg-[#080a10] text-white border border-cyan-500/30 shadow-[0_0_60px_rgba(6,182,212,0.25)] rounded-2xl sm:rounded-3xl relative w-[96vw] sm:w-full"
+        className="w-full max-w-5xl h-[92vh] max-h-[880px] p-0 overflow-hidden flex flex-col bg-[#080a10] text-white border border-cyan-500/30 shadow-[0_0_60px_rgba(6,182,212,0.25)] rounded-2xl sm:rounded-3xl relative max-w-[calc(100vw-16px)]"
         onClick={(e) => e.stopPropagation()}
       >
         
@@ -847,10 +847,10 @@ export function UploadModal({
             >
               {/* ================= STEP 1: Details & Media Setup ================= */}
               {step === 1 && (
-                <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 sm:gap-6">
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 sm:gap-6 w-full max-w-full">
                   {/* Live Video Player Preview (Natural flow on Mobile/Tablet, Right Column on Desktop) */}
-                  <div className="order-1 xl:order-2 xl:col-span-5 space-y-3">
-                    <div className="bg-[#0f121d]/90 border border-cyan-500/30 rounded-2xl p-4 space-y-3 shadow-[0_0_25px_rgba(6,182,212,0.12)]">
+                  <div className="order-1 xl:order-2 xl:col-span-5 space-y-3 w-full max-w-full">
+                    <div className="bg-[#0f121d]/90 border border-cyan-500/30 rounded-2xl p-4 space-y-3 shadow-[0_0_25px_rgba(6,182,212,0.12)] w-full max-w-full overflow-hidden">
                       <div className="flex items-center justify-between">
                         <Label className="text-xs font-bold text-cyan-300 uppercase tracking-wider block">
                           Live Video Player Preview
@@ -860,15 +860,15 @@ export function UploadModal({
                         </Badge>
                       </div>
 
-                      <div className="h-64 aspect-video bg-black/90 rounded-xl overflow-hidden border border-cyan-500/30 relative group flex items-center justify-center shadow-inner p-4">
+                      <div className="h-64 w-full bg-black/90 rounded-xl overflow-hidden border border-cyan-500/30 relative group flex items-center justify-center shadow-inner p-4">
                         {videoPreviewUrl ? (
                           <video 
                             src={videoPreviewUrl} 
                             controls 
-                            className="w-full h-full object-contain"
+                            className="w-full h-full object-contain max-w-full"
                           />
                         ) : (
-                          <div className="text-center p-4">
+                          <div className="text-center p-4 w-full">
                             <Film className="w-8 h-8 text-cyan-500/50 mx-auto mb-2" />
                             <p className="text-xs text-zinc-400">Select a video to generate player preview</p>
                           </div>
@@ -894,7 +894,7 @@ export function UploadModal({
                   </div>
 
                   {/* Metadata Form Inputs (Scrollable beneath preview on Mobile, Left Column on Desktop) */}
-                  <div className="order-2 xl:order-1 xl:col-span-7 space-y-5">
+                  <div className="order-2 xl:order-1 xl:col-span-7 space-y-5 w-full max-w-full min-w-0">
                     {/* Video File Upload Dropzone */}
                     {!file ? (
                       <div 

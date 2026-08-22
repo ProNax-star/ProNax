@@ -111,34 +111,34 @@ export default function Explore() {
   }, [q, tag, cat]);
 
   return (
-    <div className="flex-1 min-h-screen px-4 pb-24 lg:pb-8">
+    <div className="flex-1 min-h-screen px-4 pb-24 lg:pb-8 max-w-full overflow-x-hidden">
       {/* Explore header */}
       <header className="relative overflow-hidden border-b border-border/30 bg-aurora">
-        <div className="relative lg:px-6 py-6 lg:py-10">
+        <div className="relative lg:px-6 py-6 lg:py-10 max-w-full">
           <div className="flex items-center gap-2 mb-3">
-            <Compass className="w-5 h-5 text-primary" />
+            <Compass className="w-5 h-5 text-primary flex-shrink-0" />
             <span className="text-xs font-display tracking-widest uppercase text-primary">Explore</span>
           </div>
-          <h1 className="text-2xl lg:text-4xl font-display font-bold text-foreground text-glow">
+          <h1 className="text-xl sm:text-2xl lg:text-4xl font-display font-bold text-foreground text-glow leading-tight">
             Discover what the world is watching
           </h1>
-          <p className="text-sm lg:text-base text-muted-foreground mt-2 max-w-xl">
+          <p className="text-sm lg:text-base text-muted-foreground mt-2 max-w-full">
             Top-ranked creators, breakout shorts, and the freshest videos on Pro Nax — ranked by real watch signals.
           </p>
 
-          <div className="mt-5 max-w-2xl relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <div className="mt-5 w-full max-w-full relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground flex-shrink-0" />
             <input
               value={q}
               onChange={(e) => onSearch(e.target.value)}
               placeholder="Search videos, creators, topics…"
-              className="w-full pl-11 pr-4 py-3 rounded-full glass-strong border border-border/50 text-sm focus:outline-none focus:border-primary/60 transition-all"
+              className="w-full pl-11 pr-4 py-3 rounded-full glass-strong border border-border/50 text-sm focus:outline-none focus:border-primary/60 transition-all min-w-0"
             />
           </div>
         </div>
       </header>
 
-      <div className="lg:px-6 py-6 space-y-10">
+      <div className="lg:px-6 py-6 space-y-10 max-w-full overflow-x-hidden">
         {/* Trending Tags */}
         <section>
           <div className="flex items-center gap-2 mb-3">
@@ -159,17 +159,17 @@ export default function Explore() {
 
         {/* Results OR default sections */}
         {searchResults !== null ? (
-          <section>
-            <div className="flex items-center gap-2 mb-4 flex-wrap">
-              <Flame className="w-4 h-4 text-accent" />
-              <h2 className="text-sm font-display font-bold uppercase tracking-wider">{heading}</h2>
-              <span className="text-xs text-muted-foreground">{searchResults.length} results</span>
-              <div className="ml-auto flex items-center gap-2">
+          <section className="w-full max-w-full overflow-hidden">
+            <div className="flex items-center gap-2 mb-4 flex-wrap w-full max-w-full">
+              <Flame className="w-4 h-4 text-accent flex-shrink-0" />
+              <h2 className="text-sm font-display font-bold uppercase tracking-wider truncate">{heading}</h2>
+              <span className="text-xs text-muted-foreground flex-shrink-0">{searchResults.length} results</span>
+              <div className="ml-auto flex items-center gap-2 flex-shrink-0">
                 <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-display">Sort</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'views' | 'date' | 'duration')}
-                  className="h-8 rounded-lg bg-input/60 border border-border/40 px-2 text-xs text-foreground focus:outline-none focus:border-primary/60"
+                  className="h-8 rounded-lg bg-input/60 border border-border/40 px-2 text-xs text-foreground focus:outline-none focus:border-primary/60 min-w-0"
                 >
                   <option value="views">View count</option>
                   <option value="date">Upload date</option>
@@ -266,11 +266,11 @@ function Grid({ items, showTrendingScore }: { items: V[]; showTrendingScore?: bo
   }, [items, showTrendingScore]);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6 mb-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6 mb-4 w-full max-w-full">
       {rankedItems.map((v, i) => (
-        <motion.div key={v.id} className="card-vis relative p-3" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 6) * 0.04 }}>
-          <Link to={`/watch/${v.id}`} className="block group">
-            <div className="relative aspect-video rounded-xl overflow-hidden bg-muted/20 border border-white/5 shadow-md">
+        <motion.div key={v.id} className="card-vis relative p-3 w-full max-w-full min-w-0" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 6) * 0.04 }}>
+          <Link to={`/watch/${v.id}`} className="block group w-full max-w-full">
+            <div className="relative aspect-video rounded-xl overflow-hidden bg-muted/20 border border-white/5 shadow-md w-full max-w-full">
               {v.thumb_url
                 ? <img src={v.thumb_url} alt={v.title} loading={i < 4 ? 'eager' : 'lazy'} decoding="async" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-300" />
                 : <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/15 to-accent/20" />}

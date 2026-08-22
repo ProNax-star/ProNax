@@ -93,8 +93,8 @@ export function AppHeader({ onSidebarToggle }: { onSidebarToggle: () => void }) 
       {/* Mobile Header */}
       <header className={`md:hidden z-50 ${isShortsPage ? 'fixed top-2 left-0 right-0 px-3 bg-transparent' : 'sticky top-0 bg-black/90 backdrop-blur-md border-b border-white/10'}`}>
         {showMobileSearch ? (
-          <form onSubmit={handleSearch} className="flex items-center w-full gap-2 bg-black/90 backdrop-blur-md p-1.5 rounded-full border border-cyan-500/30 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
-            <Button type="button" variant="ghost" size="icon" onClick={() => setShowMobileSearch(false)} className="h-7 w-7 p-0 text-white">
+          <form onSubmit={handleSearch} className="flex items-center w-full gap-2 bg-black/90 backdrop-blur-md p-1.5 rounded-full border border-cyan-500/30 shadow-[0_0_15px_rgba(34,211,238,0.2)] max-w-full">
+            <Button type="button" variant="ghost" size="icon" onClick={() => setShowMobileSearch(false)} className="h-7 w-7 p-0 text-white flex-shrink-0">
               <X className="h-4 w-4" />
             </Button>
             <Input
@@ -102,18 +102,18 @@ export function AppHeader({ onSidebarToggle }: { onSidebarToggle: () => void }) 
               placeholder="Search ProNax"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 rounded-full bg-white/10 h-7 text-xs text-white border-0 focus-visible:ring-0"
+              className="flex-1 min-w-0 rounded-full bg-white/10 h-7 text-xs text-white border-0 focus-visible:ring-0"
               autoFocus
             />
-            <Button type="submit" variant="ghost" size="icon" className="h-7 w-7 p-0 text-white">
+            <Button type="submit" variant="ghost" size="icon" className="h-7 w-7 p-0 text-white flex-shrink-0">
               <Search className="h-4 w-4" />
             </Button>
           </form>
         ) : (
-          <div className="flex items-center justify-between h-12 px-4">
+          <div className="flex items-center justify-between h-12 px-4 max-w-full">
             {!isShortsPage && (
-              <Link to="/" className="flex items-center gap-1">
-                <div className="text-xl font-black bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">
+              <Link to="/" className="flex items-center gap-1 min-w-0">
+                <div className="text-xl font-black bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(34,211,238,0.5)] truncate">
                   ProNax
                 </div>
               </Link>
@@ -124,13 +124,13 @@ export function AppHeader({ onSidebarToggle }: { onSidebarToggle: () => void }) 
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowMobileSearch(true)}
-                className={`h-10 w-10 rounded-full ${isShortsPage ? 'bg-black/50 text-white backdrop-blur-md border border-white/20' : 'text-zinc-200'}`}
+                className={`h-10 w-10 rounded-full flex-shrink-0 ${isShortsPage ? 'bg-black/50 text-white backdrop-blur-md border border-white/20' : 'text-zinc-200'}`}
               >
                 <Search className="h-5 w-5" />
               </Button>
 
               {!isShortsPage && (
-                <Button variant="ghost" size="icon" className="relative h-10 w-10 text-zinc-200">
+                <Button variant="ghost" size="icon" className="relative h-10 w-10 text-zinc-200 flex-shrink-0">
                   <Bell className="h-5 w-5" />
                   <span className="absolute top-2 right-2 h-2 w-2 bg-cyan-400 rounded-full shadow-[0_0_6px_#22d3ee]" />
                 </Button>

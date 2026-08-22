@@ -37,8 +37,9 @@ export function MainLayout() {
           {/* Main Content Area */}
           <SidebarInset 
             className={`flex-1 min-w-0 h-full overflow-y-auto bg-black !m-0 !rounded-none ${
-              isShortsPage ? '!p-0' : 'p-4 md:p-6 pb-20 md:pb-6'
+              isShortsPage ? '!p-0' : 'p-4 md:p-6'
             }`}
+            style={{ paddingBottom: isShortsPage ? '0' : 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
           >
             <div className={`w-full h-full ${isShortsPage ? 'max-w-none' : 'max-w-[1600px] mx-auto'}`}>
               <Outlet />

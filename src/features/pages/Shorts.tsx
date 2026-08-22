@@ -495,7 +495,7 @@ function ShortItem({
             setVideoError(true);
             setIsBuffering(false);
           }}
-          className="absolute inset-0 z-0 h-full w-full object-contain"
+          className="absolute inset-0 z-0 h-full w-full object-cover"
         />
 
         {isBuffering && active && !videoError && (
@@ -804,7 +804,7 @@ export default function Shorts() {
   ] as const;
 
   return (
-    <div className="flex-1 h-full flex flex-col items-center justify-center overflow-y-auto overflow-x-hidden snap-y snap-mandatory bg-black text-white pb-20">
+    <div className="flex-1 h-full flex flex-col items-center justify-center overflow-y-auto overflow-x-hidden snap-y snap-mandatory bg-black text-white pb-20 w-full max-w-full">
       {/* Tab Header - Centered */}
       <header className="mx-auto max-w-md w-full flex justify-center items-center gap-4 px-4 py-3 border-b border-white/10 flex-shrink-0">
         {tabs.map((tab) => <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`relative px-4 py-2 text-[15px] transition-colors ${activeTab === tab.key ? 'font-bold text-white' : 'font-medium text-white/60'}`}>{tab.label}{activeTab === tab.key && <span className="absolute bottom-0 left-1/2 h-[3px] w-8 -translate-x-1/2 rounded-full bg-white" />}</button>)}
@@ -813,7 +813,7 @@ export default function Shorts() {
       {/* Single Centered Vertical Feed - Responsive */}
       <div 
         ref={containerRef} 
-        className="flex-1 h-full w-full snap-y snap-mandatory overflow-y-scroll overscroll-y-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex-1 h-full w-full snap-y snap-mandatory overflow-y-scroll overscroll-y-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-w-full"
         style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
       >
         {isLoading && (
@@ -843,11 +843,11 @@ export default function Shorts() {
             key={item.kind === 'short' ? item.short.id : item.key} 
             data-feed-item 
             data-idx={index} 
-            className="w-full max-w-[420px] md:max-w-[380px] lg:max-w-[420px] h-screen flex-shrink-0 snap-start flex items-center justify-center relative mx-auto my-2"
+            className="w-full max-w-[420px] md:max-w-[380px] lg:max-w-[420px] h-screen flex-shrink-0 snap-start flex items-center justify-center relative mx-auto my-2 max-w-full"
             style={{ touchAction: 'pan-y' }}
           >
             {item.kind === 'short' ? (
-              <div className="w-full h-full aspect-[9/16] rounded-2xl overflow-hidden relative">
+              <div className="w-full h-full aspect-[9/16] rounded-2xl overflow-hidden relative max-w-full">
                 <ShortItem 
                   short={item.short} 
                   active={index === activeIdx} 

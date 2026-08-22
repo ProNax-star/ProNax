@@ -16,16 +16,16 @@ export function CategoryScroller({ items, value, prefix = '', onSelect, rounded 
   };
 
   return (
-    <div className="relative group/category-row">
+    <div className="relative group/category-row w-full max-w-full overflow-hidden">
       <button
         type="button"
         aria-label="Scroll categories left"
         onClick={() => scroll(-1)}
-        className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full glass-strong border border-border/40 items-center justify-center opacity-0 group-hover/category-row:opacity-100 transition hover:border-primary/50"
+        className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full glass-strong border border-border/40 items-center justify-center opacity-0 group-hover/category-row:opacity-100 transition hover:border-primary/50 flex-shrink-0"
       >
         <ChevronLeft className="w-4 h-4" />
       </button>
-      <div ref={ref} className="flex gap-2 overflow-x-auto no-scrollbar scroll-smooth px-0 sm:px-9">
+      <div ref={ref} className="flex gap-2 overflow-x-auto no-scrollbar scroll-smooth px-0 sm:px-9 w-full max-w-full">
         {items.map((item) => {
           const active = item === value;
           return (
@@ -48,7 +48,7 @@ export function CategoryScroller({ items, value, prefix = '', onSelect, rounded 
         type="button"
         aria-label="Scroll categories right"
         onClick={() => scroll(1)}
-        className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full glass-strong border border-border/40 items-center justify-center opacity-0 group-hover/category-row:opacity-100 transition hover:border-primary/50"
+        className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full glass-strong border border-border/40 items-center justify-center opacity-0 group-hover/category-row:opacity-100 transition hover:border-primary/50 flex-shrink-0"
       >
         <ChevronRight className="w-4 h-4" />
       </button>
