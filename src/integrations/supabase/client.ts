@@ -36,21 +36,51 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 }
 
 
+// Used only when credentials are absent (e.g. local/preview sandbox without env vars).
+// Requests to this host simply fail, which supabase-js surfaces as `{ data: null, error }`
+// instead of throwing during module initialisation and blanking the whole app.
+const OFFLINE_URL = 'https://offline.invalid';
+const OFFLINE_KEY = 'offline-placeholder-key';
+
+function readEnv(viteKey: string, nodeKey: string): string | undefined {
+  const fromVite = (import.meta.env as Record<string, string | undefined>)[viteKey];
+  if (fromVite) return fromVite;
+  try {
+    return typeof process !== 'undefined' ? process.env?.[nodeKey] : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function isUsableUrl(value: string | undefined): value is string {
+  return !!value && /^https?:\/\/[^\s]+$/i.test(value);
+}
+
+export const isSupabaseConfigured = (): boolean =>
+  isUsableUrl(readEnv('VITE_SUPABASE_URL', 'SUPABASE_URL')) &&
+  !!readEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'SUPABASE_PUBLISHABLE_KEY');
+
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)
-  const SUPABASE_URL = import.meta.env['VITE_SUPABASE_URL'] || process.env['SUPABASE_URL'];
-  const SUPABASE_PUBLISHABLE_KEY = import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || process.env['SUPABASE_PUBLISHABLE_KEY'];
+  const envUrl = readEnv('VITE_SUPABASE_URL', 'SUPABASE_URL');
+  const envKey = readEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'SUPABASE_PUBLISHABLE_KEY');
 
-  if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  const configured = isUsableUrl(envUrl) && !!envKey;
+
+  if (!configured) {
     const missing = [
-      ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
-      ...(!SUPABASE_PUBLISHABLE_KEY ? ['SUPABASE_PUBLISHABLE_KEY'] : []),
+      ...(!isUsableUrl(envUrl) ? ['SUPABASE_URL'] : []),
+      ...(!envKey ? ['SUPABASE_PUBLISHABLE_KEY'] : []),
     ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Please configure your Supabase credentials.`;
-    console.error(`[Supabase] ${message}`);
-    throw new Error(message);
+    console.warn(
+      `[Supabase] Missing or invalid environment variable(s): ${missing.join(', ')}. ` +
+        `Running in offline mode — data requests will return errors instead of crashing the app.`,
+    );
   }
+
+  const SUPABASE_URL = configured ? (envUrl as string) : OFFLINE_URL;
+  const SUPABASE_PUBLISHABLE_KEY = configured ? (envKey as string) : OFFLINE_KEY;
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     global: {
