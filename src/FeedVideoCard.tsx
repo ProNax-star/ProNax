@@ -152,7 +152,11 @@ export function FeedVideoCard({
               variant="ghost"
               size="icon"
               aria-label="More options"
-              className="-mt-1 h-7 w-7 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="-mt-1 h-7 w-7 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground touch-pan-y"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
             >
               <MoreVertical className="h-4 w-4" />
             </Button>
