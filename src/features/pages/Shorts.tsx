@@ -465,7 +465,7 @@ function ShortItem({
 
   return (
     <div ref={stageRef} className="relative isolate h-full w-full overflow-hidden bg-black text-white select-none">
-      {/* Responsive 9:16 TikTok-style media card. The source video is never stretched. */}
+      {/* Responsive 9:16 pronax-style media card. The source video is never stretched. */}
       <div
         ref={mediaCardRef}
         className="absolute inset-0 z-0 h-full w-full overflow-hidden bg-black"
