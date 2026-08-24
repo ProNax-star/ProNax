@@ -57,7 +57,7 @@ for (let i = 0; i < args.length; i++) {
         i++;
         break;
       case 'features':
-        params.features = value.split(',').map(f => f.trim());
+        params.features = value.split(',').map((f: string) => f.trim());
         i++;
         break;
       case 'secret':
@@ -81,7 +81,7 @@ if (!params.durationDays) {
   process.exit(1);
 }
 
-if (params.features.length === 0) {
+if (!params.features || params.features.length === 0) {
   console.error('Error: --features is required');
   console.log('Usage: node generate-license.ts --licensee <name> --duration <days> --features <feature1,feature2> [--domain <domain>] [--hwid <hwid>] [--secret <secret>]');
   process.exit(1);
@@ -127,7 +127,7 @@ generateLicenseKey(params as LicenseParams)
     console.log();
     console.log('Licensee:', params.licensee);
     console.log('Duration:', params.durationDays, 'days');
-    console.log('Features:', params.features.join(', '));
+    console.log('Features:', (params.features || []).join(', '));
     if (params.domain) console.log('Domain:', params.domain);
     if (params.hwid) console.log('HWID:', params.hwid);
     console.log();

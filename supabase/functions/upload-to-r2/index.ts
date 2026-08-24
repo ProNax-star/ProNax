@@ -14,7 +14,7 @@ interface PresignedUrlRequest {
   fileSize: number
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -53,7 +53,14 @@ serve(async (req) => {
     // Generate unique file key
     const timestamp = Date.now()
     const randomString = Math.random().toString(36).substring(2, 15)
-    const fileKey = `videos/${timestamp}-${randomString}-${fileName}`
+    // Strip characters that break plain URLs (#, ?, spaces, emoji, etc.)
+    const safeName = String(fileName)
+      .normalize('NFKD')
+      .replace(/[^\w.\-]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(-120) || 'video.mp4'
+    const fileKey = `videos/${timestamp}-${randomString}-${safeName}`
 
     // Initialize S3 client for R2
     const s3Client = new S3Client({
