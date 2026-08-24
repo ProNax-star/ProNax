@@ -165,6 +165,22 @@ export default function Index() {
     const catParam = category === 'All' ? null : category;
     console.log('[Home Feed] Loading page:', { kind, offset, category, catParam });
 
+    // Get user's watch history to exclude already-watched videos (YouTube-style)
+    let watchedVideoIds: string[] = [];
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      if (auth?.user?.id) {
+        const { data: history } = await supabase
+          .from('watch_history')
+          .select('video_id')
+          .eq('user_id', auth.user.id)
+          .limit(500);
+        watchedVideoIds = (history || []).map((h: any) => h.video_id);
+      }
+    } catch (error) {
+      console.log('[Home Feed] Error fetching watch history:', error);
+    }
+
     // 1. Try get_home_feed_v2 RPC
     // Temporarily disabled to test direct queries
     /*
@@ -193,6 +209,7 @@ export default function Index() {
         .eq('status', 'ready');
 
       if (catParam) q = q.ilike('category', catParam);
+      
       if (kind === 'trending') {
         q = q.order('views_count', { ascending: false, nullsFirst: false })
              .order('created_at', { ascending: false });
@@ -202,8 +219,14 @@ export default function Index() {
       const { data, error } = await q.range(offset, offset + PAGE - 1);
       console.log('[Home Feed] Direct query result:', { data, error, count: data?.length });
       console.log('[Home Feed] Query filters:', { visibility: 'public', status: 'ready', category: catParam, kind });
+      
       if (!error && Array.isArray(data) && data.length > 0) {
-        return data as FeedVideo[];
+        // Filter out already-watched videos for "foryou" feed (YouTube-style personalization)
+        const filteredData = kind === 'foryou' && watchedVideoIds.length > 0
+          ? data.filter((v: FeedVideo) => !watchedVideoIds.includes(v.id))
+          : data;
+        
+        return filteredData as FeedVideo[];
       }
     } catch { /* fall through */ }
 
@@ -301,6 +324,40 @@ export default function Index() {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [cat]);
+
+  // 10-second auto-refresh for new content (YouTube-style)
+  useEffect(() => {
+    if (loading || !hasMore) return;
+    
+    const refreshInterval = setInterval(async () => {
+      try {
+        // Get latest videos from last 10 seconds
+        const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
+        const { data: newVideos } = await supabase
+          .from('videos')
+          .select('id,title,description,thumb_url,video_url,owner_id,created_at,views_count,duration_seconds,is_short,category,preview_sprite_url,preview_sprite_frames')
+          .eq('visibility', 'public')
+          .eq('status', 'ready')
+          .eq('is_short', false)
+          .gt('created_at', tenSecondsAgo)
+          .order('created_at', { ascending: false })
+          .limit(3);
+        
+        if (newVideos && newVideos.length > 0) {
+          const enriched = await enrich(newVideos);
+          setVideos((prev) => {
+            const existingIds = new Set(prev.map(v => v.id));
+            const freshVideos = enriched.filter(v => !existingIds.has(v.id));
+            return freshVideos.length > 0 ? [...freshVideos, ...prev] : prev;
+          });
+        }
+      } catch (error) {
+        console.log('[Auto-refresh] Error checking for new videos:', error);
+      }
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(refreshInterval);
+  }, [loading, hasMore, cat]);
 
 
 
