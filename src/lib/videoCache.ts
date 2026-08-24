@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * Video Metadata Caching Layer
  * Caches video data from Supabase with automatic invalidation and TTL management
@@ -79,7 +80,7 @@ export async function getVideoWithCache(videoId: string): Promise<CachedVideo | 
   // Cache the result
   await cache.set(cacheKey, video, TTL.VIDEO_METADATA);
   
-  return video as CachedVideo;
+  return video as unknown as CachedVideo;
 }
 
 /**
@@ -119,7 +120,7 @@ export async function getVideosWithCache(videoIds: string[]): Promise<CachedVide
     if (error) {
       console.error('Error fetching videos:', error);
     } else if (videos) {
-      fetchedVideos = videos as CachedVideo[];
+      fetchedVideos = videos as unknown as CachedVideo[];
       
       // Cache the fetched videos
       for (const video of fetchedVideos) {
@@ -182,7 +183,7 @@ export async function getVideosByCreatorWithCache(
   // Cache the result
   await cache.set(cacheKey, videos, TTL.VIDEO_BY_CREATOR);
   
-  return videos as CachedVideo[];
+  return videos as unknown as CachedVideo[];
 }
 
 /**
@@ -218,7 +219,7 @@ export async function getPopularVideosWithCache(limit: number = 20): Promise<Cac
   // Cache the result
   await cache.set(cacheKey, videos, TTL.VIDEO_POPULAR);
   
-  return videos as CachedVideo[];
+  return videos as unknown as CachedVideo[];
 }
 
 /**
@@ -259,7 +260,7 @@ export async function searchVideosWithCache(
   // Cache the result
   await cache.set(cacheKey, videos, TTL.VIDEO_SEARCH);
   
-  return videos as CachedVideo[];
+  return videos as unknown as CachedVideo[];
 }
 
 /**
@@ -311,7 +312,7 @@ export async function invalidateMultipleVideoCaches(videoIds: string[]): Promise
 
   try {
     const keys = videoIds.map(id => `${CACHE_PREFIXES.VIDEO}:${id}`);
-    await cache.del(...keys);
+    await Promise.all(keys.map((k) => cache.del(k)));
     console.log(`Invalidated ${keys.length} video caches`);
     return true;
   } catch (error) {

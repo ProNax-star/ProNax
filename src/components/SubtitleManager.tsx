@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useState, useRef } from 'react';
 import { Upload, X, Plus, Languages, Check, Sparkles, Play, Pause, SkipForward, SkipBack } from 'lucide-react';
 import { LANGUAGES, getLanguageName } from '@/lib/languages';

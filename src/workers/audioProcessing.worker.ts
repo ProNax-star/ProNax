@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * Web Worker for Audio Processing and Fingerprint Generation
  * Handles file reading and processing in chunks to prevent main thread blocking
@@ -287,3 +288,5 @@ function generateChunkHash(data: Uint8Array, chunkIndex: number): string {
   const combinedHash = (hash << 16) | (chunkIndex & 0xFFFF);
   return combinedHash.toString(16).padStart(8, '0');
 }
+
+export {};

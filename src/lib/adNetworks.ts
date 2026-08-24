@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 // Ad Network Types & Configuration
 export type AdNetworkType = 'adsense' | 'propeller' | 'unity' | 'direct';
 export type AdPlacement = 'preroll' | 'midroll' | 'overlay' | 'banner';

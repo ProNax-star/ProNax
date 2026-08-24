@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useState } from 'react';
 import { AlertTriangle, Shield, CheckCircle, XCircle, Clock, FileText, ExternalLink, Send } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';

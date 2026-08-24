@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { createClient } from "@supabase/supabase-js";
 import { defineTool, type ToolContext } from "@pronax.dev/mcp-js";
 

@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/loose';
 

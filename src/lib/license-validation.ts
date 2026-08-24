@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 // ProNax License Validation System
 // This module ensures only licensed users can use the software
 import { SignJWT, jwtVerify } from 'jose';
@@ -107,7 +108,7 @@ export async function parseLicenseToken(token: string): Promise<LicenseData | nu
   try {
     const secret = new TextEncoder().encode(process.env.VITE_LICENSE_SECRET || 'pronax-secret-key-2026');
     const { payload } = await jwtVerify(token, secret);
-    return payload as LicenseData;
+    return payload as unknown as LicenseData;
   } catch (error) {
     console.error('License token parsing failed:', error);
     return null;

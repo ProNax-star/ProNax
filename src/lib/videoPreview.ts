@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * Client-side video preparation utilities used by /upload:
  *  - captureThumbnail: grab a single frame at an offset as JPEG

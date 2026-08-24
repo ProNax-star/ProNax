@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { Link } from 'react-router-dom';
 import { Play, BarChart2, Edit3, Trash2, CheckCircle, Clock, Globe, DollarSign, Heart, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';

@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { motion } from 'framer-motion';
 import { Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -26,10 +27,14 @@ export function ShortsCard({ id, title, channel, views, thumbnail }: ShortsCardP
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-muted/40 to-muted/20" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center gap-1">
-          <Play className="w-2.5 h-2.5 text-white fill-white" />
-          <span className="text-[10px] font-semibold text-white">{views}</span>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+        <div className="absolute bottom-1.5 left-1.5 right-1.5 space-y-0.5">
+          <h4 className="line-clamp-2 text-[10px] font-medium leading-tight text-white drop-shadow">{title}</h4>
+          <div className="flex items-center gap-1">
+            <Play className="w-2.5 h-2.5 text-white fill-white" />
+            <span className="text-[10px] font-semibold text-white">{views}</span>
+          </div>
+          <p className="truncate text-[9px] text-white/70">@{channel.replace(/\s+/g, '')}</p>
         </div>
       </div>
     </motion.div>

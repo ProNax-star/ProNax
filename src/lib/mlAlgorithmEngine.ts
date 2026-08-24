@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * ProNax ML & AI Recommendation Algorithm Engine
  * Addresses Core Recommendation Engine Upgrades:

@@ -1,6 +1,7 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useParams, useNavigate } from 'react-router-dom';
 import { VideoPlayer } from '@/components/VideoPlayer';
-import { VideoCard } from '@/components/VideoCard';
+import { FeedVideoCard } from '@/components/FeedVideoCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ThumbsUp, ThumbsDown, Share2, Download, Bookmark, MoreHorizontal,
@@ -25,6 +26,8 @@ import { analyticsBus } from '@/lib/analyticsBus';
 import { Chapters } from '@/components/Chapters';
 import { useCommentLikes } from '@/hooks/useCommentLikes';
 import { AdSlot } from '@/components/AdSlot';
+import { DynamicAdContainer } from '@/components/DynamicAdContainer';
+import { InVideoAdOverlay } from '@/components/InVideoAdOverlay';
 import { useVastPreRoll } from '@/hooks/useVastPreRoll';
 import { EngineBoundary } from '@/components/EngineBoundary';
 import { LiveWatcherBadge } from '@/components/LiveWatcherBadge';
@@ -530,6 +533,11 @@ export default function Watch() {
 
 
 
+            {/* Bottom-center banner ad rendered over the player */}
+            <EngineBoundary name="in-video-ad" silent>
+              <InVideoAdOverlay paused={adActive} />
+            </EngineBoundary>
+
             <AnimatePresence>
 
               {!adActive && adRewarded && (
@@ -545,6 +553,10 @@ export default function Watch() {
               )}
             </AnimatePresence>
           </div>
+
+          <EngineBoundary name="ad-in-stream" silent>
+            <DynamicAdContainer placement="in_stream" className="v3d-stage group relative w-full px-2 pt-3 md:px-0" />
+          </EngineBoundary>
 
           <EngineBoundary name="ad-below-player" silent>
             <AdSlot slot="watch_below_player" />
@@ -1028,23 +1040,27 @@ export default function Watch() {
               transition={{ duration: 0.35 }}
               className="md:hidden pt-3 pb-4 border-t border-border/30 space-y-3"
             >
-              <div className="flex items-center justify-between px-3">
+              <div className="flex items-center justify-between -mx-7 px-3">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <span className="inline-block w-1.5 h-4 rounded-full gradient-primary glow-primary" />
                   Up Next
                 </h3>
                 <span className="text-[10px] uppercase tracking-wider text-gray-400 font-medium">Recommended</span>
               </div>
-              <div className="px-0 mx-0 w-full grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="-mx-7 px-0 sm:mx-0 grid grid-cols-1 sm:[grid-template-columns:repeat(auto-fill,minmax(280px,1fr))] gap-x-4 gap-y-4">
+                <DynamicAdContainer placement="watch_sidebar" />
                 {suggestedVideos.map((v, i) => (
-                  <motion.div
+                  <FeedVideoCard
                     key={v.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                  >
-                    <VideoCard {...v} layout="grid" />
-                  </motion.div>
+                    id={v.id}
+                    title={v.title}
+                    channel={v.channel}
+                    viewsText={v.views}
+                    timeText={v.time}
+                    durationText={v.duration}
+                    thumbUrl={v.thumbnail}
+                    index={i}
+                  />
                 ))}
               </div>
             </motion.section>
@@ -1061,16 +1077,20 @@ export default function Watch() {
             </div>
             <span className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Recommended</span>
           </div>
-          <div className="px-3 mx-0 w-full flex flex-col gap-5 pb-4">
+          <div className="px-0 mx-0 w-full flex flex-col gap-1 pb-4">
+            <DynamicAdContainer placement="watch_sidebar" />
             {suggestedVideos.map((v, i) => (
-              <motion.div
+              <FeedVideoCard
                 key={v.id}
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: Math.min(i * 0.03, 0.3) }}
-              >
-                <VideoCard {...v} layout="list" />
-              </motion.div>
+                id={v.id}
+                title={v.title}
+                channel={v.channel}
+                viewsText={v.views}
+                timeText={v.time}
+                durationText={v.duration}
+                thumbUrl={v.thumbnail}
+                index={i}
+              />
             ))}
           </div>
         </aside>

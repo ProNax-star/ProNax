@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -5,8 +6,6 @@ import {
   MessageCircle,
   Music2,
   Play,
-  VolumeX,
-  Volume2,
   Plus,
   Send,
   Search,
@@ -25,9 +24,10 @@ import {
   VideoIcon,
   Sparkles,
   Loader2,
-  Maximize2,
-  Minimize2,
+  Twitter,
+  Mail,
 } from 'lucide-react';
+
 import { Link, useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -39,7 +39,7 @@ import { analyticsBus } from '@/lib/analyticsBus';
 import { ShortsAdSlide } from '@/components/ShortsAdSlide';
 import { rankShortsByProNaxFYP, recordProNaxViewerSignal, type FYPRankingResult } from '@/lib/pronaxShortsAlgorithm';
 
-const NAV_H = 52;
+const NAV_H = 56;
 const TOP_BAR_H = 50;
 const AD_EVERY_N_SHORTS = 4;
 
@@ -132,22 +132,39 @@ function SendToSheet({
 
   const shareText = `${title} ${url}`;
   const openExternal = (target: string) => window.open(target, '_blank', 'noopener,noreferrer');
+  const nativeShare = async () => {
+    const nav = typeof navigator !== 'undefined' ? (navigator as any) : null;
+    if (nav?.share) {
+      try {
+        await nav.share({ title, text: title, url });
+        return;
+      } catch (error: any) {
+        if (error?.name === 'AbortError') return;
+      }
+    }
+    (await copyText(url)) ? toast.success('Link copied') : toast.error('Copy failed');
+  };
 
   const coloredActions = [
-    { key: 'repost', label: 'Repost', icon: Repeat2, bg: 'bg-[#f5c518]', fg: 'text-white', onClick: () => toast.success('Reposted') },
     { key: 'copy', label: 'Copy link', icon: Link2, bg: 'bg-[#2f6bff]', fg: 'text-white', onClick: async () => (await copyText(url)) ? toast.success('Link copied') : toast.error('Copy failed') },
     { key: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, bg: 'bg-[#25d366]', fg: 'text-white', onClick: () => openExternal(`https://wa.me/?text=${encodeURIComponent(shareText)}`) },
-    { key: 'sms', label: 'SMS', icon: MessageSquare, bg: 'bg-[#e9f0ff]', fg: 'text-[#2f6bff]', onClick: () => { window.location.href = `sms:?body=${encodeURIComponent(shareText)}`; } },
+    { key: 'telegram', label: 'Telegram', icon: Send, bg: 'bg-[#2aabee]', fg: 'text-white', onClick: () => openExternal(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`) },
     { key: 'facebook', label: 'Facebook', icon: Facebook, bg: 'bg-[#1877f2]', fg: 'text-white', onClick: () => openExternal(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`) },
+    { key: 'x', label: 'X', icon: Twitter, bg: 'bg-neutral-900', fg: 'text-white', onClick: () => openExternal(`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`) },
+    { key: 'email', label: 'Email', icon: Mail, bg: 'bg-[#f0a500]', fg: 'text-white', onClick: () => { window.location.href = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(shareText)}`; } },
+    { key: 'sms', label: 'SMS', icon: MessageSquare, bg: 'bg-[#e9f0ff]', fg: 'text-[#2f6bff]', onClick: () => { window.location.href = `sms:?body=${encodeURIComponent(shareText)}`; } },
+    { key: 'more', label: 'More apps', icon: Share2, bg: 'bg-neutral-200', fg: 'text-neutral-900', onClick: nativeShare },
   ];
 
   const utilityActions = [
+    { key: 'repost', label: 'Repost', icon: Repeat2, onClick: () => toast.success('Reposted') },
     { key: 'report', label: 'Report', icon: Flag, onClick: () => toast.success('Report submitted') },
     { key: 'not-interested', label: 'Not interested', icon: HeartCrack, onClick: () => toast.success('We will show fewer of these') },
     { key: 'download', label: 'Download', icon: Download, onClick: () => openExternal(videoSrc) },
     { key: 'stitch', label: 'Stitch', icon: Columns2, onClick: () => toast.info('Stitch coming soon') },
     { key: 'group', label: 'Create group', icon: Users, onClick: () => toast.info('Groups coming soon') },
   ];
+
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -209,7 +226,6 @@ function ShortItem({
   onOpenSound,
   onOpenComments,
   hasInteracted,
-  onToggleMute,
 }: {
   short: Short;
   active: boolean;
@@ -217,7 +233,6 @@ function ShortItem({
   onOpenSound: () => void;
   onOpenComments: () => void;
   hasInteracted: boolean;
-  onToggleMute: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -232,7 +247,6 @@ function ShortItem({
   const [expanded, setExpanded] = useState(false);
   const [sendToOpen, setSendToOpen] = useState(false);
   const [isLandscape, setIsLandscape] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [mediaFrame, setMediaFrame] = useState<MediaFrame | null>(null);
   const [viewportHeight, setViewportHeight] = useState(0);
 
@@ -312,11 +326,6 @@ function ShortItem({
     };
   }, [isLandscape]);
 
-  useEffect(() => {
-    const onFullscreenChange = () => setIsFullscreen(document.fullscreenElement === videoRef.current);
-    document.addEventListener('fullscreenchange', onFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
-  }, []);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -443,36 +452,23 @@ function ShortItem({
     lastTapRef.current = now;
   };
 
-  const toggleFullscreen = async () => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-        return;
-      }
-      if (video.requestFullscreen) {
-        await video.requestFullscreen();
-        return;
-      }
-      const legacyVideo = video as HTMLVideoElement & { webkitEnterFullscreen?: () => void };
-      legacyVideo.webkitEnterFullscreen?.();
-    } catch {
-      toast.info('Full screen is not available in this browser');
-    }
-  };
-
   const handle = short.channel.replace(/^@/, '');
   const name = short.displayName || handle;
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/shorts/${short.id}` : '';
   const caption = short.description || short.title;
+
+  const shareNow = async () => {
+    void recordShare(short.id, 'link').catch(() => {});
+    setSendToOpen(true);
+  };
+
+
   return (
     <div ref={stageRef} className="relative isolate h-full w-full overflow-hidden bg-black text-white select-none">
       {/* Responsive 9:16 TikTok-style media card. The source video is never stretched. */}
       <div
         ref={mediaCardRef}
-        className="absolute left-1/2 top-1/2 z-0 h-screen w-full -translate-x-1/2 -translate-y-1/2 overflow-hidden bg-black"
+        className="absolute inset-0 z-0 h-full w-full overflow-hidden bg-black"
       >
         <video
           ref={videoRef}
@@ -495,7 +491,7 @@ function ShortItem({
             setVideoError(true);
             setIsBuffering(false);
           }}
-          className="absolute inset-0 z-0 h-full w-full object-cover"
+          className={`absolute inset-0 z-0 h-full w-full ${isLandscape ? 'object-contain' : 'object-cover'}`}
         />
 
         {isBuffering && active && !videoError && (
@@ -532,53 +528,30 @@ function ShortItem({
           {paused && !videoError && (
             <motion.button
               initial={{ opacity: 0, scale: 0.7 }}
-              animate={{ opacity: 1, scale: 1 }}
+              animate={{ opacity: 0.75, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               onClick={togglePlay}
               aria-label="Play"
               className="absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2"
             >
-              <span className="grid size-16 place-items-center rounded-full bg-black/45">
-                <Play className="ml-1 size-9 fill-white text-white" />
-              </span>
+              <Play className="size-16 fill-white/85 text-white/85 drop-shadow-lg" />
             </motion.button>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Top navigation remains above the media card. */}
-      <button
-        onClick={(event) => { event.stopPropagation(); onToggleMute(); }}
-        aria-label={muted ? 'Unmute' : 'Mute'}
-        className="absolute right-3 z-30 grid size-10 place-items-center rounded-full bg-black/55 text-white shadow-lg active:scale-90"
-        style={{ top: `calc(env(safe-area-inset-top, 0px) + ${TOP_BAR_H + 8}px)` }}
-      >
-        {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
-      </button>
-
-      {active && isLandscape && mediaFrame && viewportHeight > 0 && (
-        <button
-          onClick={(event) => { event.stopPropagation(); void toggleFullscreen(); }}
-          aria-label={isFullscreen ? 'Exit full screen' : 'Full screen'}
-          className="absolute left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/80 px-5 py-3 text-[16px] font-semibold text-white shadow-lg active:scale-95"
-          style={{ top: `${Math.min(mediaFrame.bottom + 16, viewportHeight - NAV_H - 64)}px` }}
-        >
-          {isFullscreen ? <Minimize2 className="size-5" /> : <Maximize2 className="size-5" />}
-          {isFullscreen ? 'Exit full screen' : 'Full screen'}
-        </button>
-      )}
-
       {/* One, and only one, creator avatar in the action rail. */}
       <div
-        className="absolute right-3 z-30 flex flex-col items-center space-y-4"
-        style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_H + 60}px)` }}
+        className="absolute right-2 z-40 flex flex-col items-center gap-3.5"
+        style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_H + 10}px)` }}
       >
+
         <div className="relative mb-1">
           <Link
             to="/channel/$handle"
             params={{ handle }}
             onClick={(event) => event.stopPropagation()}
-            className="block size-11 overflow-hidden rounded-full border-2 border-white bg-black shadow-lg"
+            className="block size-10 overflow-hidden rounded-full border-2 border-white bg-black shadow-lg"
           >
             {short.avatar ? (
               <img src={short.avatar} alt={name} className="size-full object-cover" loading="lazy" />
@@ -592,35 +565,50 @@ function ShortItem({
             <button
               onClick={(event) => { event.preventDefault(); event.stopPropagation(); toggleFollow(); }}
               aria-label="Follow"
-              className="absolute -bottom-2 left-1/2 grid size-6 -translate-x-1/2 place-items-center rounded-full bg-[#fe2c55] text-white shadow-md active:scale-90"
+              className="absolute -bottom-1.5 left-1/2 grid size-[17px] -translate-x-1/2 place-items-center rounded-full border-2 border-black bg-[#fe2c55] text-white shadow-md active:scale-90"
             >
-              <Plus className="size-4" strokeWidth={3.5} />
+              <Plus className="size-2.5" strokeWidth={4} />
             </button>
           )}
         </div>
 
-        <button onClick={(event) => { event.stopPropagation(); toggleLike(); }} className="flex min-w-12 flex-col items-center active:scale-90" aria-label="Like">
-          <Heart className={`size-9 drop-shadow-md ${liked ? 'fill-[#fe2c55] text-[#fe2c55]' : 'fill-white text-white'}`} />
+        <button onClick={(event) => { event.stopPropagation(); toggleLike(); }} className="flex min-w-11 flex-col items-center leading-none active:scale-90" aria-label="Like">
+          <Heart className={`size-8 drop-shadow-md ${liked ? 'fill-[#fe2c55] text-[#fe2c55]' : 'fill-white text-white'}`} />
           <span className="mt-0.5 text-[11px] font-semibold text-white drop-shadow">{formatCount(likeCount)}</span>
         </button>
-        <button onClick={(event) => { event.stopPropagation(); onOpenComments(); }} className="flex min-w-12 flex-col items-center active:scale-90" aria-label="Comments">
-          <MessageCircle className="size-9 fill-white text-white drop-shadow-md" />
+        <button onClick={(event) => { event.stopPropagation(); onOpenComments(); }} className="flex min-w-11 flex-col items-center leading-none active:scale-90" aria-label="Comments">
+          <MessageCircle className="size-8 fill-white text-white drop-shadow-md" />
           <span className="mt-0.5 text-[11px] font-semibold text-white drop-shadow">{formatCount(comments.length)}</span>
         </button>
-        <button onClick={(event) => { event.stopPropagation(); toggleBookmark(); }} className="flex min-w-12 flex-col items-center active:scale-90" aria-label="Save">
-          <Bookmark className={`size-8 drop-shadow-md ${bookmarked ? 'fill-[#ffcb0b] text-[#ffcb0b]' : 'fill-white text-white'}`} />
+        <button onClick={(event) => { event.stopPropagation(); toggleBookmark(); }} className="flex min-w-11 flex-col items-center leading-none active:scale-90" aria-label="Save">
+          <Bookmark className={`size-7 drop-shadow-md ${bookmarked ? 'fill-[#ffcb0b] text-[#ffcb0b]' : 'fill-white text-white'}`} />
           <span className="mt-0.5 text-[11px] font-semibold text-white drop-shadow">{formatCount(bookmarkCount)}</span>
         </button>
-        <button onClick={(event) => { event.stopPropagation(); void recordShare(short.id, 'link').catch(() => {}); setSendToOpen(true); }} className="flex min-w-12 flex-col items-center active:scale-90" aria-label="Share">
-          <Share2 className="size-8 fill-white text-white drop-shadow-md" />
+        <button onClick={(event) => { event.stopPropagation(); void shareNow(); }} className="flex min-w-11 flex-col items-center leading-none active:scale-90" aria-label="Share">
+          <Share2 className="size-7 fill-white text-white drop-shadow-md" />
           <span className="mt-0.5 text-[11px] font-semibold text-white drop-shadow">{formatCount(short.shares)}</span>
+        </button>
+        <button
+          onClick={(event) => { event.stopPropagation(); onOpenSound(); }}
+          aria-label="Use this sound"
+          className="grid size-9 place-items-center overflow-hidden rounded-full border-[3px] border-neutral-900 bg-gradient-to-br from-neutral-700 to-black shadow-lg active:scale-90"
+        >
+          <span className="grid size-full animate-spin-slow place-items-center">
+            {short.avatar ? (
+              <img src={short.avatar} alt="" className="size-5 rounded-full object-cover" loading="lazy" />
+            ) : (
+              <Music2 className="size-4 text-white" />
+            )}
+          </span>
         </button>
       </div>
 
+
+
       {/* Bottom metadata is kept inside the visible safe area and never clipped by the 9:16 card. */}
       <div
-        className="absolute bottom-0 left-0 z-30 w-full pb-1 pl-3 pr-[82px]"
-        style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_H + 30}px)` }}
+        className="pointer-events-none absolute bottom-0 left-0 z-20 w-full pb-0 pl-3 pr-[76px] [&_a]:pointer-events-auto [&_button]:pointer-events-auto"
+        style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_H + 10}px)` }}
       >
         <div className="pointer-events-none absolute inset-x-0 -top-32 bottom-0 -z-10 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
         <Link
@@ -649,7 +637,7 @@ function ShortItem({
         </button>
         <button
           onClick={(event) => { event.stopPropagation(); onOpenSound(); }}
-          className="mt-2 flex max-w-full items-center gap-1.5 overflow-hidden rounded-full border border-white/10 bg-black/40 px-2.5 py-1 backdrop-blur-md"
+          className="mt-2 flex max-w-full items-center gap-1.5 overflow-hidden py-0.5"
         >
           <Music2 className="size-3.5 shrink-0 text-white" />
           <span className="relative block w-40 overflow-hidden text-left sm:w-56">
@@ -661,7 +649,7 @@ function ShortItem({
         </button>
       </div>
 
-      <div className="absolute inset-x-0 z-30 h-[2px] bg-white/20" style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_H + 20}px)` }}>
+      <div className="absolute inset-x-0 z-30 h-[2px] bg-white/20" style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_H}px)` }}>
         <div className="h-full bg-rose-500 transition-[width] duration-100" style={{ width: `${progressPct}%` }} />
       </div>
 
@@ -804,18 +792,41 @@ export default function Shorts() {
   ] as const;
 
   return (
-    <div className="flex-1 h-full flex flex-col items-center justify-center overflow-y-auto overflow-x-hidden snap-y snap-mandatory bg-black text-white pb-20 w-full max-w-full">
-      {/* Tab Header - Centered */}
-      <header className="mx-auto max-w-md w-full flex justify-center items-center gap-4 px-4 py-3 border-b border-white/10 flex-shrink-0">
-        {tabs.map((tab) => <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`relative px-4 py-2 text-[15px] transition-colors ${activeTab === tab.key ? 'font-bold text-white' : 'font-medium text-white/60'}`}>{tab.label}{activeTab === tab.key && <span className="absolute bottom-0 left-1/2 h-[3px] w-8 -translate-x-1/2 rounded-full bg-white" />}</button>)}
+    <div className="relative h-full w-full overflow-hidden bg-black text-white">
+      {/* Floating top bar over the video, like a native short-video feed */}
+      <header
+        className="pointer-events-none absolute inset-x-0 top-0 z-40 flex items-center justify-center px-3"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 10px)', height: `calc(env(safe-area-inset-top, 0px) + ${TOP_BAR_H}px)` }}
+      >
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent" />
+        <div className="pointer-events-auto relative flex items-center gap-6">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`relative pb-1.5 text-[17px] transition-colors ${activeTab === tab.key ? 'font-bold text-white' : 'font-medium text-white/65'}`}
+            >
+              {tab.label}
+              {activeTab === tab.key && <span className="absolute -bottom-0.5 left-1/2 h-[3px] w-7 -translate-x-1/2 rounded-full bg-white" />}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => navigate({ to: '/explore' })}
+          aria-label="Search"
+          className="pointer-events-auto absolute right-3 grid size-10 place-items-center rounded-full text-white active:scale-90"
+        >
+          <Search className="size-7 drop-shadow" />
+        </button>
       </header>
 
-      {/* Single Centered Vertical Feed - Responsive */}
+      {/* Full-bleed vertical feed */}
       <div 
         ref={containerRef} 
-        className="flex-1 h-full w-full snap-y snap-mandatory overflow-y-scroll overscroll-y-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-w-full"
+        className="h-full w-full snap-y snap-mandatory overflow-y-scroll overscroll-y-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
       >
+
         {isLoading && (
           <div className="h-full flex items-center justify-center">
             <div className="flex flex-col items-center gap-3">
@@ -843,11 +854,11 @@ export default function Shorts() {
             key={item.kind === 'short' ? item.short.id : item.key} 
             data-feed-item 
             data-idx={index} 
-            className="w-full max-w-[420px] md:max-w-[380px] lg:max-w-[420px] h-screen flex-shrink-0 snap-start flex items-center justify-center relative mx-auto my-2 max-w-full"
+            className="relative mx-auto flex h-full w-full flex-shrink-0 snap-start items-center justify-center md:max-w-[420px]"
             style={{ touchAction: 'pan-y' }}
           >
             {item.kind === 'short' ? (
-              <div className="w-full h-full aspect-[9/16] rounded-2xl overflow-hidden relative max-w-full">
+              <div className="relative h-full w-full overflow-hidden md:rounded-2xl">
                 <ShortItem 
                   short={item.short} 
                   active={index === activeIdx} 
@@ -855,11 +866,10 @@ export default function Shorts() {
                   hasInteracted={hasInteracted} 
                   onOpenSound={() => navigate({ to: '/sound/$id', params: { id: item.short.id } })} 
                   onOpenComments={() => setCommentsFor(item.short)} 
-                  onToggleMute={() => setMuted((value) => !value)} 
                 />
               </div>
             ) : (
-              <div className="w-full h-full aspect-[9/16] rounded-2xl overflow-hidden relative">
+              <div className="relative h-full w-full overflow-hidden md:rounded-2xl">
                 <ShortsAdSlide 
                   active={index === activeIdx} 
                   attributeToVideoId={item.attributeShortId} 

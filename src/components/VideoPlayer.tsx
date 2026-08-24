@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
 import {
@@ -5,6 +6,7 @@ import {
   Gauge, PictureInPicture2, RectangleHorizontal as Rectangle, Settings as SettingsIcon, Check,
   Subtitles, Languages,
 } from 'lucide-react';
+import { encodeMediaUrl } from '@/lib/videoVariants';
 
 
 interface VideoPlayerProps {
@@ -95,7 +97,7 @@ export function VideoPlayer({
 
   useEffect(() => {
     const video = videoRef.current;
-    const source = showAd ? adVideoSrc : src;
+    const source = encodeMediaUrl(showAd ? adVideoSrc : src);
     setQualities([]);
     setCurrentLevel(-1);
     if (!video || !source) return;

@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 export function renderErrorPage(): string {
   return `<!doctype html>
 <html lang="en">

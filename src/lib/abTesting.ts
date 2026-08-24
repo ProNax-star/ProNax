@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 // A/B testing framework. Deterministic variant assignment via server RPC,
 // event tracking piped through analyticsBus (worker) to keep main thread free.
 import { supabase as _supabase } from '@/integrations/supabase/loose';

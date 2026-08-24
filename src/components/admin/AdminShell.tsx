@@ -1,5 +1,7 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useState, useEffect, useRef, type ReactNode, type ComponentType } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/loose';
 import {
   Search,
   Bell,
@@ -84,12 +86,54 @@ export function AdminShell({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // System notifications sample feed
-  const systemNotifications = [
-    { id: 1, title: 'Traffic Surge Detected', desc: '+48% spike in concurrent playback', time: '2m ago', type: 'success' },
-    { id: 2, title: 'Copyright Claim Flagged', desc: 'Audio fingerprint match in video #9821', time: '14m ago', type: 'warning' },
-    { id: 3, title: 'Cluster Backup Completed', desc: 'All PostgreSQL snapshots synced', time: '1h ago', type: 'info' },
-  ];
+  // Live system notifications sourced from the platform audit trail
+  const [systemNotifications, setSystemNotifications] = useState<
+    Array<{ id: string; title: string; desc: string; time: string; type: 'success' | 'warning' | 'info' }>
+  >([]);
+
+  useEffect(() => {
+    let active = true;
+    const relTime = (iso: string) => {
+      const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+      if (mins < 1) return 'just now';
+      if (mins < 60) return `${mins}m ago`;
+      const hrs = Math.round(mins / 60);
+      if (hrs < 24) return `${hrs}h ago`;
+      return `${Math.round(hrs / 24)}d ago`;
+    };
+    const map = (rows: any[]) =>
+      rows.map((r) => ({
+        id: String(r.id),
+        title: String(r.action || 'System event').replace(/_/g, ' '),
+        desc: [r.entity_type, r.entity_id ? `#${String(r.entity_id).slice(0, 8)}` : null, r.actor_email]
+          .filter(Boolean)
+          .join(' · ') || 'Platform activity recorded',
+        time: relTime(r.created_at),
+        type: (r.severity === 'critical' || r.severity === 'error'
+          ? 'warning'
+          : r.severity === 'warning'
+            ? 'warning'
+            : 'info') as 'success' | 'warning' | 'info',
+      }));
+
+    const load = async () => {
+      const { data } = await supabase
+        .from('audit_logs')
+        .select('id,action,entity_type,entity_id,actor_email,severity,created_at')
+        .order('created_at', { ascending: false })
+        .limit(6);
+      if (active && data) setSystemNotifications(map(data));
+    };
+    load();
+    const ch = supabase
+      .channel(`admin-shell-notifs-${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_logs' }, load)
+      .subscribe();
+    return () => {
+      active = false;
+      supabase.removeChannel(ch);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#07090e] text-zinc-100 font-sans flex flex-col selection:bg-cyan-500 selection:text-black relative overflow-x-hidden">
@@ -208,18 +252,21 @@ export function AdminShell({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 mt-2 w-80 bg-[#0e121b] border border-white/15 rounded-2xl shadow-2xl p-4 z-50 backdrop-blur-2xl space-y-3"
+                  className="absolute right-0 mt-2 w-[min(20rem,calc(100vw-2rem))] bg-[#0e121b] border border-white/15 rounded-2xl shadow-2xl p-4 z-50 backdrop-blur-2xl space-y-3"
                 >
                   <div className="flex items-center justify-between border-b border-white/10 pb-2">
                     <h4 className="text-xs font-bold text-white flex items-center gap-2">
                       <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Studio Notifications
                     </h4>
                     <span className="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
-                      3 New
+                      {systemNotifications.length} New
                     </span>
                   </div>
 
                   <div className="space-y-2">
+                    {systemNotifications.length === 0 && (
+                      <p className="text-[11px] text-zinc-500 text-center py-3">No system events yet.</p>
+                    )}
                     {systemNotifications.map((n) => (
                       <div
                         key={n.id}

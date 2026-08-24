@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { Download, MonitorSmartphone, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useInstallPrompt } from '@/hooks/useInstallPrompt';

@@ -115,7 +115,7 @@ CREATE TABLE public.video_shares (
     channel text DEFAULT 'link'::text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     platform text DEFAULT 'link'::text,
-    CONSTRAINT video_shares_platform_check CHECK ((platform = ANY (ARRAY['link'::text, 'twitter'::text, 'facebook'::text, 'whatsapp'::text, 'instagram'::text, 'tiktok'::text])))
+    CONSTRAINT video_shares_platform_check CHECK ((platform = ANY (ARRAY['link'::text, 'twitter'::text, 'facebook'::text, 'whatsapp'::text, 'instagram'::text, 'pronax'::text])))
 );
 
 ALTER TABLE ONLY public.video_shares

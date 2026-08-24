@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -54,9 +55,9 @@ function VideoCardTile({ v, i }: { v: GridVideo; i: number }) {
     >
       <Link
         to={v.is_short ? `/shorts/${v.id}` : `/watch/${v.id}`}
-        className="block group w-full"
+        className="block group w-full v3d-stage"
       >
-        <div className="relative w-full aspect-video overflow-hidden rounded-none sm:rounded-xl bg-gray-800">
+        <div className="v3d-thumb relative w-full aspect-video overflow-hidden bg-gray-800 rounded-none sm:rounded-2xl">
           {v.thumb_url ? (
             <img
               src={v.thumb_url}
@@ -68,13 +69,14 @@ function VideoCardTile({ v, i }: { v: GridVideo; i: number }) {
           ) : (
             <div className="absolute inset-0 bg-gray-800" />
           )}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent opacity-0 sm:group-hover:opacity-100 transition-opacity" />
           {fmtDuration(v.duration_seconds) && (
-            <span className="absolute bottom-1 right-1 rounded bg-black/80 px-1 py-0.5 text-[11px] font-medium text-white">
+            <span className="absolute bottom-2 right-2 rounded-md bg-black/80 px-1.5 py-0.5 text-[11px] font-medium text-white">
               {fmtDuration(v.duration_seconds)}
             </span>
           )}
         </div>
-        <div className="flex gap-3 mt-3 px-3 w-full">
+        <div className="flex items-start gap-3 mt-2.5 px-3 sm:px-0 w-full">
           <div className="h-9 w-9 shrink-0 rounded-full bg-gray-700 overflow-hidden">
             {v.ownerAvatar ? (
               <img src={v.ownerAvatar} alt={v.ownerName || 'Creator'} className="h-full w-full object-cover" />
@@ -84,12 +86,12 @@ function VideoCardTile({ v, i }: { v: GridVideo; i: number }) {
               </div>
             )}
           </div>
-          <div className="min-w-0 flex-1 w-full">
-            <h3 className="line-clamp-2 text-[14px] font-semibold leading-[18px] text-white">
+          <div className="min-w-0 flex-1">
+            <h3 className="line-clamp-2  text-[14px] font-medium leading-[20px] text-white">
               {v.title}
             </h3>
-            <div className="mt-1 flex items-center gap-1 text-[12px] text-gray-400">
-              <span className="truncate">@{(v.ownerName || 'creator').replace(/\s+/g, '')}</span>
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-1 text-[12px] leading-[16px] text-gray-400">
+              <span className="truncate max-w-[55%]">@{(v.ownerName || 'creator').replace(/\s+/g, '')}</span>
               <span>•</span>
               <span className="shrink-0">{views > 0 ? <AnimatedCounter value={views} format={compactFormat} /> + ' views' : '0 views'}</span>
               <span>•</span>
@@ -114,8 +116,8 @@ function MobileVirtualList({ items }: { items: (GridVideo | { __ad: true; key: s
   const rowVirtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => parentRef.current,
-    // Card ≈ aspect-video + meta row. Overscan keeps 4 rows warm for smooth flings.
-    estimateSize: (i) => ('__ad' in items[i] ? 120 : 200),
+    // Card ≈ 16:9 thumbnail (screen width) + meta row. Overscan keeps rows warm.
+    estimateSize: (i) => ('__ad' in items[i] ? 120 : Math.round((typeof window !== 'undefined' ? window.innerWidth : 390) * 0.5625) + 78),
     overscan: 4,
   });
   return (
@@ -139,7 +141,7 @@ function MobileVirtualList({ items }: { items: (GridVideo | { __ad: true; key: s
                 width: '100%',
                 transform: `translateY(${row.start}px)`,
               }}
-              className="pb-6 px-4 sm:px-6 lg:px-8"
+              className="pb-4 px-0 sm:px-6 lg:px-8"
             >
               {'__ad' in it ? (
                 <EngineBoundary name="ad-feed-row" silent>
@@ -162,7 +164,8 @@ export function VideoGrid({ videos, empty }: { videos: GridVideo[]; empty?: stri
   if (!videos.length) {
     return <div className="text-center py-20 text-muted-foreground text-sm">{empty || 'Nothing here yet.'}</div>;
   }
-  const freq = adRow?.enabled && adRow.frequency > 0 ? adRow.frequency : 0;
+  // Default cadence: one ad unit every 4th card when admin leaves frequency unset.
+  const freq = adRow?.enabled ? (adRow.frequency > 0 ? adRow.frequency : 4) : 0;
 
   // Mobile → virtualized list (60fps regardless of feed length).
   if (isMobile) {
@@ -177,7 +180,7 @@ export function VideoGrid({ videos, empty }: { videos: GridVideo[]; empty?: stri
   }
 
   // Desktop → responsive grid with `content-visibility: auto` per card.
-  const gridCls = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-4 sm:px-6 lg:px-8';
+  const gridCls = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-x-4 gap-y-4 px-0 sm:px-6 lg:px-8';
   if (!freq) {
     return (
       <div className={gridCls}>

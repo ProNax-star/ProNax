@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * Rate Limiting Implementation
  * Sliding/rolling window rate limiter using Redis with support for IP, User ID, and API key based limiting

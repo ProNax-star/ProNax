@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * Integration helper for adding analytics tracking to video components
  * This provides ready-to-use functions for common analytics scenarios

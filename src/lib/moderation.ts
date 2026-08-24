@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 // Client-side content moderation and file validation helpers.
 // Defense-in-depth: the database trigger `moderate_comment` / `moderate_video_meta`
 // is the source of truth, this just gives instant UX feedback.

@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState } from 'react';
 import { Bookmark, Loader2, LogIn, Compass } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/loose';

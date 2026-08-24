@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 // Suppress browser extension warnings and console noise
 (function() {
   if (typeof console === 'undefined') return;
@@ -58,8 +59,15 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  HeadContent,
+  Scripts,
 } from "@tanstack/react-router";
+import type { ReactNode } from "react";
+
+import appCss from "../styles.css?url";
+
 import { useEffect } from "react";
+import { enforceLicenseRuntime } from "@/lib/license-guard";
 
 import { reportProNaxError } from "../lib/error-reporting";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -134,16 +142,65 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  head: () => ({
+    meta: [
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { title: "ProNax — Video, Shorts & Live Streaming Platform" },
+      {
+        name: "description",
+        content:
+          "ProNax is a creator-first video platform for uploads, shorts, live streams, playlists and channel monetization.",
+      },
+      { property: "og:title", content: "ProNax — Video, Shorts & Live Streaming Platform" },
+      {
+        property: "og:description",
+        content:
+          "Watch, upload and monetize videos, shorts and live streams on ProNax.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+    ],
+  }),
+  shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
+
+function RootShell({ children }: { children: ReactNode }) {
+  return (
+    <html lang="en">
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        {children}
+        <Scripts />
+      </body>
+    </html>
+  );
+}
+
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   // Global error capture (uncaught errors, rejections, perf timings) and the
   // inactivity sign-out timer.
+  // Anti-tamper / domain licence verification for production builds.
+  useEffect(() => {
+    try {
+      enforceLicenseRuntime();
+    } catch (e) {
+      console.error('[Root] License guard failed:', e);
+    }
+  }, []);
+
   useEffect(() => {
     try {
       errorMonitor.install();

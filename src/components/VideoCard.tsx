@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, MoreVertical } from 'lucide-react';
@@ -84,21 +85,21 @@ export function VideoCard({
   return (
     <div
       onClick={handleClick}
-      className="group w-full cursor-pointer mb-5 active:opacity-90 transition-opacity"
+      className="group w-full cursor-pointer mb-3 active:opacity-90 transition-opacity v3d-stage"
     >
-      {/* Thumbnail Container: Rounded Corners + Side Margins */}
-      <div className="px-3">
-        <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-neutral-900 shadow-sm">
+      {/* Thumbnail: full-bleed on mobile, elevated card on larger screens */}
+      <div className="px-0 sm:px-0">
+        <div className="v3d-thumb relative aspect-video w-full overflow-hidden rounded-none sm:rounded-2xl bg-neutral-900">
           {thumbnail && (
             <img
               src={thumbnail}
               alt={title}
               loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+              className="absolute inset-0 h-full w-full object-cover"
             />
           )}
 
-          {/* YouTube Duration Badge */}
+          {/* Duration badge */}
           <span className="absolute bottom-2 right-2 rounded-md bg-black/80 backdrop-blur-xs px-1.5 py-0.5 text-[11px] font-medium text-white">
             {duration}
           </span>

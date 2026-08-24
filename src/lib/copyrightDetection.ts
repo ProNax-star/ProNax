@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { supabase } from '@/integrations/supabase/loose';
 
 export interface CopyrightMatch {
@@ -358,7 +359,7 @@ export async function checkCopyrightViolation(
 
     // Step 3: Use Web Worker for CPU-intensive matching with per-comparison timeout
     try {
-      const worker = new Worker(new URL('@/workers/copyrightDetection.worker.ts', import.meta.url));
+      const worker = new Worker(new URL('@/workers/copyrightDetection.worker.ts', import.meta.url), { type: 'module' });
 
       for (const fp of existingFingerprints) {
         const metadata = (fp.metadata ?? {}) as {
@@ -480,7 +481,7 @@ async function generateFingerprintWithTimeout(
   try {
     // Use worker for fingerprint generation with timeout
     // Pass file reference instead of loading into memory
-    const worker = new Worker(new URL('@/workers/audioProcessing.worker.ts', import.meta.url));
+    const worker = new Worker(new URL('@/workers/audioProcessing.worker.ts', import.meta.url), { type: 'module' });
 
     const workerPromise = new Promise<{ fingerprints: string[]; duration: number; sampleRate: number }>((resolve, reject) => {
       const timeout = setTimeout(() => {
@@ -986,4 +987,83 @@ export async function releaseCopyrightClaim(claimId: string): Promise<boolean> {
     console.error('Release failed:', error);
     return false;
   }
+}
+
+/* ------------------------------------------------------------------ *
+ * Pre-upload copyright / duplicate-content pipeline
+ * ------------------------------------------------------------------ */
+
+export type CopyrightPreCheckStatus = 'clean' | 'duplicate' | 'claimed' | 'skipped';
+
+export interface CopyrightPreCheck {
+  status: CopyrightPreCheckStatus;
+  /** SHA-256 based fingerprint of the selected file. */
+  fingerprint: string | null;
+  sha256: string | null;
+  matches: CopyrightMatch[];
+  /** Human readable summary for the upload UI. */
+  message: string;
+}
+
+/**
+ * Runs before publishing: fingerprints the file, checks the Content-ID index
+ * for an exact duplicate, then runs the metadata/audio match scan.
+ */
+export async function checkCopyrightStatus(
+  file: File,
+  title = '',
+  description = ''
+): Promise<CopyrightPreCheck> {
+  const { generateVideoFingerprint, calculateFileSHA256 } = await import('@/lib/videoFingerprint');
+  const { supabase } = await import('@/integrations/supabase/loose');
+
+  let fingerprint: string | null = null;
+  let sha256: string | null = null;
+
+  try {
+    fingerprint = await generateVideoFingerprint(title || file.name, file.size, 0, file);
+    sha256 = await calculateFileSHA256(file);
+  } catch (err) {
+    console.warn('[copyright] fingerprinting failed', err);
+    return { status: 'skipped', fingerprint, sha256, matches: [], message: 'Fingerprint unavailable — scan skipped.' };
+  }
+
+  // 1) Exact duplicate of an already published asset?
+  try {
+    const { data } = await (supabase as any)
+      .from('videos')
+      .select('id, title, owner_id')
+      .eq('sha256', sha256)
+      .limit(1);
+    if (data && data.length) {
+      return {
+        status: 'duplicate',
+        fingerprint,
+        sha256,
+        matches: [],
+        message: 'This exact file is already published on ProNax.',
+      };
+    }
+  } catch (err) {
+    console.warn('[copyright] duplicate lookup failed', err);
+  }
+
+  // 2) Content-ID / metadata match scan.
+  try {
+    const matches = await checkCopyrightViolation(file, title, description);
+    if (matches.length) {
+      return {
+        status: 'claimed',
+        fingerprint,
+        sha256,
+        matches,
+        message: `${matches.length} potential copyright match${matches.length > 1 ? 'es' : ''} detected.`,
+      };
+    }
+  } catch (err) {
+    console.warn('[copyright] content scan failed', err);
+    return { status: 'skipped', fingerprint, sha256, matches: [], message: 'Copyright scan unavailable.' };
+  }
+
+  return { status: 'clean', fingerprint, sha256, matches: [], message: 'No copyright matches found.' };
 }

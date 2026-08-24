@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * Worker Entry Point
  * Starts all background job workers with proper configuration
@@ -46,7 +47,7 @@ export function startAllWorkers() {
     'subtitle-generation',
   ];
   
-  const workers = [];
+  const workers: any[] = [];
   
   for (const queueType of queueTypes) {
     const concurrency = WORKER_CONFIG.concurrency[queueType] || 5;
@@ -57,7 +58,7 @@ export function startAllWorkers() {
       {
         concurrency,
         limiter: WORKER_CONFIG.limiter,
-      }
+      } as any
     );
     
     workers.push(worker);
@@ -83,7 +84,7 @@ export function startWorker(queueType: JobType) {
     {
       concurrency,
       limiter: WORKER_CONFIG.limiter,
-    }
+    } as any
   );
   
   console.log(`Worker started for queue: ${queueType} (concurrency: ${concurrency})`);
@@ -106,7 +107,7 @@ export function startProductionWorkers() {
     'copyright-check',
   ];
   
-  const workers = [];
+  const workers: any[] = [];
   
   for (const queueType of productionQueues) {
     const concurrency = WORKER_CONFIG.concurrency[queueType] || 5;
@@ -117,7 +118,7 @@ export function startProductionWorkers() {
       {
         concurrency,
         limiter: WORKER_CONFIG.limiter,
-      }
+      } as any
     );
     
     workers.push(worker);
@@ -164,7 +165,7 @@ export function startDevelopmentWorkers() {
     'subtitle-generation',
   ];
   
-  const workers = [];
+  const workers: any[] = [];
   
   for (const queueType of queueTypes) {
     const concurrency = devConfig.concurrency[queueType] || 2;
@@ -178,7 +179,7 @@ export function startDevelopmentWorkers() {
           max: 50,
           duration: 60000,
         },
-      }
+      } as any
     );
     
     workers.push(worker);

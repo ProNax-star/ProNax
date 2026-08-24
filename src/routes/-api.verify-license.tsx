@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 // ProNax License Verification API
 // Server-side license validation for enhanced security
 import { SignJWT, jwtVerify } from 'jose'

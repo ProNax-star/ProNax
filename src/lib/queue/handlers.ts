@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * Job Handlers
  * Implements processing logic for different job types with retry strategies
@@ -41,7 +42,7 @@ export async function handleVideoProcessing(
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     // Update video in database
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('videos')
       .update({
         thumbnail: data.thumbnail || `https://via.placeholder.com/320x180`,
@@ -57,7 +58,7 @@ export async function handleVideoProcessing(
     
     return {
       success: true,
-      data: {
+      data: <any>{
         videoId: data.videoId,
         thumbnailUrl: data.thumbnail,
         duration: data.duration || 120,
@@ -87,7 +88,7 @@ export async function handleVideoTranscoding(
     console.log(`Transcoding video: ${data.videoId} to formats:`, data.outputFormats);
     
     // Simulate transcoding for each format
-    const formats = [];
+    const formats: any[] = [];
     
     for (const quality of data.outputFormats) {
       // Simulate transcoding time (higher quality = longer)
@@ -102,7 +103,7 @@ export async function handleVideoTranscoding(
     }
     
     // Update video with transcoded URLs
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('videos')
       .update({
         transcoded_urls: formats,
@@ -116,7 +117,7 @@ export async function handleVideoTranscoding(
     
     return {
       success: true,
-      data: {
+      data: <any>{
         videoId: data.videoId,
         formats,
         processedAt: new Date(),
@@ -158,7 +159,7 @@ export async function handleAnalyticsAggregation(
     }
     
     // Store aggregated data
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('channel_analytics')
       .insert({
         channel_id: data.channelId,
@@ -172,7 +173,7 @@ export async function handleAnalyticsAggregation(
     
     return {
       success: true,
-      data: {
+      data: <any>{
         videoId: data.videoId,
         channelId: data.channelId,
         startDate: data.startDate,
@@ -219,7 +220,7 @@ export async function handleEmailNotification(
     
     return {
       success: true,
-      data: {
+      data: <any>{
         sent: true,
         delivered: true,
         deliveredAt: new Date(),
@@ -262,7 +263,7 @@ export async function handlePushNotification(
     
     return {
       success: true,
-      data: {
+      data: <any>{
         sent: true,
         delivered: true,
         deliveredAt: new Date(),
@@ -308,7 +309,7 @@ export async function handleContentModeration(
     if (score < 0.2) flags.push('hate_speech');
     
     // Update video moderation status
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('videos')
       .update({
         moderation_status: approved ? 'approved' : 'flagged',
@@ -323,7 +324,7 @@ export async function handleContentModeration(
     
     return {
       success: true,
-      data: {
+      data: <any>{
         videoId: data.videoId,
         approved,
         score,
@@ -374,7 +375,7 @@ export async function handleCopyrightCheck(
       : [];
     
     // Update video copyright status
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('videos')
       .update({
         copyright_status: hasCopyright ? 'claimed' : 'clean',
@@ -388,7 +389,7 @@ export async function handleCopyrightCheck(
     
     return {
       success: true,
-      data: {
+      data: <any>{
         videoId: data.videoId,
         hasCopyright,
         matches,
@@ -434,7 +435,7 @@ export async function handleAnalyticsSync(
     
     return {
       success: true,
-      data: {
+      data: <any>{
         synced: data.events.length,
         syncedAt: new Date(),
       },
@@ -469,7 +470,7 @@ export async function handleThumbnailGeneration(
     // 3. Store in R2
     // 4. Update database with thumbnail URLs
     
-    const thumbnails = [];
+    const thumbnails: any[] = [];
     const count = data.count || 5;
     const timestamps = data.timestamps || Array.from({ length: count }, (_, i) => i * 10);
     
@@ -482,7 +483,7 @@ export async function handleThumbnailGeneration(
     
     return {
       success: true,
-      data: {
+      data: <any>{
         videoId: data.videoId,
         thumbnails,
         generatedAt: new Date(),
@@ -518,7 +519,7 @@ export async function handleSubtitleGeneration(
     // 3. Store in subtitle_tracks table
     // 4. Update database with subtitle URLs
     
-    const subtitles = [];
+    const subtitles: any[] = [];
     for (const language of data.languages) {
       subtitles.push({
         language,
@@ -529,7 +530,7 @@ export async function handleSubtitleGeneration(
     
     return {
       success: true,
-      data: {
+      data: <any>{
         videoId: data.videoId,
         subtitles,
         generatedAt: new Date(),

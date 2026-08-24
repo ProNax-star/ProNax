@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useState, useEffect } from 'react';
 import { Eye, Clock, Users, MousePointerClick, TrendingUp, Globe } from 'lucide-react';
 import { useStudio } from './StudioLayout';
@@ -52,11 +53,11 @@ export default function StudioAnalytics() {
       if (!user?.id) return;
       setAnalyticsLoading(true);
       try {
-        const { data, error } = await supabase.rpc('get_channel_analytics', { p_user_id: user.id });
+        const { data, error } = await (supabase.rpc as any)('get_channel_analytics', { p_user_id: user.id });
         if (error) {
           console.error('Error fetching channel analytics:', error);
         } else {
-          setChannelAnalytics(data as ChannelAnalyticsData);
+          setChannelAnalytics(data as unknown as ChannelAnalyticsData);
         }
       } catch (err) {
         console.error('Error fetching channel analytics:', err);

@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * Compatibility layer that maps the legacy React Router API surface used across
  * the imported ZKG codebase onto TanStack Router (the router this stack uses).

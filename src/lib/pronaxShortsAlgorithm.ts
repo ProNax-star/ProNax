@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * ProNax Pro-Grade FYP (For You Page) Short Video Recommendation Algorithm Engine
  * High-Level Professional Architecture

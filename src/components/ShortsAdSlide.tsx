@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 // Full-screen Shorts ad slide. ProNax Sponsored interstitial.
 // • Uses Google IMA + VITE_SHORTS_VAST_URL when configured (real ad serving).
 // • On impression, credits the just-watched short's uploader via record_ad_view

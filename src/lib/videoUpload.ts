@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * Video Upload Service with Copyright Detection
  * Handles video upload to Cloudflare R2 via pre-signed URLs and FastAPI copyright detection
@@ -9,7 +10,7 @@ import { supabase } from '@/integrations/supabase/loose';
 export interface VideoUploadResult {
   success: boolean;
   videoId?: string;
-  status: 'published' | 'copyright_flagged' | 'error';
+  status: 'published' | 'ready' | 'copyright_flagged' | 'error';
   message?: string;
   copyrightMatch?: {
     matched: boolean;

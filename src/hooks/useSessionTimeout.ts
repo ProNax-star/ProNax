@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * Session management: signs the user out after a period of inactivity and
  * refreshes the access token while they are active. Protects shared/public

@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -19,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/loose';
-import { checkCopyrightViolation } from '@/lib/copyrightDetection';
+import { checkCopyrightViolation, checkCopyrightStatus } from '@/lib/copyrightDetection';
 import { generateVideoFingerprint, checkForCopyrightMatch } from '@/lib/videoFingerprint';
 import { validateFile, videoMetadataSchema, firstIssue } from '@/lib/validation';
 import { requireVerifiedUser, ensureUserProfile } from '@/lib/authGuards';
@@ -72,6 +73,7 @@ export function UploadModal({
 
   // File & Media state
   const [file, setFile] = useState<File | null>(initialVideoFile || null);
+  const [preCheck, setPreCheck] = useState<{ state: 'idle' | 'scanning' | 'done'; status?: string; message?: string }>({ state: 'idle' });
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(initialVideoPreview || null);
   const [duration, setDuration] = useState<number | null>(null);
   const [isShort, setIsShort] = useState(false);
@@ -294,6 +296,17 @@ export function UploadModal({
     }
 
     generateFramePreviews(selectedFile);
+
+    // Pre-upload Content-ID pipeline: flag duplicated audio/video before publishing.
+    setPreCheck({ state: 'scanning' });
+    checkCopyrightStatus(selectedFile, title, description)
+      .then((res) => {
+        setPreCheck({ state: 'done', status: res.status, message: res.message });
+        if (res.status === 'duplicate' || res.status === 'claimed') {
+          toast({ title: 'Copyright check', description: res.message, variant: 'destructive' });
+        }
+      })
+      .catch(() => setPreCheck({ state: 'idle' }));
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -747,7 +760,7 @@ export function UploadModal({
 
   return (
     <div 
-      className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-hidden animate-in fade-in-0 duration-200"
+      className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-stretch sm:items-center justify-center pt-16 pb-14 sm:p-4 overflow-hidden animate-in fade-in-0 duration-200"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onOpenChange(false);
@@ -755,7 +768,7 @@ export function UploadModal({
       }}
     >
       <div 
-        className="w-full max-w-5xl h-[92vh] max-h-[880px] p-0 overflow-hidden flex flex-col bg-[#080a10] text-white border border-cyan-500/30 shadow-[0_0_60px_rgba(6,182,212,0.25)] rounded-2xl sm:rounded-3xl relative max-w-[calc(100vw-16px)]"
+        className="w-full sm:max-w-5xl h-full sm:h-[92vh] max-h-full sm:max-h-[880px] p-0 overflow-hidden flex flex-col bg-[#080a10] text-white border-0 sm:border sm:border-cyan-500/30 shadow-[0_0_60px_rgba(6,182,212,0.25)] rounded-none sm:rounded-3xl relative"
         onClick={(e) => e.stopPropagation()}
       >
         
@@ -835,7 +848,7 @@ export function UploadModal({
         </div>
 
         {/* Main Scrollable Body Area */}
-        <div className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-6 pb-12 sm:pb-10 scrollbar-thin scroll-gpu">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-3.5 sm:p-6 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:pb-10 scrollbar-thin scroll-gpu">
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
@@ -847,10 +860,10 @@ export function UploadModal({
             >
               {/* ================= STEP 1: Details & Media Setup ================= */}
               {step === 1 && (
-                <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 sm:gap-6 w-full max-w-full">
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 sm:gap-6">
                   {/* Live Video Player Preview (Natural flow on Mobile/Tablet, Right Column on Desktop) */}
-                  <div className="order-1 xl:order-2 xl:col-span-5 space-y-3 w-full max-w-full">
-                    <div className="bg-[#0f121d]/90 border border-cyan-500/30 rounded-2xl p-4 space-y-3 shadow-[0_0_25px_rgba(6,182,212,0.12)] w-full max-w-full overflow-hidden">
+                  <div className="order-1 xl:order-2 xl:col-span-5 space-y-3">
+                    <div className="bg-[#0f121d]/90 border border-cyan-500/30 rounded-2xl p-4 space-y-3 shadow-[0_0_25px_rgba(6,182,212,0.12)]">
                       <div className="flex items-center justify-between">
                         <Label className="text-xs font-bold text-cyan-300 uppercase tracking-wider block">
                           Live Video Player Preview
@@ -860,15 +873,15 @@ export function UploadModal({
                         </Badge>
                       </div>
 
-                      <div className="h-64 w-full bg-black/90 rounded-xl overflow-hidden border border-cyan-500/30 relative group flex items-center justify-center shadow-inner p-4">
+                      <div className="w-full aspect-video h-auto bg-black/90 rounded-xl overflow-hidden border border-cyan-500/30 relative group flex items-center justify-center shadow-inner p-4">
                         {videoPreviewUrl ? (
                           <video 
                             src={videoPreviewUrl} 
                             controls 
-                            className="w-full h-full object-contain max-w-full"
+                            className="w-full h-full object-contain"
                           />
                         ) : (
-                          <div className="text-center p-4 w-full">
+                          <div className="text-center p-4">
                             <Film className="w-8 h-8 text-cyan-500/50 mx-auto mb-2" />
                             <p className="text-xs text-zinc-400">Select a video to generate player preview</p>
                           </div>
@@ -894,7 +907,7 @@ export function UploadModal({
                   </div>
 
                   {/* Metadata Form Inputs (Scrollable beneath preview on Mobile, Left Column on Desktop) */}
-                  <div className="order-2 xl:order-1 xl:col-span-7 space-y-5 w-full max-w-full min-w-0">
+                  <div className="order-2 xl:order-1 xl:col-span-7 space-y-5">
                     {/* Video File Upload Dropzone */}
                     {!file ? (
                       <div 
@@ -942,6 +955,26 @@ export function UploadModal({
                         </Button>
                       </div>
                     )}
+
+                    {/* Pre-upload Content ID scan status */}
+                    {file && preCheck.state !== 'idle' && (
+                      <div
+                        className={`rounded-xl border px-3 py-2 text-[11px] font-medium ${
+                          preCheck.state === 'scanning'
+                            ? 'border-cyan-500/30 bg-cyan-950/30 text-cyan-300'
+                            : preCheck.status === 'clean'
+                              ? 'border-emerald-500/30 bg-emerald-950/30 text-emerald-300'
+                              : preCheck.status === 'skipped'
+                                ? 'border-zinc-600/40 bg-zinc-900/40 text-zinc-400'
+                                : 'border-red-500/40 bg-red-950/30 text-red-300'
+                        }`}
+                      >
+                        {preCheck.state === 'scanning'
+                          ? 'Running Content ID copyright scan…'
+                          : preCheck.message}
+                      </div>
+                    )}
+
 
                     {/* Title Input */}
                     <div className="space-y-1.5">

@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * Cookie / privacy consent. Stored locally so it applies before sign-in, and
  * mirrored to `user_consents` (GDPR record of consent) whenever a session

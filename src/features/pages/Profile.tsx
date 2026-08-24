@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Check, Edit3, Image as ImageIcon, UserPlus, UserCheck, Share2, Settings, BadgeCheck, MoreVertical, Wallet, LogOut, Users, Loader2, Home, Compass, PlaySquare, TrendingUp, History as HistoryIcon, ListVideo, Heart, Bookmark, Upload, Radio, SlidersHorizontal } from 'lucide-react';

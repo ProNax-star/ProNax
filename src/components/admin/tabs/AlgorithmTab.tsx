@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Loader2, Save, Cpu, Zap, Clock, MousePointerClick, Rewind, Sparkles, History, FlaskConical, Trophy, BarChart2, Bot } from 'lucide-react';
 import { toast } from 'sonner';
@@ -54,14 +55,6 @@ type SimVideo = {
   views: string;
 };
 
-const SIM_VIDEOS: SimVideo[] = [
-  { id: 'v1', title: 'Building a Full-Stack Pronax Video Platform in 24 Hours', channel: 'CodeCraft Pro', category: 'Tech & Coding', ctr: 14.2, avdRatio: 0.78, isShort: false, shortsCompletion: 0, hoursAgo: 6, tags: ['coding', 'tech', 'react', 'fullstack'], views: '142K' },
-  { id: 'v2', title: 'Cyberpunk Synthwave Beats for Late Night Focus 🌌', channel: 'Aesthetic Audio', category: 'Music & Vibes', ctr: 8.5, avdRatio: 0.91, isShort: false, shortsCompletion: 0, hoursAgo: 48, tags: ['music', 'synthwave', 'lofi', 'focus'], views: '520K' },
-  { id: 'v3', title: 'Mind-Blowing Quantum Computing Breakthrough Explained! ⚡', channel: 'Future Tech 360', category: 'Tech & Science', ctr: 18.5, avdRatio: 0.62, isShort: true, shortsCompletion: 0.94, hoursAgo: 2, tags: ['tech', 'science', 'quantum', 'ai'], views: '890K' },
-  { id: 'v4', title: '10 Hidden Features You Didn\'t Know in VS Code', channel: 'Dev Tips Daily', category: 'Tech & Coding', ctr: 11.0, avdRatio: 0.55, isShort: true, shortsCompletion: 0.88, hoursAgo: 12, tags: ['coding', 'vscode', 'tools'], views: '95K' },
-  { id: 'v5', title: 'Top 5 Easy Meal Prep Recipes for Busy Developers', channel: 'Healthy Dev', category: 'Lifestyle', ctr: 6.8, avdRatio: 0.40, isShort: false, shortsCompletion: 0, hoursAgo: 72, tags: ['lifestyle', 'food', 'dev'], views: '32K' },
-];
-
 type Persona = {
   id: string;
   name: string;
@@ -87,6 +80,7 @@ export function AlgorithmTab() {
   const [note, setNote] = useState('');
   const [audit, setAudit] = useState<AuditRow[]>([]);
   const [selectedPersona, setSelectedPersona] = useState<string>('tech');
+  const [simVideos, setSimVideos] = useState<SimVideo[]>([]);
 
   // AI & ML Dynamic Engine State
   const [optimizingAI, setOptimizingAI] = useState(false);
@@ -98,6 +92,46 @@ export function AlgorithmTab() {
   const [testCategory, setTestCategory] = useState('Tech & Coding');
   const [analyzingQuality, setAnalyzingQuality] = useState(false);
   const [aiQualityResult, setAiQualityResult] = useState<AIContentQualityAssessment | null>(null);
+
+  // Load real catalog rows for the live ranking preview
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data } = await supabase
+        .from('videos')
+        .select('id,title,category,tags,is_short,views_count,likes_count,duration_seconds,created_at,owner_id')
+        .eq('visibility', 'public')
+        .eq('is_removed', false)
+        .order('created_at', { ascending: false })
+        .limit(12);
+      if (!active || !data) return;
+      const ownerIds = Array.from(new Set(data.map((v: any) => v.owner_id).filter(Boolean)));
+      const { data: profs } = ownerIds.length
+        ? await supabase.from('profiles').select('id,display_name').in('id', ownerIds)
+        : { data: [] as any[] };
+      const nameById = new Map<string, string>((profs ?? []).map((p: any) => [String(p.id), String(p.display_name ?? '')]));
+      if (!active) return;
+      setSimVideos(data.map((v: any) => {
+        const views = Number(v.views_count || 0);
+        const likes = Number(v.likes_count || 0);
+        const engagement = views > 0 ? likes / views : 0;
+        return {
+          id: v.id,
+          title: v.title,
+          channel: nameById.get(String(v.owner_id)) || 'Unknown channel',
+          category: v.category || 'Uncategorized',
+          ctr: Math.round(Math.min(engagement * 100, 100) * 10) / 10,
+          avdRatio: Math.min(1, engagement * 5),
+          isShort: Boolean(v.is_short),
+          shortsCompletion: v.is_short ? Math.min(1, engagement * 6) : 0,
+          hoursAgo: Math.max(0, (Date.now() - new Date(v.created_at).getTime()) / 3600000),
+          tags: (v.tags as string[] | null) ?? [],
+          views: views >= 1000 ? `${(views / 1000).toFixed(1)}K` : String(views),
+        } satisfies SimVideo;
+      }));
+    })();
+    return () => { active = false; };
+  }, []);
 
   const loadAll = useCallback(async () => {
     try {
@@ -195,7 +229,7 @@ export function AlgorithmTab() {
   const personaObj = useMemo(() => PERSONAS.find(p => p.id === selectedPersona) || PERSONAS[0], [selectedPersona]);
 
   const rankedSimVideos = useMemo(() => {
-    return SIM_VIDEOS.map(vid => {
+    return simVideos.map(vid => {
       // 1. CTR Score
       const ctrScore = (vid.ctr / 10) * weights.algo_ctr_weight;
 
@@ -230,7 +264,7 @@ export function AlgorithmTab() {
         totalScore,
       };
     }).sort((a, b) => b.totalScore - a.totalScore);
-  }, [weights, personaObj]);
+  }, [weights, personaObj, simVideos]);
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-red-500" /></div>;
 
@@ -512,6 +546,11 @@ export function AlgorithmTab() {
               </div>
 
               <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+                {rankedSimVideos.length === 0 && (
+                  <div className="p-4 text-center text-xs text-zinc-500 border border-dashed border-[#282828] rounded-lg">
+                    No published videos yet — ranking preview will populate as content goes live.
+                  </div>
+                )}
                 {rankedSimVideos.map((vid, idx) => (
                   <div
                     key={vid.id}

@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -92,117 +93,6 @@ export function formatSecondsToTimestamp(secs: number): string {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-const SEED_CLAIMS: CopyrightClaimItem[] = [
-  {
-    id: 'claim_101',
-    video_id: 'v_cyberpunk_night',
-    video_title: 'Cyberpunk Synthwave Mix 2026 - Live from Neo Tokyo',
-    channel_name: 'Aether Beats',
-    channel_handle: '@aetherbeats',
-    claimant: 'Universal Music Group (UMG Publishing)',
-    claimant_type: 'record_label',
-    match_type: 'audio_fingerprint',
-    confidence_score: 99.2,
-    matched_reference_title: 'Resonance in Cyber City (Original Master)',
-    timestamp_start: '02:14',
-    timestamp_end: '04:30',
-    policy_action: 'monetize',
-    status: 'disputed',
-    dispute_reason: 'I licensed this track under Creative Commons BY 4.0 license from the composer directly with signed documentation.',
-    dispute_date: '2026-07-28T14:20:00Z',
-    created_at: '2026-07-27T10:00:00Z',
-    thumbnail_url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80',
-    ai_evaluation: {
-      merit_score: 88,
-      merit_level: 'High Merit / Strong Fair Use',
-      recommendation: 'release_claim',
-      reasoning: 'Creator provides valid license defense. Audio segment matches licensed CC BY stem.',
-      fair_use_factors: { transformative_nature: 85, amount_used: 72, market_effect: 90 },
-    },
-  },
-  {
-    id: 'claim_102',
-    video_id: 'v_unreal_engine_5',
-    video_title: 'Unreal Engine 5.5 Next-Gen Graphics Showcase',
-    channel_name: 'TechMatrix HQ',
-    channel_handle: '@techmatrix',
-    claimant: 'Warner Chappell Music',
-    claimant_type: 'record_label',
-    match_type: 'audio_fingerprint',
-    confidence_score: 94.7,
-    matched_reference_title: 'Orchestral Trailer Soundpack - Epic Horizon',
-    timestamp_start: '00:45',
-    timestamp_end: '01:50',
-    policy_action: 'mute',
-    status: 'active',
-    created_at: '2026-07-28T08:30:00Z',
-    thumbnail_url: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'claim_103',
-    video_id: 'v_movie_review_dune',
-    video_title: 'Deep Dive: Dune Part 3 Cinematic Cinematography',
-    channel_name: 'Cinephile Corner',
-    channel_handle: '@cinephile',
-    claimant: 'Legendary Pictures & Warner Bros',
-    claimant_type: 'movie_studio',
-    match_type: 'visual_frame',
-    confidence_score: 97.8,
-    matched_reference_title: 'Dune Part II Official Featurette Scene #4',
-    timestamp_start: '05:10',
-    timestamp_end: '06:05',
-    policy_action: 'block_worldwide',
-    status: 'disputed',
-    dispute_reason: 'Fair Use defense under educational commentary, film analysis doctrine, and critique.',
-    dispute_date: '2026-07-28T18:45:00Z',
-    created_at: '2026-07-26T12:00:00Z',
-    thumbnail_url: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&auto=format&fit=crop&q=80',
-    ai_evaluation: {
-      merit_score: 79,
-      merit_level: 'High Merit / Strong Fair Use',
-      recommendation: 'release_claim',
-      reasoning: 'Short 55s clip used exclusively with voiceover analysis and visual breakdown overlay.',
-      fair_use_factors: { transformative_nature: 92, amount_used: 80, market_effect: 85 },
-    },
-  },
-  {
-    id: 'claim_104',
-    video_id: 'v_lofi_coding',
-    video_title: '3 Hour Lofi Hip Hop Code & Chill Radio',
-    channel_name: 'Dev Flow Radio',
-    channel_handle: '@devflow',
-    claimant: 'Sony Music Entertainment',
-    claimant_type: 'record_label',
-    match_type: 'audio_fingerprint',
-    confidence_score: 88.3,
-    matched_reference_title: 'Midnight Coffee Lofi Loop - Sample Pack V3',
-    timestamp_start: '12:30',
-    timestamp_end: '15:10',
-    policy_action: 'monetize',
-    status: 'released',
-    created_at: '2026-07-25T09:15:00Z',
-    thumbnail_url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'claim_105',
-    video_id: 'v_ai_music_gen',
-    video_title: 'Creating Full Pop Songs with Gemini Audio AI in 5 Mins',
-    channel_name: 'AI Sound Lab',
-    channel_handle: '@aisoundlab',
-    claimant: 'PRO NAX Automated Content ID',
-    claimant_type: 'pro_nax_ai',
-    match_type: 'metadata_exact',
-    confidence_score: 91.0,
-    matched_reference_title: 'AI Vocal Synthesizer Preset #892',
-    timestamp_start: '00:10',
-    timestamp_end: '00:55',
-    policy_action: 'track_only',
-    status: 'active',
-    created_at: '2026-07-28T22:00:00Z',
-    thumbnail_url: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80',
-  },
-];
-
 function mapRowToClaimItem(c: CopyrightClaimRow): CopyrightClaimItem {
   return {
     id: c.id,
@@ -228,7 +118,7 @@ function mapRowToClaimItem(c: CopyrightClaimRow): CopyrightClaimItem {
 }
 
 export function CopyrightClaimsTab() {
-  const [claims, setClaims] = useState<CopyrightClaimItem[]>(SEED_CLAIMS);
+  const [claims, setClaims] = useState<CopyrightClaimItem[]>([]);
   const [_loading, setLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
@@ -259,13 +149,11 @@ export function CopyrightClaimsTab() {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && data && data.length > 0) {
-        const mapped: CopyrightClaimItem[] = (data as CopyrightClaimRow[]).map(mapRowToClaimItem);
-        // Merge with SEED_CLAIMS to preserve full demo dataset
-        setClaims(mapped.concat(SEED_CLAIMS.filter((s) => !mapped.some((m) => m.id === s.id))));
+      if (!error && data) {
+        setClaims((data as CopyrightClaimRow[]).map(mapRowToClaimItem));
       }
     } catch {
-      // Fallback stays SEED_CLAIMS
+      setClaims([]);
     } finally {
       setLoading(false);
     }

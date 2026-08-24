@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 // Routes Pronax Studio's AI calls to the `pronax-gemini` edge function,
 // keeping the original fetch(path, init) call signature used by the views.
 const BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pronax-gemini`;

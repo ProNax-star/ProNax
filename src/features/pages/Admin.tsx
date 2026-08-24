@@ -1,7 +1,8 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, Users, Flag, Wallet, AlertTriangle, Loader2, Check, X, Ban, ShieldCheck, Trash2, Plus, Minus, ScrollText, Gavel, Activity, Bot, Video, Zap, Eye, EyeOff, Rocket, Heart, MessageSquare, AlertCircle, BadgeCheck, Home, ShieldAlert, Cpu, Settings as SettingsIcon, LayoutDashboard, Sliders, Tag as TagIcon, Megaphone, Gauge } from 'lucide-react';
+import { Shield, Users, Flag, Wallet, AlertTriangle, Loader2, Check, X, Ban, ShieldCheck, Trash2, Plus, Minus, ScrollText, Gavel, Activity, Bot, Video, Zap, Eye, EyeOff, Rocket, Heart, MessageSquare, AlertCircle, BadgeCheck, Home, ShieldAlert, Cpu, Settings as SettingsIcon, LayoutDashboard, Sliders, Tag as TagIcon, Megaphone, Gauge, KeyRound } from 'lucide-react';
 import { CommandCenterTab } from '@/components/admin/CommandCenter';
 import { ModerationSettingsTab } from '@/components/admin/ModerationSettingsTab';
 import { EngineBoundary } from '@/components/EngineBoundary';
@@ -12,10 +13,12 @@ import { AlgorithmTab } from '@/components/admin/tabs/AlgorithmTab';
 import { RealtimeTab } from '@/components/admin/tabs/RealtimeTab';
 import { LivePreviewTab } from '@/components/admin/tabs/LivePreviewTab';
 import { AdSettingsTab } from '@/components/admin/tabs/AdSettingsTab';
+import { AdManagementTab } from '@/components/admin/tabs/AdManagementTab';
 import { CopyrightCenterTab } from '@/components/admin/tabs/CopyrightCenterTab';
 import { UserManagementTab } from '@/components/admin/tabs/UserManagementTab';
 import { AuditLogsTab } from '@/components/admin/tabs/AuditLogsTab';
 import { RateLimitTab } from '@/components/admin/tabs/RateLimitTab';
+import { AdminAccessTab } from '@/components/admin/tabs/AdminAccessTab';
 import { toast } from 'sonner';
 import { supabase as _supabase } from '@/integrations/supabase/loose';
 import { moderationQueue } from '@/lib/moderationQueue';
@@ -30,7 +33,7 @@ function enqueueMod(name: string, args: Record<string, unknown>, okMsg: string) 
   );
 }
 
-type Tab = 'preview' | 'command' | 'app' | 'categories' | 'algorithm' | 'realtime' | 'users' | 'videos' | 'copyright' | 'reports' | 'moderation' | 'appeals' | 'settings' | 'wallets' | 'withdrawals' | 'audit' | 'auditlogs' | 'ratelimits' | 'monitor' | 'ads';
+type Tab = 'preview' | 'command' | 'app' | 'categories' | 'algorithm' | 'realtime' | 'users' | 'videos' | 'copyright' | 'reports' | 'moderation' | 'appeals' | 'settings' | 'wallets' | 'withdrawals' | 'audit' | 'auditlogs' | 'ratelimits' | 'monitor' | 'ads' | 'admanager' | 'access';
 type AdminState = 'checking' | 'bootstrap' | 'denied' | 'authed';
 
 
@@ -203,12 +206,14 @@ export default function Admin() {
     { id: 'wallets', label: 'Earn & Creator Wallets', icon: Wallet, group: 'Monetization & AdSense' },
     { id: 'withdrawals', label: 'Payout Requests', icon: Wallet, group: 'Monetization & AdSense' },
     { id: 'ads', label: 'Ad Network & RPM/CPM', icon: Megaphone, group: 'Monetization & AdSense' },
+    { id: 'admanager', label: 'Ad Management (16:9)', icon: Megaphone, group: 'Monetization & AdSense' },
 
     { id: 'algorithm', label: 'Algorithm Tuning Engine', icon: Cpu, group: 'Studio Settings & Control' },
     { id: 'users', label: 'User Directory & Verification', icon: Users, group: 'Studio Settings & Control' },
     { id: 'categories', label: 'Categories & Tags', icon: TagIcon, group: 'Studio Settings & Control' },
     { id: 'app', label: 'App Controls', icon: SettingsIcon, group: 'Studio Settings & Control' },
     { id: 'settings', label: 'Automated Moderation Rules', icon: Sliders, group: 'Studio Settings & Control' },
+    { id: 'access', label: 'Admin Access & Team', icon: KeyRound, group: 'System & Security' },
     { id: 'monitor', label: 'System Health Monitor', icon: Activity, group: 'System & Security' },
     { id: 'audit', label: 'Admin Action Log', icon: ScrollText, group: 'System & Security' },
     { id: 'auditlogs', label: 'Application Audit Trail', icon: ScrollText, group: 'System & Security' },
@@ -240,9 +245,11 @@ export default function Admin() {
         {tab === 'wallets' && <WalletsTab />}
         {tab === 'withdrawals' && <WithdrawalsTab />}
         {tab === 'ads' && <AdSettingsTab />}
+        {tab === 'admanager' && <EngineBoundary name="ad-management"><AdManagementTab /></EngineBoundary>}
         {tab === 'audit' && <AuditTab />}
         {tab === 'auditlogs' && <EngineBoundary name="audit-logs"><AuditLogsTab /></EngineBoundary>}
         {tab === 'ratelimits' && <EngineBoundary name="rate-limits"><RateLimitTab /></EngineBoundary>}
+        {tab === 'access' && <EngineBoundary name="admin-access"><AdminAccessTab /></EngineBoundary>}
         {tab === 'monitor' && <MonitorTab />}
       </motion.div>
     </AdminShell>
@@ -471,41 +478,7 @@ function ReportsTab() {
       // Fallback
     }
 
-    const localReports = JSON.parse(localStorage.getItem('pronax_user_reports') || '[]');
-    const seedReports = [
-      {
-        id: 'rep_seed_001',
-        video_id: 'v_cyberpunk_night',
-        reason: 'COPYRIGHT: Unauthorized audio track re-upload without sync license',
-        details: 'Timestamp: 01:15 - 03:42, Fingerprint FP-SHA256-A89F matched reference master.',
-        status: 'pending',
-        created_at: new Date(Date.now() - 3600000 * 4).toISOString(),
-      },
-      {
-        id: 'rep_seed_002',
-        video_id: 'v_crypto_bot_live',
-        reason: 'SPAM_MISLEADING: Automated phishing link in video overlay & chat bot',
-        details: 'Promoting fake Elon Musk giveaway site.',
-        status: 'pending',
-        created_at: new Date(Date.now() - 3600000 * 12).toISOString(),
-      },
-      {
-        id: 'rep_seed_003',
-        video_id: 'v_unreal_engine_5',
-        reason: 'HARASSMENT_HATE: Hate speech in comments and targeted harassment',
-        details: 'Multiple users flagged toxic comment threads.',
-        status: 'reviewed',
-        created_at: new Date(Date.now() - 3600000 * 28).toISOString(),
-      },
-    ];
-
-    const merged = [...dbReports, ...localReports, ...seedReports];
-    const uniqueMap = new Map();
-    merged.forEach(item => {
-      if (!uniqueMap.has(item.id)) uniqueMap.set(item.id, item);
-    });
-
-    setRows(Array.from(uniqueMap.values()));
+    setRows(dbReports);
     setLoading(false);
   }, []);
 
@@ -520,11 +493,10 @@ function ReportsTab() {
     return () => { supabase.removeChannel(ch); };
   }, [load]);
 
-  const resolve = (id: string, status: string) => {
+  const resolve = async (id: string, status: string) => {
     setRows(prev => prev.map(r => r.id === id ? { ...r, status } : r));
-    const localReports = JSON.parse(localStorage.getItem('pronax_user_reports') || '[]');
-    const updatedLocal = localReports.map((r: any) => r.id === id ? { ...r, status } : r);
-    localStorage.setItem('pronax_user_reports', JSON.stringify(updatedLocal));
+    const { error } = await supabase.from('video_reports').update({ status }).eq('id', id);
+    if (error) { toast.error('Could not update report'); void load(); return; }
     toast.success(`Report status set to ${status}`);
     void enqueueMod('admin_resolve_report', { p_report: id, p_status: status }, `Report ${status}`);
   };
@@ -1134,11 +1106,11 @@ function MonitorTab() {
         </h2>
         <div className="space-y-1 max-h-[28rem] overflow-y-auto">
           {rows.map(r => (
-            <div key={r.id} className="grid grid-cols-[80px_120px_1fr_140px] gap-2 text-[11px] glass rounded px-2 py-1.5 border border-border/30 items-center">
+            <div key={r.id} className="grid grid-cols-[70px_1fr] md:grid-cols-[80px_120px_1fr_140px] gap-x-2 gap-y-0.5 text-[11px] glass rounded px-2 py-1.5 border border-border/30 items-center">
               <span className={`font-bold uppercase ${kindColor(r.kind)}`}>{r.kind}</span>
-              <span className="text-muted-foreground truncate font-mono text-[10px]">{r.user_id?.slice(0, 8) ?? '—'}</span>
-              <span className="text-muted-foreground truncate">{r.video_id ?? ''} · {JSON.stringify(r.payload).slice(0, 90)}</span>
-              <span className="text-muted-foreground text-right tabular-nums text-[10px]">{new Date(r.created_at).toLocaleTimeString()}</span>
+              <span className="text-muted-foreground truncate font-mono text-[10px] text-right md:text-left">{r.user_id?.slice(0, 8) ?? '—'}</span>
+              <span className="text-muted-foreground truncate col-span-2 md:col-span-1">{r.video_id ?? ''} · {JSON.stringify(r.payload).slice(0, 90)}</span>
+              <span className="text-muted-foreground text-right tabular-nums text-[10px] col-span-2 md:col-span-1">{new Date(r.created_at).toLocaleTimeString()}</span>
             </div>
           ))}
           {rows.length === 0 && <p className="text-xs text-muted-foreground text-center py-6">No activity yet.</p>}

@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -308,10 +309,10 @@ export default function App() {
 
       {/* Video Studio Editor Modal (Trim / Blur / End Screen) */}
       <VideoEditorModal
-        video={editorVideo}
+        video={editorVideo as any}
         isOpen={!!editorVideo}
         onClose={() => setEditorVideo(null)}
-        onSaveVideo={handleSaveVideo}
+        onSaveVideo={handleSaveVideo as any}
       />
 
       {/* Live Control Room Modal */}

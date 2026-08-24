@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState, useCallback } from 'react';
 
 const DISMISS_KEY = 'pronax_adblock_dismissed_at';

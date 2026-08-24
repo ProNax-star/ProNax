@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, LogOut, SlidersHorizontal, Settings as SettingsIcon, Sun, Moon, LogIn, Shield, Key, Sparkles, X } from 'lucide-react';
@@ -56,7 +57,7 @@ export function ProfileMenu() {
     supabase.rpc('admin_bootstrap_status').then(({ data }) => {
       const b = data as { is_admin?: boolean; can_claim_initial_admin?: boolean } | null;
       setShowAdmin(Boolean(b?.is_admin || b?.can_claim_initial_admin));
-    }).catch(() => {
+    }, () => {
       // RPC function doesn't exist or failed - just hide admin options
       setShowAdmin(false);
     });

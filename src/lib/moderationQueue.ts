@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * moderationQueue — main-thread facade over the moderation Web Worker.
  *
@@ -51,7 +52,7 @@ async function loadPersisted(): Promise<Job[]> {
 function boot() {
   if (worker || typeof window === "undefined" || typeof Worker === "undefined") return;
   try {
-    worker = new Worker(new URL("../workers/moderation.worker.ts", import.meta.url));
+    worker = new Worker(new URL("../workers/moderation.worker.ts", import.meta.url), { type: "module" });
     worker.onmessage = (e: MessageEvent<OutMsg>) => {
       const msg = e.data;
       if (msg.type === "ack") {

@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { Outlet, useLocation } from '@tanstack/react-router';
 import { AppHeader } from './AppHeader';
 import { AppSidebar } from './AppSidebar';
@@ -7,6 +8,16 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 export function MainLayout() {
   const location = useLocation();
   const isShortsPage = location.pathname.includes('/shorts');
+  // Admin console renders its own full-screen shell — no user app header/sidebar/bottom nav.
+  const isStandalonePage = /^\/admin(\/|$)/.test(location.pathname);
+
+  if (isStandalonePage) {
+    return (
+      <div className="min-h-screen w-full bg-black text-white">
+        <Outlet />
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -27,7 +38,7 @@ export function MainLayout() {
         )}
 
         {/* Flex Wrapper for Sidebar & Content */}
-        <div className={`flex flex-1 w-full overflow-hidden relative ${isShortsPage ? 'h-[calc(100vh-48px)] md:h-[calc(100vh-64px)]' : 'h-[calc(100vh-112px)] md:h-[calc(100vh-64px)]'}`}>
+        <div className={`flex flex-1 w-full overflow-hidden relative ${isShortsPage ? 'h-[100dvh] md:h-[calc(100vh-64px)]' : 'h-[calc(100vh-104px)] md:h-[calc(100vh-64px)]'}`}>
           
           {/* App Sidebar Container (Desktop) */}
           <div className="flex-shrink-0 relative z-20">
@@ -37,9 +48,8 @@ export function MainLayout() {
           {/* Main Content Area */}
           <SidebarInset 
             className={`flex-1 min-w-0 h-full overflow-y-auto bg-black !m-0 !rounded-none ${
-              isShortsPage ? '!p-0' : 'p-4 md:p-6'
+              isShortsPage ? '!p-0' : 'px-0 py-2 md:p-6 pb-20 md:pb-6'
             }`}
-            style={{ paddingBottom: isShortsPage ? '0' : 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
           >
             <div className={`w-full h-full ${isShortsPage ? 'max-w-none' : 'max-w-[1600px] mx-auto'}`}>
               <Outlet />

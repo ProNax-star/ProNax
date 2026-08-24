@@ -1,19 +1,23 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * Redis Client Configuration
  * Provides caching layer with auto-reconnect, error handling, and pattern invalidation
  */
 
-import Redis from 'redis';
+import * as RedisNS from 'redis';
+
+type RedisClient = any;
+const Redis: any = (RedisNS as any).createClient ?? (RedisNS as any).default ?? RedisNS;
 
 // Redis client instance
-let redisClient: Redis | null = null;
+let redisClient: RedisClient | null = null;
 
 /**
  * Get or create Redis client instance with connection pooling and auto-reconnect
  */
-export function getRedisClient(): Redis {
+export function getRedisClient(): RedisClient {
   if (!redisClient) {
-    redisClient = Redis({
+    redisClient = (typeof Redis === 'function' ? Redis : Redis.createClient)({
       host: process.env.REDIS_HOST || 'localhost',
       port: parseInt(process.env.REDIS_PORT || '6379'),
       password: process.env.REDIS_PASSWORD || undefined,

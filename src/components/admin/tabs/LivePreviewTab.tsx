@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useRef, useState } from 'react';
 import { Smartphone, Monitor, Tablet, RefreshCw, ExternalLink, Radio, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { AppControlTab } from './AppControlTab';

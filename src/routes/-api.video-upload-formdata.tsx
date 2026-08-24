@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { supabase } from '@/integrations/supabase/loose';
 
 export interface FormDataUploadParams {
@@ -112,8 +113,7 @@ export async function uploadVideoFormData(params: FormDataUploadParams): Promise
         
         console.log('Checking for duplicate fingerprint in FormData upload:', videoFingerprint);
         
-        const { data: duplicateCheck, error: duplicateError } = await supabase
-          .rpc('check_and_handle_duplicate_fingerprint', {
+        const { data: duplicateCheck, error: duplicateError } = await (supabase.rpc as any)('check_and_handle_duplicate_fingerprint', {
             p_fingerprint: videoFingerprint,
             p_video_id: videoId,
             p_video_title: params.title,

@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -42,120 +43,8 @@ const SLOT_HELP: Record<string, string> = {
   floating_anchor: 'Sticky bottom floating bar ad displayed persistently across mobile and desktop.',
 };
 
-const DEFAULT_SLOTS: AdSlotRow[] = [
-  {
-    id: 'player_preroll',
-    slot: 'player_preroll',
-    kind: 'video',
-    enabled: true,
-    network: 'google_ad_manager',
-    html_snippet: '',
-    vast_tag_url: 'https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/single_ad_samples&sz=640x480&ciu_szs=300x250%2C728x90&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=sample_ct%3Dlinear&correlator=',
-    ad_unit_id: 'ca-pub-pronax-preroll-01',
-    publisher_id: 'pub-88492019482',
-    frequency: 0,
-    impressions_count: 1425800,
-    notes: 'Default video preroll for ProNax Watch Page',
-  },
-  {
-    id: 'player_midroll',
-    slot: 'player_midroll',
-    kind: 'video',
-    enabled: true,
-    network: 'vast_vpaid_custom',
-    html_snippet: '',
-    vast_tag_url: 'https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/single_ad_samples&sz=640x480&ciu_szs=300x250%2C728x90&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=sample_ct%3Dlinear&correlator=',
-    ad_unit_id: 'ca-pub-pronax-midroll-01',
-    publisher_id: 'pub-88492019482',
-    frequency: 300,
-    impressions_count: 894200,
-    notes: 'Midroll triggers every 5 minutes (300 seconds) on videos longer than 8 minutes',
-  },
-  {
-    id: 'player_postroll',
-    slot: 'player_postroll',
-    kind: 'video',
-    enabled: true,
-    network: 'google_ad_manager',
-    html_snippet: '',
-    vast_tag_url: 'https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/single_ad_samples&sz=640x480&ciu_szs=300x250%2C728x90&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=sample_ct%3Dlinear&correlator=',
-    ad_unit_id: 'ca-pub-pronax-postroll-01',
-    publisher_id: 'pub-88492019482',
-    frequency: 0,
-    impressions_count: 512000,
-    notes: 'Post-roll triggers immediately after video ends',
-  },
-  {
-    id: 'shorts_between',
-    slot: 'shorts_between',
-    kind: 'banner',
-    enabled: true,
-    network: 'monetag',
-    html_snippet: '<div style="background:#111;color:#fff;padding:20px;text-align:center;border-radius:12px;border:1px solid #06b6d4;"><p style="font-size:12px;color:#06b6d4;font-weight:bold;">ProNax Sponsored Short</p><p style="font-weight:bold;font-size:16px;">Discover Next-Gen AI Creator Tools</p><p style="font-size:12px;color:#a1a1aa;margin-top:6px;">Monetize your video content with ProNax Studio</p></div>',
-    vast_tag_url: '',
-    ad_unit_id: 'shorts-interstitial-1',
-    publisher_id: 'pub-88492019482',
-    frequency: 4,
-    impressions_count: 3241000,
-    notes: 'Inserted every 4 Shorts swipes',
-  },
-  {
-    id: 'watch_below_player',
-    slot: 'watch_below_player',
-    kind: 'banner',
-    enabled: true,
-    network: 'google_adsense',
-    html_snippet: '<div style="background:#18181b;padding:14px;border-radius:10px;border:1px solid #27272a;display:flex;align-items:center;justify-content:between;"><div style="flex:1;"><span style="font-size:10px;color:#06b6d4;text-transform:uppercase;font-weight:bold;">Sponsored Ad</span><div style="font-size:14px;font-weight:700;color:#f4f4f5;margin-top:2px;">Upgrade Your Creator Studio Setup</div></div><a href="#" style="background:#06b6d4;color:#000;padding:8px 16px;border-radius:8px;font-weight:bold;font-size:12px;text-decoration:none;">Learn More</a></div>',
-    vast_tag_url: '',
-    ad_unit_id: 'watch-banner-below-1',
-    publisher_id: 'pub-88492019482',
-    frequency: 0,
-    impressions_count: 2150000,
-    notes: 'Displayed under watch page video player',
-  },
-  {
-    id: 'feed_grid_row',
-    slot: 'feed_grid_row',
-    kind: 'banner',
-    enabled: true,
-    network: 'adsterra',
-    html_snippet: '<div style="background:#09090b;padding:16px;border-radius:12px;border:1px solid #27272a;"><span style="font-size:10px;color:#71717a;text-transform:uppercase;font-weight:bold;">Adsterra Sponsored Native</span><div style="font-size:14px;font-weight:bold;color:#38bdf8;margin-top:4px;">Stream in Ultra HD 4K without lag</div></div>',
-    vast_tag_url: '',
-    ad_unit_id: 'feed-native-card-1',
-    publisher_id: 'pub-88492019482',
-    frequency: 6,
-    impressions_count: 4890000,
-    notes: 'Injected every 6 video cards on home feed',
-  },
-  {
-    id: 'sidebar',
-    slot: 'sidebar',
-    kind: 'banner',
-    enabled: true,
-    network: 'google_adsense',
-    html_snippet: '<div style="background:#18181b;padding:20px;border-radius:12px;text-align:center;border:1px solid #3f3f46;"><p style="font-size:10px;color:#71717a;text-transform:uppercase;">Sidebar Ad 300x250</p><p style="font-weight:bold;color:#fff;margin-top:8px;">ProNax Creator Pro Subscription</p></div>',
-    vast_tag_url: '',
-    ad_unit_id: 'sidebar-banner-300x250',
-    publisher_id: 'pub-88492019482',
-    frequency: 0,
-    impressions_count: 1120000,
-    notes: 'Desktop sidebar 300x250 banner',
-  },
-  {
-    id: 'floating_anchor',
-    slot: 'floating_anchor',
-    kind: 'banner',
-    enabled: true,
-    network: 'propellerads',
-    html_snippet: '<div style="background:#09090b;padding:10px 16px;border-top:1px solid #06b6d4;display:flex;align-items:center;justify-content:between;"><span style="font-size:11px;color:#fff;font-weight:bold;">🔥 ProNax Special Offer: Earn 80% RevShare today</span><span style="font-size:10px;color:#06b6d4;border:1px solid #06b6d4;padding:2px 8px;border-radius:6px;">SPONSORED</span></div>',
-    vast_tag_url: '',
-    ad_unit_id: 'anchor-bottom-banner',
-    publisher_id: 'pub-88492019482',
-    frequency: 0,
-    impressions_count: 980000,
-    notes: 'Floating sticky bottom anchor banner across all pages',
-  },
-];
+/** No demo creatives: the console only ever renders real rows from `ad_settings`. */
+const DEFAULT_SLOTS: AdSlotRow[] = [];
 
 export function AdSettingsTab() {
   const [rows, setRows] = useState<AdSlotRow[]>([]);
@@ -179,7 +68,7 @@ export function AdSettingsTab() {
     return Number(localStorage.getItem('pronax_min_payout')) || 50;
   });
   const [globalEcpm, setGlobalEcpm] = useState<string>(() => {
-    return localStorage.getItem('pronax_global_ecpm') || '8.45';
+    return localStorage.getItem('pronax_global_ecpm') || '0';
   });
 
   const [liveNetworkReviews, setLiveNetworkReviews] = useState<NetworkRateReview[]>([]);
@@ -218,7 +107,7 @@ export function AdSettingsTab() {
       .order('kind', { ascending: true })
       .order('slot', { ascending: true });
 
-    if (error || !data || data.length === 0) {
+    if (error || !data) {
       setRows(DEFAULT_SLOTS);
     } else {
       setRows(data as AdSlotRow[]);
@@ -347,7 +236,12 @@ export function AdSettingsTab() {
   };
 
   const totalImpressions = rows.reduce((acc, r) => acc + (r.impressions_count || 0), 0);
-  const totalEstimatedRevenue = ((totalImpressions / 1000) * parseFloat(globalEcpm || '8.45')).toFixed(2);
+  // Measured eCPM across networks that actually recorded revenue (no assumed rate).
+  const earningNetworks = liveNetworkReviews.filter((n) => n.cpmPer1kViews > 0);
+  const measuredEcpm = earningNetworks.length
+    ? earningNetworks.reduce((a, n) => a + n.cpmPer1kViews, 0) / earningNetworks.length
+    : 0;
+  const totalEstimatedRevenue = ((totalImpressions / 1000) * measuredEcpm).toFixed(2);
   const platformRevenue = ((parseFloat(totalEstimatedRevenue) * (100 - creatorRevShare)) / 100).toFixed(2);
   const creatorPayoutTotal = ((parseFloat(totalEstimatedRevenue) * creatorRevShare) / 100).toFixed(2);
 
@@ -432,7 +326,7 @@ export function AdSettingsTab() {
             <span>Network Average eCPM</span>
             <BarChart3 className="w-4 h-4 text-amber-400" />
           </div>
-          <div className="text-2xl font-black text-amber-300 font-mono">${globalEcpm}</div>
+          <div className="text-2xl font-black text-amber-300 font-mono">${measuredEcpm.toFixed(2)}</div>
           <div className="text-[11px] text-zinc-400 mt-1 font-mono">
             {(totalImpressions / 1000).toFixed(0)}k total impressions served
           </div>
@@ -476,7 +370,7 @@ export function AdSettingsTab() {
                 <th className="pb-2 text-cyan-300">Creator Earn (55%)</th>
                 <th className="pb-2 text-purple-300">Platform Share (45%)</th>
                 <th className="pb-2">Fill Rate</th>
-                <th className="pb-2">Latency</th>
+                <th className="pb-2">Impressions (30d)</th>
                 <th className="pb-2 text-right">Auction Status</th>
               </tr>
             </thead>
@@ -500,7 +394,7 @@ export function AdSettingsTab() {
                     {(net.fillRate * 100).toFixed(0)}%
                   </td>
                   <td className="py-2.5 text-zinc-400">
-                    {net.latencyMs}ms
+                    {net.impressions.toLocaleString()}
                   </td>
                   <td className="py-2.5 text-right">
                     {net.status === 'winning_optimal' ? (
@@ -509,12 +403,19 @@ export function AdSettingsTab() {
                       </span>
                     ) : (
                       <span className="px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 text-[10px]">
-                        ACTIVE BID
+                        {net.status === 'no_data' ? 'NO IMPRESSIONS YET' : 'ACTIVE BID'}
                       </span>
                     )}
                   </td>
                 </tr>
               ))}
+              {!reviewingNetworks && liveNetworkReviews.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-6 text-center text-zinc-500 font-sans text-xs">
+                    No ad network has recorded an impression yet. Enable a slot below and rates will appear here from live revenue data.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

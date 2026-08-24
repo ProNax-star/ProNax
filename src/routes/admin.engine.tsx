@@ -1,14 +1,15 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { createFileRoute } from "@tanstack/react-router";
-import AdminEngine from "@/features/pages/AdminEngine";
+import Admin from "@/features/pages/Admin";
 
 export const Route = createFileRoute("/admin/engine")({
   head: () => ({
     meta: [
-      { title: "Admin engine — ProNax" },
-      { name: "description", content: "Inspect and tune the ProNax recommendation engine." },
-      { property: "og:title", content: "Admin engine — ProNax" },
-      { property: "og:description", content: "Inspect and tune the ProNax recommendation engine." },
+      { title: "Admin — ProNax" },
+      { name: "description", content: "ProNax platform administration console." },
+      { property: "og:title", content: "Admin — ProNax" },
+      { property: "og:description", content: "ProNax platform administration console." },
     ],
   }),
-  component: AdminEngine,
+  component: Admin,
 });

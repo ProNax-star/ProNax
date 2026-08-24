@@ -218,7 +218,7 @@ def mock_get_impl_error_enum(endpoint: str, **json):
                 "hashRegions": ["UK"],
                 "CSPFeedbacks": [
                     {
-                        "source": "TikTok",
+                        "source": "pronax",
                         "feedbackValue": "Undefined",
                         "tags": ["Tag-One", "Tag-eight"],
                     },

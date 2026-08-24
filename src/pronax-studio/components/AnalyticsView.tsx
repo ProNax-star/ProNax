@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import React, { useState, useEffect, useRef } from "react";
 import {
   AreaChart,
@@ -76,6 +77,20 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   const [minuteViewsLoading, setMinuteViewsLoading] = useState(false);
   const [minuteViewsError, setMinuteViewsError] = useState<string | null>(null);
   
+  const refreshMinuteFn = async () => {
+    if (!user?.id) return;
+    try {
+      setMinuteViewsLoading(true);
+      setMinuteViewsError(null);
+      const { fetchMinuteViews } = await import("../analyticsApi");
+      setMinuteViewsData(await fetchMinuteViews(user.id, 60));
+    } catch (err) {
+      setMinuteViewsError(err instanceof Error ? err.message : 'Failed to load');
+    } finally {
+      setMinuteViewsLoading(false);
+    }
+  };
+
   useEffect(() => {
     const loadMinuteViews = async () => {
       if (!user?.id) return;

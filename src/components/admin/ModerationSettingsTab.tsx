@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, Save, ShieldCheck, Zap, Link2, MessageSquareWarning, PowerOff } from 'lucide-react';
@@ -145,7 +146,7 @@ export function ModerationSettingsTab() {
 }
 
 function AIModerationTestCard() {
-  const [sampleText, setSampleText] = useState('Awesome video! Check out my free crypto investment links http://fake-crypto.xyz for 100x gains!');
+  const [sampleText, setSampleText] = useState('');
   const [testing, setTesting] = useState(false);
   const [res, setRes] = useState<any>(null);
 

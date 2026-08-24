@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { supabase } from "@/integrations/supabase/loose";
 
 export interface ChartDataPoint {
@@ -153,7 +154,7 @@ export async function fetchTrafficSources(
   userId: string
 ): Promise<TrafficSource[]> {
   try {
-    const { data, error } = await supabase.rpc('get_traffic_sources_analytics', { p_user_id: userId });
+    const { data, error } = await (supabase.rpc as any)('get_traffic_sources_analytics', { p_user_id: userId });
     
     if (error) throw error;
     
@@ -179,7 +180,7 @@ export async function fetchGeographies(
   userId: string
 ): Promise<GeographyData[]> {
   try {
-    const { data, error } = await supabase.rpc('get_geography_analytics', { p_user_id: userId });
+    const { data, error } = await (supabase.rpc as any)('get_geography_analytics', { p_user_id: userId });
     
     if (error) throw error;
     
@@ -205,7 +206,7 @@ export async function fetchRealTimeViews(
   userId: string
 ): Promise<{ last48Hours: number; last60Minutes: number }> {
   try {
-    const { data, error } = await supabase.rpc('get_realtime_views', { p_user_id: userId });
+    const { data, error } = await (supabase.rpc as any)('get_realtime_views', { p_user_id: userId });
     
     if (error) throw error;
     
@@ -213,7 +214,7 @@ export async function fetchRealTimeViews(
       return { last48Hours: 0, last60Minutes: 0 };
     }
     
-    const result = data[0];
+    const result = data[0] as any;
     return {
       last48Hours: result.last_48_hours || 0,
       last60Minutes: result.last_60_minutes || 0,
@@ -232,7 +233,7 @@ export async function fetchMinuteViews(
   minutes: number = 60
 ): Promise<{ min: string; views: number }[]> {
   try {
-    const { data, error } = await supabase.rpc('get_minute_views', { 
+    const { data, error } = await (supabase.rpc as any)('get_minute_views', { 
       p_user_id: userId, 
       p_minutes: minutes 
     });

@@ -1,49 +1,39 @@
-// Ad SDK adapter — Live multi-network ad auction & CPM rate review layer.
-// Connects to Google AdSense/IMA, Adsterra, PropellerAds, Ezoic, Unity Ads, AppLovin, and Direct Private Sponsors.
-// Reviews 1k view live rates (eCPM) across all networks, picks the highest yield network,
-// and enforces the 55% Creator / 45% Platform revenue split.
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
+// Ad SDK adapter — real revenue accounting layer.
+// All CPM / fill-rate figures are derived from actual recorded impressions in
+// `revenue_logs` and the ad networks configured in `ad_settings`.
+// No simulated, random or demo rates are produced anywhere in this module.
 
-export type AdNetwork =
-  | 'google_ima'
-  | 'adsense'
-  | 'adsterra'
-  | 'propellerads'
-  | 'ezoic'
-  | 'unity'
-  | 'applovin'
-  | 'direct';
+import { supabase } from '@/integrations/supabase/loose';
+
+export type AdNetwork = string;
 
 export interface NetworkRateReview {
   network: AdNetwork;
   networkName: string;
-  cpmPer1kViews: number; // USD per 1,000 views
-  creatorEarningsPer1k: number; // 55% of 1k view rate
-  platformRevenuePer1k: number; // 45% of 1k view rate
-  fillRate: number; // 0.0 to 1.0 (0% to 100%)
-  latencyMs: number;
-  status: 'winning_optimal' | 'active_bid' | 'fallback';
+  /** Measured eCPM (USD per 1,000 views) from recorded impressions. */
+  cpmPer1kViews: number;
+  creatorEarningsPer1k: number;
+  platformRevenuePer1k: number;
+  /** Share of recorded impressions for this network that produced revenue. */
+  fillRate: number;
+  /** Total views attributed to this network in the measured window. */
+  views: number;
+  /** Number of recorded impression rows in the measured window. */
+  impressions: number;
+  status: 'winning_optimal' | 'active_bid' | 'no_data';
 }
 
 export interface AdImpressionResult {
-  /** Actual gross revenue earned for this single impression in USD. */
   revenue: number;
-  /** Creator payout for this impression (55%). */
   creatorShare: number;
-  /** Platform retained revenue for this impression (45%). */
   platformShare: number;
-  /** Effective CPM the winning ad network paid for 1,000 views (USD per 1k). */
   cpm: number;
-  /** Ad network identifier that won the bid and filled the slot. */
   network: AdNetwork;
-  /** True if a real ad served, false if the slot went unfilled. */
   filled: boolean;
-  /** Network-reported fill rate (0–1). */
   fillRate: number;
-  /** Optional VAST tag / line item identifier. */
   creativeId?: string;
-  /** ISO timestamp when the live rates were reviewed. */
   fetchedAt: string;
-  /** Comparative review breakdown across all connected ad networks. */
   networkBreakdown?: NetworkRateReview[];
 }
 
@@ -52,87 +42,111 @@ export interface LiveRates {
   network: AdNetwork;
   fillRate: number;
   fetchedAt: string;
-  creatorSharePct: number; // 55
-  platformSharePct: number; // 45
+  creatorSharePct: number;
+  platformSharePct: number;
   networkBreakdown: NetworkRateReview[];
 }
 
-const RATE_TTL_MS = 30_000; // 30 seconds caching for real-time live bidding
+const RATE_TTL_MS = 60_000;
 let cachedRates: { value: LiveRates; expiresAt: number } | null = null;
 
-// Standard Revenue Sharing Constants
 export const CREATOR_SHARE_PCT = 55;
 export const PLATFORM_SHARE_PCT = 45;
 
-/**
- * Conduct a live review of 1,000 views eCPM across all integrated ad networks.
- * Calculates live 1k view earnings for each network and selects the highest paying provider.
- */
-export async function fetchMultiNetworkLiveRates(): Promise<NetworkRateReview[]> {
-  // Read live global eCPM set by ProNax Admin or default to $8.45 per 1k views
-  const storedEcpm = typeof localStorage !== 'undefined' ? localStorage.getItem('pronax_global_ecpm') : null;
-  const baseEcpm = storedEcpm ? Math.max(1.0, parseFloat(storedEcpm)) : 8.45;
+/** Measurement window for network performance. */
+const WINDOW_DAYS = 30;
 
-  // Simulate real-time auction rates per 1,000 views from each network around the baseline
-  const networkDefinitions: { id: AdNetwork; name: string; multiplier: number; fill: number; latency: number }[] = [
-    { id: 'google_ima', name: 'Google IMA / AdSense for Video', multiplier: 1.18, fill: 0.98, latency: 120 },
-    { id: 'direct', name: 'ProNax Direct Private Marketplace (Sponsors)', multiplier: 1.25, fill: 0.85, latency: 45 },
-    { id: 'applovin', name: 'AppLovin MAX Video Bidding', multiplier: 1.08, fill: 0.92, latency: 95 },
-    { id: 'ezoic', name: 'Ezoic Video Ad Exchange', multiplier: 0.95, fill: 0.94, latency: 140 },
-    { id: 'adsterra', name: 'Adsterra Video Network', multiplier: 0.88, fill: 0.96, latency: 110 },
-    { id: 'propellerads', name: 'PropellerAds SSP', multiplier: 0.82, fill: 0.95, latency: 130 },
-    { id: 'unity', name: 'Unity Ads Video Network', multiplier: 0.78, fill: 0.90, latency: 105 },
-  ];
+const NETWORK_LABELS: Record<string, string> = {
+  google_ima: 'Google IMA / AdSense for Video',
+  google_adsense: 'Google AdSense',
+  adsense: 'Google AdSense',
+  adsterra: 'Adsterra',
+  propellerads: 'PropellerAds',
+  ezoic: 'Ezoic',
+  unity: 'Unity Ads',
+  applovin: 'AppLovin MAX',
+  direct: 'Direct Sponsors',
+  custom: 'Custom Ad Tag',
+};
 
-  const reviewedNetworks: NetworkRateReview[] = networkDefinitions.map((net) => {
-    // Calculate exact 1k views rate with slight live market fluctuation (±3%)
-    const jitter = 0.97 + Math.random() * 0.06;
-    const rawCpmPer1k = +(baseEcpm * net.multiplier * jitter).toFixed(2);
-
-    const creatorEarningsPer1k = +(rawCpmPer1k * (CREATOR_SHARE_PCT / 100)).toFixed(4);
-    const platformRevenuePer1k = +(rawCpmPer1k * (PLATFORM_SHARE_PCT / 100)).toFixed(4);
-
-    return {
-      network: net.id,
-      networkName: net.name,
-      cpmPer1kViews: rawCpmPer1k,
-      creatorEarningsPer1k,
-      platformRevenuePer1k,
-      fillRate: net.fill,
-      latencyMs: net.latency + Math.floor(Math.random() * 20),
-      status: 'active_bid',
-    };
-  });
-
-  // Sort descending by highest 1k view eCPM rate
-  reviewedNetworks.sort((a, b) => b.cpmPer1kViews - a.cpmPer1kViews);
-
-  if (reviewedNetworks.length > 0) {
-    reviewedNetworks[0].status = 'winning_optimal';
-  }
-
-  return reviewedNetworks;
+export function networkLabel(id: string) {
+  return NETWORK_LABELS[id] ?? id.replace(/[_-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 /**
- * Fetch live CPM rates and pick the winning ad network with highest yield per 1,000 views.
+ * Aggregate real eCPM / fill-rate per ad network from recorded impressions.
+ * Returns an empty array when the platform has not served any paid impression yet.
  */
-export async function fetchLiveRates(): Promise<LiveRates> {
-  if (cachedRates && cachedRates.expiresAt > Date.now()) {
-    return cachedRates.value;
+export async function fetchMultiNetworkLiveRates(): Promise<NetworkRateReview[]> {
+  const since = new Date(Date.now() - WINDOW_DAYS * 86_400_000).toISOString();
+
+  const [{ data: logs }, { data: slots }] = await Promise.all([
+    supabase
+      .from('revenue_logs')
+      .select('ad_network, gross_revenue, amount_earned, views_count, cpm')
+      .gte('created_at', since)
+      .limit(10_000),
+    supabase.from('ad_settings').select('network, enabled'),
+  ]);
+
+  type Agg = { gross: number; views: number; rows: number; filledRows: number };
+  const byNetwork = new Map<string, Agg>();
+
+  for (const row of logs ?? []) {
+    const id = (row.ad_network || 'direct').toString();
+    const agg = byNetwork.get(id) ?? { gross: 0, views: 0, rows: 0, filledRows: 0 };
+    const gross = Number(row.gross_revenue ?? row.amount_earned ?? 0);
+    agg.gross += gross;
+    agg.views += Number(row.views_count ?? 0);
+    agg.rows += 1;
+    if (gross > 0) agg.filledRows += 1;
+    byNetwork.set(id, agg);
   }
 
+  // Configured-but-not-yet-earning networks are listed with zeroed metrics
+  // so the admin can see they are connected, without inventing numbers.
+  for (const s of slots ?? []) {
+    const id = (s.network || '').toString();
+    if (!id || byNetwork.has(id) || !s.enabled) continue;
+    byNetwork.set(id, { gross: 0, views: 0, rows: 0, filledRows: 0 });
+  }
+
+  const reviews: NetworkRateReview[] = [...byNetwork.entries()].map(([id, a]) => {
+    const cpm = a.views > 0 ? +((a.gross / a.views) * 1000).toFixed(4) : 0;
+    return {
+      network: id,
+      networkName: networkLabel(id),
+      cpmPer1kViews: cpm,
+      creatorEarningsPer1k: +(cpm * (CREATOR_SHARE_PCT / 100)).toFixed(4),
+      platformRevenuePer1k: +(cpm * (PLATFORM_SHARE_PCT / 100)).toFixed(4),
+      fillRate: a.rows > 0 ? a.filledRows / a.rows : 0,
+      views: a.views,
+      impressions: a.rows,
+      status: a.rows > 0 ? 'active_bid' : 'no_data',
+    };
+  });
+
+  reviews.sort((x, y) => y.cpmPer1kViews - x.cpmPer1kViews);
+  if (reviews.length > 0 && reviews[0].cpmPer1kViews > 0) {
+    reviews[0].status = 'winning_optimal';
+  }
+  return reviews;
+}
+
+/**
+ * Current best-performing network, based on measured eCPM.
+ * Returns cpm = 0 when there is no measured revenue yet.
+ */
+export async function fetchLiveRates(): Promise<LiveRates> {
+  if (cachedRates && cachedRates.expiresAt > Date.now()) return cachedRates.value;
+
   const breakdown = await fetchMultiNetworkLiveRates();
-  const winner = breakdown[0] || {
-    network: 'direct' as AdNetwork,
-    cpmPer1kViews: 8.45,
-    fillRate: 0.95,
-  };
+  const winner = breakdown.find((n) => n.cpmPer1kViews > 0);
 
   const value: LiveRates = {
-    cpm: winner.cpmPer1kViews,
-    network: winner.network,
-    fillRate: winner.fillRate,
+    cpm: winner?.cpmPer1kViews ?? 0,
+    network: winner?.network ?? 'direct',
+    fillRate: winner?.fillRate ?? 0,
     fetchedAt: new Date().toISOString(),
     creatorSharePct: CREATOR_SHARE_PCT,
     platformSharePct: PLATFORM_SHARE_PCT,
@@ -143,89 +157,66 @@ export async function fetchLiveRates(): Promise<LiveRates> {
   return value;
 }
 
+export function invalidateLiveRates() {
+  cachedRates = null;
+}
+
 /**
- * Request a single live ad impression. Pulls highest-paying live network CPM for 1k views,
- * derives per-impression gross revenue (CPM / 1000), applies the 55% Creator / 45% Platform split,
- * and records the impression.
+ * Account for a single served ad impression using measured network rates.
+ * Revenue is exactly eCPM / 1000 — no randomised variance or synthetic fill.
  */
 export async function requestAdImpression(opts: {
   videoId: string;
   adTagUrl?: string;
+  network?: AdNetwork;
+  cpm?: number;
 }): Promise<AdImpressionResult> {
   const rates = await fetchLiveRates();
-  const filled = Math.random() < rates.fillRate;
-
-  if (!filled) {
-    return {
-      revenue: 0,
-      creatorShare: 0,
-      platformShare: 0,
-      cpm: rates.cpm,
-      network: rates.network,
-      fillRate: rates.fillRate,
-      filled: false,
-      fetchedAt: rates.fetchedAt,
-      networkBreakdown: rates.networkBreakdown,
-    };
-  }
-
-  // Per-impression gross revenue derived from winning 1k view eCPM
-  // Variance ±5% to account for specific ad video length or targeting
-  const variance = 0.95 + Math.random() * 0.1;
-  const grossRevenue = +((rates.cpm / 1000) * variance).toFixed(6);
-
-  const creatorShare = +(grossRevenue * (CREATOR_SHARE_PCT / 100)).toFixed(6);
-  const platformShare = +(grossRevenue * (PLATFORM_SHARE_PCT / 100)).toFixed(6);
+  const cpm = opts.cpm ?? rates.cpm;
+  const network = opts.network ?? rates.network;
+  const grossRevenue = +(cpm / 1000).toFixed(6);
+  const filled = grossRevenue > 0;
 
   return {
     revenue: grossRevenue,
-    creatorShare,
-    platformShare,
-    cpm: rates.cpm,
-    network: rates.network,
+    creatorShare: +(grossRevenue * (CREATOR_SHARE_PCT / 100)).toFixed(6),
+    platformShare: +(grossRevenue * (PLATFORM_SHARE_PCT / 100)).toFixed(6),
+    cpm,
+    network,
     fillRate: rates.fillRate,
-    filled: true,
-    creativeId: `pronax-ad-${opts.videoId}-${Date.now()}`,
+    filled,
+    creativeId: filled ? `pronax-ad-${opts.videoId}-${Date.now()}` : undefined,
     fetchedAt: rates.fetchedAt,
     networkBreakdown: rates.networkBreakdown,
   };
 }
 
-/**
- * Calculate expected creator & platform earnings for any view count based on live 1k view eCPM rates.
- */
-export function calculatePayoutForViews(
-  viewsCount: number,
-  cpmPer1k: number = 8.45
-) {
+/** Expected creator & platform split for a given view count at a given eCPM. */
+export function calculatePayoutForViews(viewsCount: number, cpmPer1k: number) {
   const gross = (viewsCount / 1000) * cpmPer1k;
-  const creatorPayout = gross * (CREATOR_SHARE_PCT / 100);
-  const platformPayout = gross * (PLATFORM_SHARE_PCT / 100);
-
   return {
     viewsCount,
     cpmPer1k,
     grossPayout: +gross.toFixed(4),
-    creatorPayout: +creatorPayout.toFixed(4),
-    platformPayout: +platformPayout.toFixed(4),
+    creatorPayout: +(gross * (CREATOR_SHARE_PCT / 100)).toFixed(4),
+    platformPayout: +(gross * (PLATFORM_SHARE_PCT / 100)).toFixed(4),
     creatorPercent: CREATOR_SHARE_PCT,
     platformPercent: PLATFORM_SHARE_PCT,
   };
 }
 
-/**
- * Generate a comprehensive live report reviewing all ad networks' 1,000 views performance.
- */
+/** Comparative report across all networks with recorded performance. */
 export async function getNetworkCpmComparisonReport() {
   const breakdown = await fetchMultiNetworkLiveRates();
-  const winner = breakdown[0];
+  const winner = breakdown.find((n) => n.cpmPer1kViews > 0) ?? null;
 
   return {
     timestamp: new Date().toISOString(),
-    winningNetwork: winner?.networkName || 'Direct Marketplace',
-    topCpmPer1kViews: winner?.cpmPer1kViews || 8.45,
-    creator1kEarnings: winner?.creatorEarningsPer1k || 4.6475,
-    platform1kRevenue: winner?.platformRevenuePer1k || 3.8025,
+    windowDays: WINDOW_DAYS,
+    winningNetwork: winner?.networkName ?? null,
+    topCpmPer1kViews: winner?.cpmPer1kViews ?? 0,
+    creator1kEarnings: winner?.creatorEarningsPer1k ?? 0,
+    platform1kRevenue: winner?.platformRevenuePer1k ?? 0,
     splitRatio: `${CREATOR_SHARE_PCT}% Creator / ${PLATFORM_SHARE_PCT}% Platform`,
     networks: breakdown,
   };

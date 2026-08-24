@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * analyticsBus — thin main-thread proxy over the analytics Web Worker.
  * Keeps ALL impression / telemetry I/O off the UI thread. Falls back to
@@ -17,7 +18,7 @@ let ready = false;
 function boot() {
   if (worker || typeof window === 'undefined' || typeof Worker === 'undefined') return;
   try {
-    worker = new Worker(new URL('../workers/analytics.worker.ts', import.meta.url));
+    worker = new Worker(new URL('../workers/analytics.worker.ts', import.meta.url), { type: 'module' });
     const url = import.meta.env.VITE_SUPABASE_URL as string;
     const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
     void supabase.auth.getSession().then(({ data }) => {

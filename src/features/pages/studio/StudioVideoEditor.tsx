@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
@@ -63,7 +64,7 @@ export default function StudioVideoEditor() {
       setVisibility((data.visibility as 'public' | 'unlisted' | 'private') ?? 'public');
       
       // Load subtitles from database
-      const { data: subtitleData, error: subtitleError } = await supabase
+      const { data: subtitleData, error: subtitleError } = await (supabase as any)
         .from('video_subtitles')
         .select('*')
         .eq('video_id', id);
@@ -107,7 +108,7 @@ export default function StudioVideoEditor() {
     }
     
     // Save subtitles - delete existing and insert new ones
-    const { error: deleteError } = await supabase.from('video_subtitles').delete().eq('video_id', id);
+    const { error: deleteError } = await (supabase as any).from('video_subtitles').delete().eq('video_id', id);
     if (deleteError) {
       console.error('Error deleting old subtitles:', deleteError);
     }
@@ -123,7 +124,7 @@ export default function StudioVideoEditor() {
         is_default: sub.default || false,
       }));
       
-      const { error: insertError } = await supabase.from('video_subtitles').insert(subtitleRows);
+      const { error: insertError } = await (supabase as any).from('video_subtitles').insert(subtitleRows);
       if (insertError) {
         console.error('Error inserting subtitles:', insertError);
         toast.error('Failed to save subtitles');

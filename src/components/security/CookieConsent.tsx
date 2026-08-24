@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Cookie, X } from "lucide-react";
@@ -34,7 +35,7 @@ export function CookieConsent() {
         exit={{ opacity: 0, y: 40 }}
         role="dialog"
         aria-label="Cookie preferences"
-        className="fixed inset-x-3 bottom-20 lg:bottom-4 lg:left-auto lg:right-4 lg:max-w-md z-[70] glass-strong border border-primary/30 rounded-2xl p-4 shadow-2xl"
+        className="fixed inset-x-3 bottom-20 lg:bottom-4 lg:left-auto lg:right-4 lg:max-w-md z-[70] bg-card border border-primary/30 rounded-2xl p-4 shadow-2xl"
       >
         <div className="flex items-start gap-3">
           <Cookie className="w-5 h-5 text-primary mt-0.5 shrink-0" />

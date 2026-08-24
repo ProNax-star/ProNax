@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UploadModal } from '@/components/UploadModal';
@@ -13,12 +14,12 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#07080c] text-white px-4 pb-20 sm:p-6 md:p-8 flex flex-col items-center justify-center relative overflow-hidden [perspective:1000px]">
+    <div className="min-h-[100dvh] w-full bg-[#07080c] text-white px-3 sm:px-6 md:px-8 pt-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-10 flex flex-col items-center justify-center relative overflow-x-hidden [perspective:1000px]">
       {/* Background Ambient Neon Glows */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 left-1/3 w-[400px] h-[400px] bg-red-600/10 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(500px,90vw)] h-[min(500px,90vw)] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 left-1/3 w-[min(400px,80vw)] h-[min(400px,80vw)] bg-red-600/10 rounded-full blur-[100px] pointer-events-none" />
 
-      <div className="max-w-xl w-full text-center space-y-6 bg-[#0d0f18]/85 border border-cyan-500/30 p-6 sm:p-8 rounded-3xl shadow-[0_0_60px_rgba(6,182,212,0.15)] backdrop-blur-2xl relative z-10 holo-sweep">
+      <div className="max-w-xl w-full text-center space-y-5 sm:space-y-6 bg-[#0d0f18]/85 border border-cyan-500/30 p-5 sm:p-8 rounded-3xl shadow-[0_0_60px_rgba(6,182,212,0.15)] backdrop-blur-2xl relative z-10 holo-sweep">
         <div className="w-16 h-16 bg-gradient-to-br from-red-600/20 to-cyan-500/20 border border-cyan-400/40 rounded-2xl flex items-center justify-center mx-auto text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.25)]">
           <UploadCloud className="w-8 h-8 text-cyan-400" />
         </div>

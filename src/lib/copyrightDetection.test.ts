@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * Smoke test for copyright detection and fingerprint generation
  * This test verifies that the AudioContext fix works correctly
@@ -159,14 +160,14 @@ export async function testFingerprintWithMatch() {
     });
     
     console.log('✓ Worker comparison with identical fingerprints:', {
-      matchScore: comparison.matchScore,
-      matchingHashes: comparison.matchingHashes,
-      totalHashes: comparison.totalHashes,
-      isMatch: comparison.matchScore >= 0.75
+      matchScore: (comparison as any).matchScore,
+      matchingHashes: (comparison as any).matchingHashes,
+      totalHashes: (comparison as any).totalHashes,
+      isMatch: (comparison as any).matchScore >= 0.75
     });
     
     // Verify match score is high for identical fingerprints
-    if (comparison.matchScore >= 0.75) {
+    if ((comparison as any).matchScore >= 0.75) {
       console.log('✓ Match detection working correctly (identical fingerprints detected)');
       worker.terminate();
       return true;

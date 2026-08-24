@@ -1,16 +1,17 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState } from 'react';
-import { Flame, PlaySquare, ChevronRight, Loader2 } from 'lucide-react';
+import { PlaySquare, ChevronRight, Loader2 } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 import { supabase } from '@/integrations/supabase/loose';
 import { toast } from 'sonner';
 
 
-import { GlassCard } from '@/components/ui/glass-card';
-import { OrbBackground } from '@/components/ui/orb-background';
 import { AnimatedCounter, compactFormat } from '@/components/ui/animated-counter';
 import { LiveNowRail } from '@/components/LiveNowRail';
 import { CategoryScroller } from '@/components/CategoryScroller';
-import { HoverSprite } from '@/components/HoverSprite';
+import { FeedVideoCard } from '@/components/FeedVideoCard';
+import { DynamicAdContainer } from '@/components/DynamicAdContainer';
+import { useAdSlot } from '@/hooks/useAdSlot';
 
 type FeedKind = 'foryou' | 'trending' | 'following';
 
@@ -154,7 +155,6 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [cat, setCat] = useState('All');
-  const [hero, setHero] = useState<FeedVideo | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const PAGE = 24;
 
@@ -249,13 +249,11 @@ export default function Index() {
         const longs = enriched.filter((v) => !v.is_short);
         setVideos(longs.length > 0 ? longs : enriched);
         setShorts(enriched.filter((v) => v.is_short).slice(0, 12));
-        setHero(longs[0] ?? enriched[0] ?? null);
         setHasMore(first.length >= PAGE);
       } catch (e: any) {
         if (!cancelled) {
           console.warn('[index] feed load error', e);
           setVideos([]);
-          setHero(null);
           setHasMore(false);
         }
       } finally {
@@ -308,13 +306,14 @@ export default function Index() {
 
 
   const filtered = cat === 'All' ? videos : videos.filter(v => (v.category || '').toLowerCase() === cat.toLowerCase());
+  const { row: feedAdRow } = useAdSlot('home_feed');
+  const feedAdEvery = feedAdRow?.enabled && feedAdRow.html_snippet ? Math.max(1, Number(feedAdRow.frequency) || 6) : 0;
 
   return (
-    <div className="flex-1 min-h-screen relative px-4 pb-20 md:pb-0">
-      <OrbBackground variant="aurora" />
+    <div className="relative min-h-screen w-full max-w-full flex-1 px-0 pb-20 md:pb-0">
 
       {/* Feed kind toggle */}
-      <div className="flex gap-2 px-3 lg:px-6 pt-3">
+      <div className="flex gap-1 px-3 pt-3 sm:px-4 lg:px-5">
         {(['foryou', 'trending', 'following'] as FeedKind[]).map((k) => (
           <button
             key={k}
@@ -329,51 +328,20 @@ export default function Index() {
       </div>
 
       {/* Categories */}
-      <div className="px-3 lg:px-6 py-2">
+      <div className="px-3 py-2 sm:px-4 lg:px-5">
         <CategoryScroller items={categories} value={cat} onSelect={setCat} />
       </div>
 
-      <div className="px-3 lg:px-6"><LiveNowRail /></div>
-
-      {/* Hero / Trending banner */}
-
-      {hero && (
-        <div className="hidden md:block px-4 lg:px-6 pb-4">
-          <a href={`/watch/${hero.id}`}>
-            <GlassCard className="p-6 perspective-container">
-              <div className="relative z-10 flex items-center gap-6">
-                {hero.thumb_url ? (
-                  <img src={hero.thumb_url} alt="" className="w-48 aspect-video object-cover rounded-xl border border-border/40" />
-                ) : (
-                  <div className="w-48 aspect-video rounded-xl bg-gradient-to-br from-primary/30 to-secondary/30" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Flame className="w-5 h-5 text-accent" />
-                    <span className="text-xs font-display tracking-wider text-accent uppercase">Featured Now</span>
-                  </div>
-                  <h2 className="text-xl font-bold text-foreground mb-1 line-clamp-2">{hero.title}</h2>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{hero.description || `${hero.ownerName} · just dropped`}</p>
-                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                    <span><AnimatedCounter value={hero.views ?? 0} format={compactFormat} /> views</span>
-                    <span>•</span>
-                    <span>{timeAgo(hero.created_at)}</span>
-                  </div>
-                </div>
-              </div>
-            </GlassCard>
-          </a>
-        </div>
-      )}
+      <div className="px-3 sm:px-4 lg:px-5"><LiveNowRail /></div>
 
       {/* Grid */}
-      <div className="px-0 lg:px-6 pb-4 perspective-container w-full">
+      <div className="w-full px-0 pb-4 sm:px-4 lg:px-5">
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+          <div className="grid w-full grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {Array.from({ length: 9 }).map((_, i) => (
               <div key={i} className="flex flex-col gap-2 w-full">
                 <div className="aspect-video rounded-none sm:rounded-xl bg-gray-800 animate-pulse w-full" />
-                <div className="flex gap-3 mt-3 px-3 w-full">
+                 <div className="mt-2.5 flex w-full gap-3 px-3 sm:px-0">
                   <div className="w-9 h-9 rounded-full bg-gray-700 animate-pulse shrink-0" />
                   <div className="flex-1 space-y-2 w-full">
                     <div className="h-4 w-11/12 bg-gray-700 rounded animate-pulse" />
@@ -407,57 +375,36 @@ export default function Index() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-4 w-full">
-            {filtered.map((v, i) => (
+          <div className="mb-4 grid w-full grid-cols-1 items-start gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+            {filtered.flatMap((v, i) => {
+              const nodes = [
               <ImpressionCard
                 key={v.id}
                 videoId={String(v.id)}
-                className="card-vis animate-[fadeUp_.35s_ease-out_both] w-full p-3"
-                style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+                className="card-vis w-full"
               >
-                <a href={`/watch/${v.id}`} className="block group w-full">
-                  <div className="relative aspect-video rounded-none sm:rounded-xl overflow-hidden bg-gray-800 w-full">
-                    {v.thumb_url ? (
-                      <img src={v.thumb_url} alt={v.title} loading={i < 3 ? 'eager' : 'lazy'} decoding="async" fetchPriority={i === 0 ? 'high' : 'auto'} className="absolute inset-0 w-full h-full object-cover" />
-
-                    ) : (
-                      <div className="absolute inset-0 bg-gray-800" />
-                    )}
-                    {v.preview_sprite_url && v.preview_sprite_frames ? (
-                      <HoverSprite url={v.preview_sprite_url} frames={v.preview_sprite_frames} />
-                    ) : null}
-                    {fmtDuration(v.duration_seconds) && (
-                      <span className="absolute bottom-1 right-1 rounded bg-black/80 px-1 py-0.5 text-[11px] font-medium text-white">
-                        {fmtDuration(v.duration_seconds)}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex gap-3 mt-3 w-full">
-                    <div className="w-9 h-9 rounded-full shrink-0 bg-gray-700 overflow-hidden">
-                      {v.ownerAvatar ? (
-                        <img src={v.ownerAvatar} alt={v.ownerName || 'Creator'} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gray-600 text-[10px] font-bold text-white">
-                          {(v.ownerName || '?').slice(0, 2).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0 w-full">
-                      <h3 className="text-[14px] font-semibold leading-[18px] text-white line-clamp-2">
-                        {v.title}
-                      </h3>
-                      <div className="mt-1 flex items-center gap-1 text-[12px] text-gray-400">
-                        <span className="truncate">@{(v.ownerName || 'creator').replace(/\s+/g, '')}</span>
-                        <span>•</span>
-                        <span className="shrink-0">{(v.views ?? 0) > 0 ? <AnimatedCounter value={v.views ?? 0} format={compactFormat} /> + ' views' : '0 views'}</span>
-                        <span>•</span>
-                        <span className="shrink-0">{timeAgo(v.created_at)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </a>
+                <FeedVideoCard
+                  id={String(v.id)}
+                  title={v.title}
+                  channel={v.ownerName || 'creator'}
+                  views={v.views ?? 0}
+                  timeText={timeAgo(v.created_at)}
+                  durationText={fmtDuration(v.duration_seconds)}
+                  thumbUrl={v.thumb_url}
+                   channelAvatar={v.ownerAvatar}
+                  previewSpriteUrl={v.preview_sprite_url}
+                  previewSpriteFrames={v.preview_sprite_frames}
+                  index={i}
+                />
               </ImpressionCard>
-            ))}
+              ];
+              if (feedAdEvery > 0 && (i + 1) % feedAdEvery === 0) {
+                nodes.push(
+                  <DynamicAdContainer key={`ad-${i}`} placement="home_feed" className="v3d-stage group relative w-full px-0 pb-1" />
+                );
+              }
+              return nodes;
+            })}
           </div>
         )}
         {!loading && hasMore && cat === 'All' && (

@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * Client-side gates for actions that require a verified account. The database
  * still enforces ownership through RLS — these guards exist so the user gets a

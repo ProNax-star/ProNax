@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import * as Icons from 'lucide-react';
 import {
   Home, Compass, PlaySquare, Wallet, Upload, TrendingUp,

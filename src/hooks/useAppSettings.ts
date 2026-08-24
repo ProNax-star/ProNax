@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState, useCallback } from 'react';
 import { supabase as _supabase } from '@/integrations/supabase/loose';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

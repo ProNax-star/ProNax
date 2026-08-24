@@ -1,9 +1,10 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Copy, Check, Share2, MessageCircle, Facebook, Twitter, Send, Mail, Link2 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 type Props = {
   open: boolean;
@@ -31,9 +32,9 @@ export function ShareDialog({ open, onOpenChange, url, title = 'Check this out o
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-      toast({ title: 'Link copied' });
+      toast.success('Link copied');
     } catch {
-      toast({ title: 'Copy failed', variant: 'destructive' });
+      toast.error('Copy failed');
     }
   };
 

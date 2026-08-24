@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -367,7 +368,6 @@ function ShortItem({
         disablePictureInPicture
         poster={undefined}
         // iOS/Android inline playback attributes
-        // @ts-expect-error non-standard inline attrs
         webkit-playsinline="true"
         x5-playsinline="true"
         x5-video-player-type="h5"
@@ -452,7 +452,7 @@ function ShortItem({
         {/* Profile avatar pinned right */}
         <div className="absolute right-3 top-3">
           <Link
-            to="/u/$handle"
+            to="/profile/$handle"
             params={{ handle }}
             onClick={(e) => e.stopPropagation()}
             className="block h-9 w-9 overflow-hidden rounded-full border-2 border-white/70 bg-transparent drop-shadow-lg transition-transform hover:scale-105"
@@ -499,7 +499,7 @@ function ShortItem({
         {/* Profile + follow button */}
         <div className="relative flex flex-col items-center gap-1">
           <Link
-            to="/u/$handle"
+            to="/profile/$handle"
             params={{ handle }}
             onClick={(e) => e.stopPropagation()}
             className="block h-11 w-11 shrink-0 overflow-hidden rounded-full border-2 border-white/70 bg-transparent drop-shadow-lg transition-transform hover:scale-105"
@@ -604,7 +604,7 @@ function ShortItem({
           <ShareButton
             shortId={short.id}
             title={short.title}
-            onShared={() => recordShare(short.id, 'link').catch(() => {})}
+            onShareClick={() => { void recordShare(short.id, 'link'); }}
             variant="tiktok"
             shareCount={short.shares}
             formatCount={formatCount}
@@ -645,7 +645,7 @@ function ShortItem({
         {/* Username row */}
         <div className="flex min-w-0 items-center gap-2">
           <Link
-            to="/u/$handle"
+            to="/profile/$handle"
             params={{ handle }}
             onClick={(e) => e.stopPropagation()}
             className="shrink-0"
@@ -1063,9 +1063,9 @@ export function AppShell() {
                 />
               ) : (
                 <ShortsAdSlide
-                  attributeShortId={item.attributeShortId}
+                  attributeToVideoId={item.attributeShortId}
                   active={activeIdx === i}
-                  onSkip={() => {
+                  onAdFinished={() => {
                     const el = containerRef.current;
                     if (!el) return;
                     const next = el.querySelector(`[data-idx="${i + 1}"]`);

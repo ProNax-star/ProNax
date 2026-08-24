@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useState } from 'react';
 import { Plus, Trash2, Clock, Video, Link as LinkIcon, ExternalLink, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';

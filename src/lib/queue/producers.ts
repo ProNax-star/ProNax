@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * Task Producers
  * Provides convenient functions to enqueue jobs for different background tasks
@@ -281,7 +282,7 @@ export async function enqueueAnalyticsSyncBatch(
 ) {
   // Split events into batches of 100
   const batchSize = 100;
-  const batches = [];
+  const batches: any[] = [];
   
   for (let i = 0; i < events.length; i += batchSize) {
     batches.push(events.slice(i, i + batchSize));

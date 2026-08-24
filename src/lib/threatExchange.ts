@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * ThreatExchange Service
  * Handles communication with FastAPI server for PDQ image hashing and vPDQ video hashing

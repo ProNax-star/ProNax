@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * Web Worker for Copyright Detection
  * Handles CPU-intensive fingerprint matching/comparison in a separate thread
@@ -30,7 +31,7 @@ const FINGERPRINT_CONFIG = {
 };
 
 self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
-  const { type, data } = e.message || e.data;
+  const { type, data } = (e as any).message || e.data;
 
   if (type === 'compareFingerprints') {
     try {
@@ -180,3 +181,5 @@ function getSlice(array: string[], offset: number, size: number): string[] {
   const end = Math.min(array.length, start + size);
   return array.slice(start, end);
 }
+
+export {};

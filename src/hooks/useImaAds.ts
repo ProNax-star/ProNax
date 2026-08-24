@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 // Google IMA SDK adapter — loads on demand and requests a VAST/VMAP tag.
 // Hands back lifecycle events so the player can pause/resume the content video,
 // and reports the served impression to `record_ad_view` for wallet crediting.

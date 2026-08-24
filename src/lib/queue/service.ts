@@ -1,9 +1,11 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * Queue Service Implementation
  * Manages BullMQ queues for async task processing with Redis backend
  */
 
-import { Queue, Worker, Job, QueueScheduler } from 'bullmq';
+import { Queue, Worker, Job } from 'bullmq';
+type QueueScheduler = any;
 import { getRedisClient } from '../redis';
 import type {
   JobType,
@@ -152,7 +154,7 @@ export async function getQueueStats<T extends JobType>(
     queue.getCompletedCount(),
     queue.getFailedCount(),
     queue.getDelayedCount(),
-    queue.isPaused() ? 1 : 0,
+    (await queue.isPaused()) ? 1 : 0,
   ]);
 
   return {

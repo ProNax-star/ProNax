@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useCallback, useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/loose";
 import { useAuthSession } from "@/hooks/useAuthSession";
@@ -183,7 +184,7 @@ export function useLiveStudio() {
 
       setVideos(rows.map((r) => toVideo(r, likeMap[String(r.id)] ?? 0, commentCount[String(r.id)] ?? 0)));
       setComments(mappedComments);
-      setRealUsers(uRes.data ?? []);
+      setRealUsers((uRes.data ?? []) as any);
 
       const p: Row = pRes.data ?? {};
       const w: Row = wRes.data ?? {};

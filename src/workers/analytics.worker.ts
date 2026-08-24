@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 /**
  * Analytics Web Worker — isolated engine for video impressions and
  * non-critical telemetry. Runs entirely off the main thread so scroll
@@ -107,3 +108,5 @@ self.onmessage = (e: MessageEvent<InMsg>) => {
       break;
   }
 };
+
+export {};

@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import React from "react";
 import { supabase } from "@/integrations/supabase/loose";
 import { useAuthSession } from "@/hooks/useAuthSession";
@@ -114,7 +115,7 @@ export async function trackAnalyticsEvent(data: AnalyticsEventData): Promise<voi
       user_agent: data.userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : null),
     };
     
-    await supabase.from('analytics_events').insert(eventData);
+    await (supabase as any).from('analytics_events').insert(eventData);
   } catch (error) {
     console.error('[analyticsTracker] Failed to track event:', error);
     // Don't throw - we don't want analytics errors to break the app

@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -29,88 +30,8 @@ export type UserItem = {
   wallet_balance?: number;
 };
 
-// Rich Realistic Seed Users
-const SEED_USERS: UserItem[] = [
-  {
-    id: 'usr_9a8b7c6d-1111-4000-8000-000000000001',
-    email: 'alex.cyber@pronax.tv',
-    display_name: 'Alex Rivera',
-    handle: '@alexrivera',
-    role: 'admin',
-    upload_limit_mb: 10240,
-    status: 'active',
-    is_banned: false,
-    is_verified: true,
-    subscribers_count: 142500,
-    videos_count: 84,
-    created_at: '2025-11-10T08:00:00Z',
-    wallet_balance: 12450.00,
-  },
-  {
-    id: 'usr_8b7c6d5e-2222-4000-8000-000000000002',
-    email: 'synth.beats@gmail.com',
-    display_name: 'Aether Beats',
-    handle: '@aetherbeats',
-    role: 'creator',
-    upload_limit_mb: 2048,
-    status: 'active',
-    is_banned: false,
-    is_verified: true,
-    subscribers_count: 89300,
-    videos_count: 42,
-    created_at: '2026-01-15T14:30:00Z',
-    wallet_balance: 3820.50,
-  },
-  {
-    id: 'usr_7c6d5e4f-3333-4000-8000-000000000003',
-    email: 'tech.matrix@outlook.com',
-    display_name: 'TechMatrix HQ',
-    handle: '@techmatrix',
-    role: 'creator',
-    upload_limit_mb: 4096,
-    status: 'active',
-    is_banned: false,
-    is_verified: true,
-    subscribers_count: 312000,
-    videos_count: 156,
-    created_at: '2025-08-20T11:15:00Z',
-    wallet_balance: 9140.20,
-  },
-  {
-    id: 'usr_6d5e4f3a-4444-4000-8000-000000000004',
-    email: 'spammer_bot_99@tempmail.org',
-    display_name: 'Crypto Pump Bot',
-    handle: '@cryptobots',
-    role: 'user',
-    upload_limit_mb: 250,
-    status: 'suspended',
-    is_banned: true,
-    is_verified: false,
-    ban_reason: 'Automated spam comments & unauthorized promotional links.',
-    subscribers_count: 12,
-    videos_count: 3,
-    created_at: '2026-07-20T04:12:00Z',
-    wallet_balance: 0.00,
-  },
-  {
-    id: 'usr_5e4f3a2b-5555-4000-8000-000000000005',
-    email: 'sarah.vlogs@icloud.com',
-    display_name: 'Sarah Codes',
-    handle: '@sarahcodes',
-    role: 'creator',
-    upload_limit_mb: 2048,
-    status: 'flagged',
-    is_banned: false,
-    is_verified: false,
-    subscribers_count: 45200,
-    videos_count: 29,
-    created_at: '2026-03-01T09:45:00Z',
-    wallet_balance: 1150.00,
-  },
-];
-
 export function UserManagementTab() {
-  const [users, setUsers] = useState<UserItem[]>(SEED_USERS);
+  const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [q, setQ] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'creator' | 'user'>('all');
@@ -130,7 +51,7 @@ export function UserManagementTab() {
 
       const adminSet = new Set((roles ?? []).map((r: any) => r.user_id));
 
-      if (profs && profs.length > 0) {
+      if (profs) {
         const mapped: UserItem[] = profs.map((p: any) => ({
           id: p.id,
           email: p.email || 'no-email@pronax.tv',
@@ -140,16 +61,17 @@ export function UserManagementTab() {
           upload_limit_mb: p.upload_limit_mb || 2048,
           status: p.is_banned ? 'suspended' : (p.status || 'active'),
           is_banned: Boolean(p.is_banned),
+          is_verified: Boolean(p.is_verified),
           ban_reason: p.ban_reason,
           subscribers_count: p.subscribers_count || 0,
           videos_count: p.videos_count || 0,
           created_at: p.created_at || new Date().toISOString(),
           wallet_balance: p.balance || 0,
         }));
-        setUsers(mapped.concat(SEED_USERS.filter(s => !mapped.some(m => m.id === s.id))));
+        setUsers(mapped);
       }
     } catch {
-      // Keep SEED_USERS
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -170,13 +92,16 @@ export function UserManagementTab() {
     }
 
     try {
-      await supabase.rpc('admin_set_role', {
+      const { error } = await supabase.rpc('admin_set_role', {
         p_user: user.id,
         p_role: 'admin',
         p_grant: grant,
       });
+      if (error) throw error;
     } catch {
-      // Local sync fallback
+      toast.error('Role change failed');
+      void loadUsers();
+      return;
     }
 
     toast.success(grant ? `🛡️ Admin privileges granted to ${user.handle}` : `Revoked admin role from ${user.handle}`);
@@ -194,13 +119,17 @@ export function UserManagementTab() {
     } : u));
 
     try {
-      await supabase.rpc('admin_ban_user', {
+      const { error } = await supabase.rpc('admin_ban_user', {
         p_user: banModalUser.id,
         p_reason: reason,
         p_until: null,
       });
+      if (error) throw error;
     } catch {
-      // Local sync fallback
+      toast.error('Ban failed');
+      void loadUsers();
+      setBanModalUser(null);
+      return;
     }
 
     toast.error(`🚫 User ${banModalUser.handle} has been suspended.`);
@@ -217,9 +146,12 @@ export function UserManagementTab() {
     } : u));
 
     try {
-      await supabase.rpc('admin_unban_user', { p_user: user.id });
+      const { error } = await supabase.rpc('admin_unban_user', { p_user: user.id });
+      if (error) throw error;
     } catch {
-      // Local sync fallback
+      toast.error('Unban failed');
+      void loadUsers();
+      return;
     }
 
     toast.success(`✅ User ${user.handle} restored & unsuspended.`);

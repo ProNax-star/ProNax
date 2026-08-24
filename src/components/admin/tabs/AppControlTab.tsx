@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Save, Loader2, Palette, Upload, Radio, Film, MessageCircle, Megaphone, Wallet, Download, GripVertical, Home, HardDrive, ShieldCheck, Check, Server, RefreshCw } from 'lucide-react';

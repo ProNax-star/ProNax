@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -14,7 +15,7 @@ import {
   Radio,
   BarChart3,
   Search,
-  Sparkles
+  Sparkles as _Sparkles
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/loose';
 
@@ -338,28 +339,8 @@ export function RealtimeTab() {
     });
   }, [eventsStream, filterType, searchQuery]);
 
-  // Simulate High-Concurrency Traffic (for testing UI throughput)
-  const simulateTraffic = () => {
-    const now = Date.now();
-    const mockVideos = ['v_cyberpunk_night', 'v_unreal_engine_5', 'v_movie_review_dune', 'v_lofi_coding', 'v_ai_music_gen'];
-    const mockViewers = ['usr_alpha', 'usr_beta', 'usr_gamma', 'usr_delta', 'usr_epsilon'];
+  // (Demo traffic simulator removed — this tab streams only real backend events.)
 
-    for (let i = 0; i < 8; i++) {
-      const vid = mockVideos[Math.floor(Math.random() * mockVideos.length)];
-      const vusr = mockViewers[Math.floor(Math.random() * mockViewers.length)];
-      const type = i % 3 === 0 ? 'like' : i % 4 === 0 ? 'comment' : 'view';
-
-      pendingBufferRef.current.push({
-        id: `sim_${now}_${i}_${Math.random().toString(36).substring(2, 6)}`,
-        type,
-        video_id: vid,
-        viewer_id: vusr,
-        detail: type === 'view' ? `${Math.floor(Math.random() * 120 + 5)}s watch` : type === 'like' ? 'Liked video' : 'Nice stream!',
-        created_at: new Date(now - i * 50).toISOString(),
-        timestampMs: now - i * 50,
-      });
-    }
-  };
 
   const exportCsv = () => {
     const header = 'event_type,video_id,viewer_id,detail,created_at\n';
@@ -403,14 +384,7 @@ export function RealtimeTab() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={simulateTraffic}
-              className="px-3 py-1.5 rounded-xl bg-indigo-600/80 hover:bg-indigo-500 border border-indigo-400/40 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-600/20 cursor-pointer transition"
-              title="Simulate high concurrency event stream"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>Simulate Burst Traffic</span>
-            </button>
+
 
             <button
               onClick={exportCsv}
