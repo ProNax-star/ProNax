@@ -44,7 +44,7 @@ const loadingState = {
   description: 'Loading video details...' 
 };
 
-type SuggestedVideo = { id: string; title: string; channel: string; views: string; time: string; duration: string; monetized: boolean; thumbnail?: string; channelAvatar?: string };
+type SuggestedVideo = { id: string; title: string; channel: string; views: string; time: string; duration: string; monetized: boolean; thumbnail?: string; channelAvatar?: string; isShort?: boolean };
 type DbVideoRow = {
   id: string;
   title: string;
@@ -205,9 +205,14 @@ export default function Watch() {
         const { data, error } = await supabase.rpc('get_related_videos', { p_video: videoId, p_limit: 12 });
         if (cancelled || error || !Array.isArray(data) || data.length === 0) return;
         const ownerIds = Array.from(new Set(data.map((r: any) => r.owner_id).filter(Boolean)));
-        const { data: profs } = await supabase.from('profiles').select('id,display_name,avatar_url').in('id', ownerIds);
+        const relatedIds = data.map((r: any) => r.id).filter(Boolean);
+        const [{ data: profs }, { data: videoKinds }] = await Promise.all([
+          supabase.from('profiles').select('id,display_name,avatar_url').in('id', ownerIds),
+          supabase.from('videos').select('id,is_short').in('id', relatedIds),
+        ]);
         const nameMap = new Map<string, string>((profs ?? []).map((p: any) => [p.id, p.display_name || 'Creator']));
         const avatarMap = new Map<string, string | null>((profs ?? []).map((p: any) => [p.id, p.avatar_url]));
+        const shortIds = new Set((videoKinds ?? []).filter((v: any) => v.is_short).map((v: any) => String(v.id)));
         setSuggestedVideos(data.map((r: any) => ({
           id: String(r.id),
           title: r.title,
@@ -218,6 +223,7 @@ export default function Watch() {
           duration: fmtDur(r.duration_seconds) || '0:00',
           monetized: true,
           thumbnail: r.thumb_url,
+          isShort: shortIds.has(String(r.id)),
         })));
       } catch { /* keep fallback */ }
     })();
@@ -489,13 +495,15 @@ export default function Watch() {
   const formatLikes = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
 
   return (
-    <div className="shrink-0 min-h-0 h-[calc(100dvh-3.25rem)] max-h-[calc(100dvh-3.25rem)] overflow-hidden flex flex-col bg-background px-4">
-      <div className={theater ? 'w-full h-full min-h-0 overflow-y-auto scrollbar-thin max-w-[1700px] mx-auto px-2 py-2' : 'w-full h-full min-h-0 max-w-[1600px] mx-auto px-1 lg:px-2 py-1 md:grid md:grid-cols-12 md:gap-6 md:items-stretch overflow-hidden'}>
+    <div className="shrink-0 min-h-0 md:h-[calc(100dvh-3.25rem)] md:max-h-[calc(100dvh-3.25rem)] md:overflow-hidden flex flex-col bg-background px-0">
+      <div className={theater ? 'w-full h-full min-h-0 overflow-y-auto scrollbar-thin max-w-[1700px] mx-auto px-0 py-0' : 'w-full md:h-full min-h-0 max-w-[1600px] mx-auto px-0 lg:px-2 py-0 md:grid md:grid-cols-12 md:gap-6 md:items-stretch md:overflow-hidden'}>
         {/* ============= Left Column: Video + Info + Comments (Independent Scroll Panel) ============= */}
-        <div className="min-w-0 min-h-0 flex flex-col md:col-span-8 lg:col-span-8 h-full overflow-y-auto overscroll-contain pr-0 md:pr-2 scrollbar-thin space-y-3.5 scroll-gpu">
+        <div className="min-w-0 min-h-0 flex flex-col md:col-span-8 lg:col-span-8 md:h-full md:overflow-y-auto overscroll-contain pr-0 md:pr-2 scrollbar-thin space-y-0 md:space-y-3.5 scroll-gpu">
+
 
           {/* Video Player — Sticky on mobile for seamless comment scrolling, relative on desktop */}
-          <div className="relative md:rounded-2xl overflow-hidden bg-black aspect-video w-full max-h-[70vh] md:max-h-[580px] shrink-0 shadow-2xl sticky top-0 z-30 md:relative">
+          <div className="relative md:rounded-2xl overflow-hidden bg-black aspect-video w-full max-h-[56.25vw] md:max-h-[580px] shrink-0 shadow-2xl sticky top-0 z-30 md:relative">
+
 
             {/* Live watching badge — inside the player, top-right corner */}
             <div className="absolute top-2 right-2 z-20 pointer-events-none">
@@ -555,7 +563,7 @@ export default function Watch() {
           </div>
 
           <EngineBoundary name="ad-in-stream" silent>
-            <DynamicAdContainer placement="in_stream" className="v3d-stage group relative w-full px-2 pt-3 md:px-0" />
+            <DynamicAdContainer placement="in_stream" className="v3d-stage group relative w-full px-2 pt-2 md:px-0" />
           </EngineBoundary>
 
           <EngineBoundary name="ad-below-player" silent>
@@ -563,53 +571,59 @@ export default function Watch() {
           </EngineBoundary>
 
           {/* Video Details, Actions, Channel & Comments Content */}
-          <div className="px-2 md:px-0 py-3 space-y-3">
-            {/* Line 1: Video Title - Bold, prominent typography */}
-            <h1 className="text-[15px] sm:text-base font-bold text-white leading-tight mt-3 mb-3">
-              {video.title}
-            </h1>
-
-            {/* Line 2: Compact stats row with pill tags */}
-            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 font-medium mt-3 mb-3">
-              <span className="font-medium">{Number(dbVideo?.views_count || 0).toLocaleString()} views</span>
-              <span className="text-muted-foreground/50">•</span>
-              <span>{video.time}</span>
-              <LiveWatcherBadge videoId={videoId} baseViewsCount={Number(dbVideo?.views_count || 500)} variant="inline" />
-              <span className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[11px] font-semibold border border-green-500/20">
-                Monetized
-              </span>
+          <div className="px-3 md:px-0 py-2 md:py-3 space-y-2 md:space-y-3">
+            {/* Title + inline meta/description (tap to expand) */}
+            <div className="cursor-pointer" onClick={() => setShowFullDesc(!showFullDesc)}>
+              <h1 className={`text-[16px] sm:text-lg font-bold text-white leading-snug ${showFullDesc ? '' : 'line-clamp-2'}`}>
+                {video.title}
+              </h1>
+              <div className="mt-1 flex items-center gap-x-1.5 text-[12px] text-white/60 font-medium overflow-hidden">
+                <span className="shrink-0">@{video.channel.replace(/\s+/g, '')}</span>
+                <span className="shrink-0">{Number(dbVideo?.views_count || 0).toLocaleString()} views</span>
+                <span className="shrink-0">{video.time}</span>
+                {!showFullDesc && (
+                  <span className="truncate text-white/50">{video.description}</span>
+                )}
+                <span className="shrink-0 text-white font-semibold">{showFullDesc ? 'Show less' : '...more'}</span>
+              </div>
+              {showFullDesc && (
+                <div className="mt-2 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                    <LiveWatcherBadge videoId={videoId} baseViewsCount={Number(dbVideo?.views_count || 500)} variant="inline" />
+                    <span className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 font-semibold border border-green-500/20">
+                      Monetized
+                    </span>
+                  </div>
+                  <p className="text-[13px] text-white/90 leading-relaxed whitespace-pre-wrap">{video.description}</p>
+                </div>
+              )}
             </div>
 
-            {/* Line 3: Channel Info Row - Avatar, Name, Follow button in horizontal row */}
-            <div className="flex items-center justify-between mt-3 mb-3">
+            {/* Channel + action icons in one scrollable row */}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-3 px-3 md:mx-0 md:px-0">
               <Link
                 to={`/channel/${encodeURIComponent(video.channel)}`}
-                className="flex items-center gap-3 group min-w-0"
+                className="shrink-0 w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-display font-bold text-foreground overflow-hidden"
+                aria-label={`@${video.channel}`}
               >
-                <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-display font-bold text-foreground shrink-0 group-hover:ring-2 group-hover:ring-primary/50 transition overflow-hidden">
-                  {dbCreatorAvatar ? (
-                    <img src={dbCreatorAvatar} alt="Creator avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    initials
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">@{video.channel.replace(/\s+/g, '')}</p>
-                  <p className="text-[12px] text-muted-foreground">{followerCount > 0 ? `${followerCount.toLocaleString()} followers` : video.channelSubs + ' followers'}</p>
-                </div>
+                {dbCreatorAvatar ? (
+                  <img src={dbCreatorAvatar} alt="Creator avatar" className="w-full h-full object-cover" />
+                ) : (
+                  initials
+                )}
               </Link>
-              {/* Check if user is watching their own video */}
+
               {(() => {
                 const isOwnVideo = Boolean(
-                  user?.id && 
-                  (dbVideo?.owner_id || dbCreatorId) && 
+                  user?.id &&
+                  (dbVideo?.owner_id || dbCreatorId) &&
                   (String(user.id) === String(dbVideo?.owner_id) || String(user.id) === String(dbCreatorId))
                 );
                 if (isOwnVideo) {
                   return (
                     <Link
                       to={`/studio`}
-                      className="px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-black hover:bg-white/90 transition-all"
+                      className="shrink-0 px-4 py-1.5 rounded-full text-[13px] font-semibold bg-white text-black hover:bg-white/90 transition-all"
                     >
                       Edit Video
                     </Link>
@@ -623,7 +637,7 @@ export default function Watch() {
                       toggleFollow();
                       toast({ title: followed ? 'Unfollowed' : `Following ${video.channel}` });
                     }}
-                    className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                    className={`shrink-0 px-4 py-1.5 rounded-full text-[13px] font-semibold transition-all ${
                       followed
                         ? 'bg-white/10 text-white border border-white/20'
                         : 'bg-white text-black'
@@ -633,108 +647,83 @@ export default function Watch() {
                   </motion.button>
                 );
               })()}
-            </div>
 
-            {/* Line 4: Action Buttons Row - Horizontal scrollable with compact pill-shaped buttons */}
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar px-3 py-2">
-              {/* Like - Compact pill button */}
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={handleLike}
-                className={`rounded-full bg-white/10 hover:bg-white/20 px-3 py-1.5 text-xs flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-                  liked ? 'text-white' : 'text-white/70'
-                }`}
-              >
-                <ThumbsUp className={`w-4 h-4 ${liked ? 'fill-white' : ''}`} />
-                {formatLikes(likes)}
-              </motion.button>
-
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setShareOpen(true)}
-                className="rounded-full bg-white/10 hover:bg-white/20 px-3 py-1.5 text-xs flex items-center gap-1.5 whitespace-nowrap text-white/70 hover:text-white shrink-0"
-              >
-                <Share2 className="w-4 h-4" /> Share
-              </motion.button>
-
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={handleDownload}
-                className="rounded-full bg-white/10 hover:bg-white/20 px-3 py-1.5 text-xs flex items-center gap-1.5 whitespace-nowrap text-white/70 hover:text-white shrink-0"
-              >
-                <Download className="w-4 h-4" /> Download
-              </motion.button>
-
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={toggleSave}
-                className={`rounded-full bg-white/10 hover:bg-white/20 px-3 py-1.5 text-xs flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-                  saved ? 'text-white' : 'text-white/70'
-                }`}
-              >
-                <Bookmark className={`w-4 h-4 ${saved ? 'fill-white' : ''}`} /> {saved ? 'Saved' : 'Save'}
-              </motion.button>
-
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setReportOpen(true)}
-                className="rounded-full bg-white/10 hover:bg-white/20 px-3 py-1.5 text-xs flex items-center gap-1.5 whitespace-nowrap text-white/70 hover:text-red-400 shrink-0"
-              >
-                <Flag className="w-4 h-4" /> Report
-              </motion.button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    aria-label="More options"
-                    className="rounded-full bg-white/10 hover:bg-white/20 px-3 py-1.5 text-xs flex items-center gap-1.5 whitespace-nowrap text-white/70 hover:text-white shrink-0"
-                  >
-                    <MoreHorizontal className="w-4 h-4" /> More
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  sideOffset={8}
-                  className="w-56 glass-strong border border-primary/30 rounded-xl p-1.5 shadow-[0_20px_60px_hsla(var(--primary)/0.25)]"
+              <div className="flex items-center gap-1 ml-auto shrink-0">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleLike}
+                  aria-label="Like"
+                  className={`h-9 px-2.5 rounded-full hover:bg-white/10 flex items-center gap-1 text-[12px] ${liked ? 'text-white' : 'text-white/80'}`}
                 >
-                  <DropdownMenuItem
-                    onClick={handleCopy}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-xs text-foreground focus:bg-primary/15 focus:text-primary"
+                  <ThumbsUp className={`w-5 h-5 ${liked ? 'fill-white' : ''}`} />
+                  {formatLikes(likes)}
+                </motion.button>
+
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setShareOpen(true)}
+                  aria-label="Share"
+                  className="h-9 w-9 rounded-full hover:bg-white/10 flex items-center justify-center text-white/80"
+                >
+                  <Share2 className="w-5 h-5" />
+                </motion.button>
+
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={toggleSave}
+                  aria-label={saved ? 'Saved' : 'Save'}
+                  className={`h-9 w-9 rounded-full hover:bg-white/10 flex items-center justify-center ${saved ? 'text-white' : 'text-white/80'}`}
+                >
+                  <Bookmark className={`w-5 h-5 ${saved ? 'fill-white' : ''}`} />
+                </motion.button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      aria-label="More options"
+                      className="h-9 w-9 rounded-full hover:bg-white/10 flex items-center justify-center text-white/80"
+                    >
+                      <MoreHorizontal className="w-5 h-5" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    sideOffset={8}
+                    className="w-56 glass-strong border border-primary/30 rounded-xl p-1.5 shadow-[0_20px_60px_hsla(var(--primary)/0.25)]"
                   >
-                    <Link2 className="w-3.5 h-3.5" />
-                    <span className="flex-1">Copy Video Link</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={toggleSave}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-xs text-foreground focus:bg-primary/15 focus:text-primary"
-                  >
-                    <Bookmark className="w-3.5 h-3.5" />
-                    <span className="flex-1">Save to Playlist</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setReportOpen(true)}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-xs text-red-400 focus:bg-red-500/15 focus:text-red-300"
-                  >
-                    <Flag className="w-3.5 h-3.5" />
-                    <span className="flex-1">Report Video</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <DropdownMenuItem
+                      onClick={handleDownload}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-xs text-foreground focus:bg-primary/15 focus:text-primary"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span className="flex-1">Download</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={handleCopy}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-xs text-foreground focus:bg-primary/15 focus:text-primary"
+                    >
+                      <Link2 className="w-3.5 h-3.5" />
+                      <span className="flex-1">Copy Video Link</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={toggleSave}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-xs text-foreground focus:bg-primary/15 focus:text-primary"
+                    >
+                      <Bookmark className="w-3.5 h-3.5" />
+                      <span className="flex-1">Save to Playlist</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setReportOpen(true)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-xs text-red-400 focus:bg-red-500/15 focus:text-red-300"
+                    >
+                      <Flag className="w-3.5 h-3.5" />
+                      <span className="flex-1">Report Video</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
 
-            {/* Description */}
-            <div
-              className="bg-white/5 rounded-xl p-3 cursor-pointer"
-              onClick={() => setShowFullDesc(!showFullDesc)}
-            >
-              <p className={`text-[13px] text-white/90 leading-relaxed ${showFullDesc ? '' : 'line-clamp-2'}`}>
-                {video.description}
-              </p>
-              <span className="text-[12px] text-white/70 font-medium mt-2 inline-flex items-center gap-1">
-                {showFullDesc ? 'Show less' : '...more'}
-                <ChevronDown className={`w-3 h-3 transition-transform ${showFullDesc ? 'rotate-180' : ''}`} />
-              </span>
-            </div>
 
             {/* Chapters (auto-parsed from description) */}
             <Chapters
@@ -1038,18 +1027,19 @@ export default function Watch() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35 }}
-              className="md:hidden pt-3 pb-4 border-t border-border/30 space-y-3"
+              className="-mx-3 md:hidden pt-3 pb-4 border-t border-border/30 space-y-3"
             >
-              <div className="flex items-center justify-between -mx-7 px-3">
+              <div className="flex items-center justify-between px-3">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <span className="inline-block w-1.5 h-4 rounded-full gradient-primary glow-primary" />
                   Up Next
                 </h3>
                 <span className="text-[10px] uppercase tracking-wider text-gray-400 font-medium">Recommended</span>
               </div>
-              <div className="-mx-7 px-0 sm:mx-0 grid grid-cols-1 sm:[grid-template-columns:repeat(auto-fill,minmax(280px,1fr))] gap-x-4 gap-y-4">
+              <div className="grid grid-cols-1 items-start gap-x-4 gap-y-3">
+
                 <DynamicAdContainer placement="watch_sidebar" />
-                {suggestedVideos.map((v, i) => (
+                {suggestedVideos.filter((v) => !v.isShort).map((v, i) => (
                   <FeedVideoCard
                     key={v.id}
                     id={v.id}
@@ -1063,6 +1053,25 @@ export default function Watch() {
                   />
                 ))}
               </div>
+              {suggestedVideos.some((v) => v.isShort) && (
+                <div className="px-3 pt-2">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-foreground">Shorts</h3>
+                    <Link to="/shorts" className="text-xs font-medium text-primary hover:underline">View all</Link>
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto no-scrollbar rail-gpu pb-2">
+                    {suggestedVideos.filter((v) => v.isShort).map((v) => (
+                      <Link key={v.id} to={`/shorts/${v.id}`} className="relative aspect-[9/16] w-32 shrink-0 overflow-hidden rounded-lg bg-muted">
+                        {v.thumbnail ? (
+                          <img src={v.thumbnail} alt={v.title} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
+                        ) : null}
+                        <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+                        <div className="absolute bottom-2 left-2 right-2 line-clamp-2 text-[11px] font-semibold text-foreground">{v.title}</div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </motion.section>
 
           </div>
