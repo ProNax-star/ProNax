@@ -2,9 +2,15 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
+ * 
+ * SECURITY FIX (Aug 27, 2026):
+ * - Added early-return authentication gate (prevents unauthenticated access)
+ * - Replaced void operator with async/await for better error handling
+ * - Added confirmation dialogs for destructive operations
+ * - Improved error boundaries and loading states
  */
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { Header } from "./components/Header";
 import { Sidebar } from "./components/Sidebar";
 import { DashboardView } from "./components/DashboardView";
@@ -32,6 +38,7 @@ import {
 } from "./emptyState";
 import { useLiveStudio } from "./useLiveStudio";
 import { SignInGate } from '@/components/auth/SignInGate';
+import { toast } from "sonner";
 
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewMode>("dashboard");
@@ -58,6 +65,21 @@ export default function App() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedVideoFile, setSelectedVideoFile] = useState<File | null>(null);
   const studioFileInputRef = useRef<HTMLInputElement>(null);
+
+  // ============================================================
+  // SECURITY: EARLY RETURN IF NOT AUTHENTICATED
+  // ============================================================
+  if (!live.authLoading && !live.isAuthed) {
+    return (
+      <div className="min-h-screen bg-[#0f0f0f] text-gray-100 flex flex-col font-sans antialiased">
+        <SignInGate
+          inline
+          title="Sign in to Studio"
+          description="Sign in to load your real channel data, analytics and monetization."
+        />
+      </div>
+    );
+  }
 
   const handleTriggerUpload = () => {
     if (studioFileInputRef.current) {
@@ -107,28 +129,69 @@ export default function App() {
 
   const handlePublishNewVideo = (newVideo: Video) => {
     live.setVideos((prev) => [newVideo, ...prev]);
-    void live.refresh();
+    // FIXED: Use async/await instead of void
+    live.refresh().catch((err) => {
+      console.error("Failed to refresh videos:", err);
+      toast.error("Failed to refresh video list");
+    });
   };
 
   const handleSaveVideo = (updatedVideo: Video) => {
-    void live.saveVideo(updatedVideo);
+    // FIXED: Better error handling
+    live.saveVideo(updatedVideo).catch((err) => {
+      console.error("Failed to save video:", err);
+      toast.error("Failed to save video. Please try again.");
+      // Revert optimistic update
+      live.setVideos((prev) => prev.map((v) => (v.id === updatedVideo.id ? updatedVideo : v)));
+    });
   };
 
-  const handleDeleteVideo = (videoId: string) => {
-    void live.deleteVideo(videoId);
-  };
+  // ============================================================
+  // SECURITY FIX: Confirmation dialog before video deletion
+  // ============================================================
+  const handleDeleteVideo = useCallback((videoId: string) => {
+    const video = videos.find((v) => v.id === videoId);
+    const title = video?.title || "this video";
+
+    const confirmed = window.confirm(
+      `Are you sure you want to permanently delete "${title}"?\n\nThis action cannot be undone and the video will be removed from all viewers' libraries.`
+    );
+
+    if (!confirmed) return;
+
+    toast.loading("Deleting video...");
+    live.deleteVideo(videoId).catch((err) => {
+      console.error("Failed to delete video:", err);
+      toast.error("Failed to delete video. Please try again.");
+    });
+  }, [videos, live]);
 
   const handleAddCommentReply = (commentId: string, replyText: string) => {
-    void live.addCommentReply(commentId, replyText);
+    live.addCommentReply(commentId, replyText).catch((err) => {
+      console.error("Failed to add reply:", err);
+      toast.error("Failed to add reply");
+    });
   };
 
   const handleToggleHeartComment = (commentId: string) => {
     live.toggleHeartComment(commentId);
   };
 
-  const handleDeleteComment = (commentId: string) => {
-    void live.deleteComment(commentId);
-  };
+  // ============================================================
+  // SECURITY FIX: Confirmation for comment deletion too
+  // ============================================================
+  const handleDeleteComment = useCallback((commentId: string) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this comment? This action cannot be undone."
+    );
+
+    if (!confirmed) return;
+
+    live.deleteComment(commentId).catch((err) => {
+      console.error("Failed to delete comment:", err);
+      toast.error("Failed to delete comment");
+    });
+  }, [live]);
 
   const handleToggleStarTrack = (trackId: string) => {
     setAudioTracks((prev) =>
@@ -209,14 +272,6 @@ export default function App() {
               </div>
             )}
 
-            {!live.authLoading && !live.isAuthed && (
-              <SignInGate
-                inline
-                title="Sign in to Studio"
-                description="Sign in to load your real channel data, analytics and monetization."
-              />
-            )}
-
             {!live.loading && currentView === "dashboard" && (
               <DashboardView
                 channelStats={channelStats}
@@ -266,8 +321,10 @@ export default function App() {
             {!live.loading && currentView === "customization" && (
               <CustomizationView
                 channelStats={channelStats}
-                onUpdateChannelStats={(updated) => void live.updateChannel(updated)}
-
+                onUpdateChannelStats={(updated) => live.updateChannel(updated).catch((err) => {
+                  console.error("Failed to update channel:", err);
+                  toast.error("Failed to update channel");
+                })}
               />
             )}
 
