@@ -59,8 +59,10 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useLocation,
   HeadContent,
   Scripts,
+  Outlet,
 } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
@@ -185,6 +187,8 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const location = useLocation();
+  const isStudioRoute = location.pathname.startsWith('/studio');
 
   // Global error capture (uncaught errors, rejections, perf timings) and the
   // inactivity sign-out timer.
@@ -218,12 +222,17 @@ function RootComponent() {
         <Sonner />
         <AppConfigProvider>
           <WalletProvider>
-            {/* Required: nested routes render inside the shell's <Outlet />. */}
             <ClientOnly fallback={<div className="min-h-screen bg-background" />}>
               <ErrorBoundary>
-                <MainLayout />
+                {isStudioRoute ? (
+                  // Studio routes render directly without MainLayout
+                  <Outlet />
+                ) : (
+                  // Main app routes render with MainLayout
+                  <MainLayout />
+                )}
               </ErrorBoundary>
-              <CookieConsent />
+              {!isStudioRoute && <CookieConsent />}
             </ClientOnly>
           </WalletProvider>
         </AppConfigProvider>

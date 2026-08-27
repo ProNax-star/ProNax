@@ -33,13 +33,13 @@ export interface CachedVideo {
   id: string;
   title: string;
   description: string;
-  thumbnail: string;
+  thumb_url: string;
   video_url: string;
-  duration: string;
+  duration_seconds: number;
   visibility: string;
-  monetization: boolean;
+  monetization_enabled: boolean;
   created_at: string;
-  views: number;
+  views_count: number;
   comments_count: number;
   likes: number;
   tags: string[];
@@ -68,19 +68,38 @@ export async function getVideoWithCache(videoId: string): Promise<CachedVideo | 
   // Fetch from database
   const { data: video, error } = await supabase
     .from('videos')
-    .select('*')
+    .select('id,title,description,thumb_url,video_url,duration_seconds,visibility,monetization_enabled,created_at,views_count,comments_count,likes,tags,category,is_short')
     .eq('id', videoId)
-    .single();
+    .maybeSingle();
   
   if (error || !video) {
     console.error(`Error fetching video ${videoId}:`, error);
     return null;
   }
   
-  // Cache the result
-  await cache.set(cacheKey, video, TTL.VIDEO_METADATA);
+  // Map database fields to cache interface
+  const cachedVideo: CachedVideo = {
+    id: video.id,
+    title: video.title,
+    description: video.description,
+    thumb_url: video.thumb_url,
+    video_url: video.video_url,
+    duration_seconds: video.duration_seconds,
+    visibility: video.visibility,
+    monetization_enabled: video.monetization_enabled,
+    created_at: video.created_at,
+    views_count: video.views_count,
+    comments_count: video.comments_count,
+    likes: video.likes,
+    tags: video.tags,
+    category: video.category,
+    is_short: video.is_short,
+  };
   
-  return video as unknown as CachedVideo;
+  // Cache the result
+  await cache.set(cacheKey, cachedVideo, TTL.VIDEO_METADATA);
+  
+  return cachedVideo;
 }
 
 /**
@@ -92,8 +111,10 @@ export async function getVideosWithCache(videoIds: string[]): Promise<CachedVide
   if (videoIds.length === 0) {
     return [];
   }
+  // Cap at 100 IDs to prevent unbounded queries
+  const cappedIds = videoIds.slice(0, 100);
 
-  const cacheKeys = videoIds.map(id => `${CACHE_PREFIXES.VIDEO}:${id}`);
+  const cacheKeys = cappedIds.map(id => `${CACHE_PREFIXES.VIDEO}:${id}`);
   
   // Try to get all from cache
   const cachedVideos = await cache.mget<CachedVideo>(cacheKeys);
@@ -105,22 +126,39 @@ export async function getVideosWithCache(videoIds: string[]): Promise<CachedVide
   cachedVideos.forEach((video, index) => {
     if (!video) {
       missingIndices.push(index);
-      missingIds.push(videoIds[index]);
+      missingIds.push(cappedIds[index]);
     }
   });
   
-  // Fetch missing videos from database
+  // Fetch missing videos from database (capped at 100)
   let fetchedVideos: CachedVideo[] = [];
   if (missingIds.length > 0) {
     const { data: videos, error } = await supabase
       .from('videos')
-      .select('*')
-      .in('id', missingIds);
+      .select('id,title,description,thumb_url,video_url,duration_seconds,visibility,monetization_enabled,created_at,views_count,comments_count,likes,tags,category,is_short')
+      .in('id', missingIds.slice(0, 100));
     
     if (error) {
       console.error('Error fetching videos:', error);
     } else if (videos) {
-      fetchedVideos = videos as unknown as CachedVideo[];
+      // Map database fields to cache interface
+      fetchedVideos = videos.map(video => ({
+        id: video.id,
+        title: video.title,
+        description: video.description,
+        thumb_url: video.thumb_url,
+        video_url: video.video_url,
+        duration_seconds: video.duration_seconds,
+        visibility: video.visibility,
+        monetization_enabled: video.monetization_enabled,
+        created_at: video.created_at,
+        views_count: video.views_count,
+        comments_count: video.comments_count,
+        likes: video.likes,
+        tags: video.tags,
+        category: video.category,
+        is_short: video.is_short,
+      }));
       
       // Cache the fetched videos
       for (const video of fetchedVideos) {
@@ -134,7 +172,7 @@ export async function getVideosWithCache(videoIds: string[]): Promise<CachedVide
   const result: CachedVideo[] = [];
   let fetchedIndex = 0;
   
-  for (let i = 0; i < videoIds.length; i++) {
+  for (let i = 0; i < cappedIds.length; i++) {
     if (cachedVideos[i]) {
       result.push(cachedVideos[i]!);
     } else {
@@ -156,6 +194,8 @@ export async function getVideosByCreatorWithCache(
   creatorId: string,
   limit: number = 20
 ): Promise<CachedVideo[]> {
+  // Cap at 100 rows to prevent unbounded queries
+  const cappedLimit = Math.min(limit, 100);
   const cacheKey = `${CACHE_PREFIXES.VIDEO_BY_CREATOR}:${creatorId}:${limit}`;
   
   // Try cache first
@@ -170,20 +210,39 @@ export async function getVideosByCreatorWithCache(
   // Fetch from database
   const { data: videos, error } = await supabase
     .from('videos')
-    .select('*')
+    .select('id,title,description,thumb_url,video_url,duration_seconds,visibility,monetization_enabled,created_at,views_count,comments_count,likes,tags,category,is_short')
     .eq('owner_id', creatorId)
     .order('created_at', { ascending: false })
-    .limit(limit);
+    .limit(cappedLimit);
   
   if (error || !videos) {
     console.error(`Error fetching videos for creator ${creatorId}:`, error);
     return [];
   }
   
-  // Cache the result
-  await cache.set(cacheKey, videos, TTL.VIDEO_BY_CREATOR);
+  // Map database fields to cache interface
+  const cachedVideos = videos.map(video => ({
+    id: video.id,
+    title: video.title,
+    description: video.description,
+    thumb_url: video.thumb_url,
+    video_url: video.video_url,
+    duration_seconds: video.duration_seconds,
+    visibility: video.visibility,
+    monetization_enabled: video.monetization_enabled,
+    created_at: video.created_at,
+    views_count: video.views_count,
+    comments_count: video.comments_count,
+    likes: video.likes,
+    tags: video.tags,
+    category: video.category,
+    is_short: video.is_short,
+  }));
   
-  return videos as unknown as CachedVideo[];
+  // Cache the result with TTL
+  await cache.set(cacheKey, cachedVideos, TTL.VIDEO_BY_CREATOR);
+  
+  return cachedVideos;
 }
 
 /**
@@ -192,6 +251,8 @@ export async function getVideosByCreatorWithCache(
  * @returns Array of popular videos
  */
 export async function getPopularVideosWithCache(limit: number = 20): Promise<CachedVideo[]> {
+  // Cap at 100 rows to prevent unbounded queries
+  const cappedLimit = Math.min(limit, 100);
   const cacheKey = `${CACHE_PREFIXES.VIDEO_POPULAR}:${limit}`;
   
   // Try cache first
@@ -206,20 +267,39 @@ export async function getPopularVideosWithCache(limit: number = 20): Promise<Cac
   // Fetch from database
   const { data: videos, error } = await supabase
     .from('videos')
-    .select('*')
+    .select('id,title,description,thumb_url,video_url,duration_seconds,visibility,monetization_enabled,created_at,views_count,comments_count,likes,tags,category,is_short')
     .eq('visibility', 'public')
     .order('views', { ascending: false })
-    .limit(limit);
+    .limit(cappedLimit);
   
   if (error || !videos) {
     console.error('Error fetching popular videos:', error);
     return [];
   }
   
-  // Cache the result
-  await cache.set(cacheKey, videos, TTL.VIDEO_POPULAR);
+  // Map database fields to cache interface
+  const cachedVideos = videos.map(video => ({
+    id: video.id,
+    title: video.title,
+    description: video.description,
+    thumb_url: video.thumb_url,
+    video_url: video.video_url,
+    duration_seconds: video.duration_seconds,
+    visibility: video.visibility,
+    monetization_enabled: video.monetization_enabled,
+    created_at: video.created_at,
+    views_count: video.views_count,
+    comments_count: video.comments_count,
+    likes: video.likes,
+    tags: video.tags,
+    category: video.category,
+    is_short: video.is_short,
+  }));
   
-  return videos as unknown as CachedVideo[];
+  // Cache the result with TTL
+  await cache.set(cacheKey, cachedVideos, TTL.VIDEO_POPULAR);
+  
+  return cachedVideos;
 }
 
 /**
@@ -232,6 +312,8 @@ export async function searchVideosWithCache(
   searchTerm: string,
   limit: number = 20
 ): Promise<CachedVideo[]> {
+  // Cap at 100 rows to prevent unbounded queries
+  const cappedLimit = Math.min(limit, 100);
   const normalizedSearch = searchTerm.toLowerCase().trim();
   const cacheKey = `${CACHE_PREFIXES.VIDEO_SEARCH}:${normalizedSearch}:${limit}`;
   
@@ -247,20 +329,39 @@ export async function searchVideosWithCache(
   // Fetch from database (using full-text search if available)
   const { data: videos, error } = await supabase
     .from('videos')
-    .select('*')
+    .select('id,title,description,thumb_url,video_url,duration_seconds,visibility,monetization_enabled,created_at,views_count,comments_count,likes,tags,category,is_short')
     .or(`title.ilike.%${normalizedSearch}%,description.ilike.%${normalizedSearch}%`)
     .eq('visibility', 'public')
-    .limit(limit);
+    .limit(cappedLimit);
   
   if (error || !videos) {
     console.error(`Error searching videos for "${searchTerm}":`, error);
     return [];
   }
   
-  // Cache the result
-  await cache.set(cacheKey, videos, TTL.VIDEO_SEARCH);
+  // Map database fields to cache interface
+  const cachedVideos = videos.map(video => ({
+    id: video.id,
+    title: video.title,
+    description: video.description,
+    thumb_url: video.thumb_url,
+    video_url: video.video_url,
+    duration_seconds: video.duration_seconds,
+    visibility: video.visibility,
+    monetization_enabled: video.monetization_enabled,
+    created_at: video.created_at,
+    views_count: video.views_count,
+    comments_count: video.comments_count,
+    likes: video.likes,
+    tags: video.tags,
+    category: video.category,
+    is_short: video.is_short,
+  }));
   
-  return videos as unknown as CachedVideo[];
+  // Cache the result with TTL
+  await cache.set(cacheKey, cachedVideos, TTL.VIDEO_SEARCH);
+  
+  return cachedVideos;
 }
 
 /**

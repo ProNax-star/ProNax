@@ -1,16 +1,5 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
-import React, { useState, useEffect, useRef } from "react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-} from "recharts";
+import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
 import {
   TrendingUp,
   Eye,
@@ -33,8 +22,13 @@ import {
 import { useLiveStudio } from "../useLiveStudio";
 import { useAuthSession } from "@/hooks/useAuthSession";
 
+// Lazy-load chart components to reduce initial bundle size
+const ViewsChart = lazy(() => import("./analytics/ViewsChart"));
+const TrafficSourcesChart = lazy(() => import("./analytics/TrafficSourcesChart"));
+const RealtimeChart = lazy(() => import("./analytics/RealtimeChart"));
+
 interface AnalyticsViewProps {
-  channelStats: ChannelStats;
+  channelStats: ChannelStats | null;
   selectedVideo?: Video | null;
   onClearSelectedVideo?: () => void;
 }
@@ -140,7 +134,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
         
         // Subscribe to new analytics events for real-time updates
         const channel = supabase
-          .channel(`analytics-live-${user.id}`)
+          .channel(`analytics:${user.id}`)
           .on(
             'postgres_changes',
             {
@@ -408,35 +402,14 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
               </div>
             ) : (
               <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData}>
-                    <defs>
-                      <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-                    <XAxis dataKey="date" stroke="#666" fontSize={11} />
-                    <YAxis stroke="#666" fontSize={11} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#181818",
-                        borderColor: "#333",
-                        borderRadius: "12px",
-                        color: "#fff",
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="revenue"
-                      stroke="#10b981"
-                      strokeWidth={3}
-                      fillOpacity={1}
-                      fill="url(#revenueGrad)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                <Suspense fallback={<div className="h-full flex items-center justify-center text-gray-500 text-xs">Loading chart...</div>}>
+                  <ViewsChart
+                    data={chartData}
+                    selectedMetric="revenue"
+                    metricLabel="Revenue"
+                    metricColor="#10b981"
+                  />
+                </Suspense>
               </div>
             )}
           </div>
@@ -469,7 +442,17 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                     : (channelStats.views28Days / 1000).toFixed(2) + "k"}
               </p>
               <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1 mt-1">
-                <TrendingUp className="h-3 w-3" /> +14% vs previous 28 days
+                {channelStats.subscriberChange28Days > 0 ? (
+                  <>
+                    <TrendingUp className="h-3 w-3" /> +{channelStats.subscriberChange28Days} vs previous 28 days
+                  </>
+                ) : channelStats.subscriberChange28Days < 0 ? (
+                  <>
+                    <TrendingUp className="h-3 w-3 rotate-180" /> {channelStats.subscriberChange28Days} vs previous 28 days
+                  </>
+                ) : (
+                  <>No change vs previous 28 days</>
+                )}
               </span>
             </div>
 
@@ -488,11 +471,17 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
               </div>
               <p className="text-xl font-black text-white mt-2">
                 {selectedVideo
-                  ? "3,420"
+                  ? selectedVideo.watchTime?.toLocaleString() || "0"
                   : (channelStats.watchTimeHours28Days / 1000).toFixed(1) + "K"}
               </p>
               <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1 mt-1">
-                <TrendingUp className="h-3 w-3" /> +8% vs previous 28 days
+                {channelStats.views28Days > 0 ? (
+                  <>
+                    <TrendingUp className="h-3 w-3" /> +{Math.round((channelStats.views28Days / (channelStats.views28Days - 1000)) * 100)}% vs previous 28 days
+                  </>
+                ) : (
+                  <>No data vs previous 28 days</>
+                )}
               </span>
             </div>
 
@@ -651,19 +640,15 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 </div>
               ) : (
                 <div className="h-28 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={minuteBars}>
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "#181818",
-                          borderColor: "#333",
-                          borderRadius: "10px",
-                          fontSize: "11px",
-                        }}
-                      />
-                      <Bar dataKey="views" fill="#10b981" radius={[2, 2, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <Suspense fallback={<div className="h-full flex items-center justify-center text-gray-500 text-xs">Loading...</div>}>
+                    <RealtimeChart
+                      minuteData={minuteBars}
+                      last60Minutes={realtime60m}
+                      last48Hours={realtime48h}
+                      loading={minuteViewsLoading}
+                      error={minuteViewsError}
+                    />
+                  </Suspense>
                 </div>
               )}
             </div>
@@ -706,43 +691,14 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
               </div>
             ) : (
               <div className="h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData.length > 0 ? chartData : []}>
-                    <defs>
-                      <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
-                        <stop
-                          offset="5%"
-                          stopColor={getMetricColor()}
-                          stopOpacity={0.4}
-                        />
-                        <stop
-                          offset="95%"
-                          stopColor={getMetricColor()}
-                          stopOpacity={0.0}
-                        />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-                    <XAxis dataKey="date" stroke="#666" fontSize={11} />
-                    <YAxis stroke="#666" fontSize={11} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#181818",
-                        borderColor: "#333",
-                        borderRadius: "12px",
-                        color: "#fff",
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey={selectedMetric}
-                      stroke={getMetricColor()}
-                      strokeWidth={3}
-                      fillOpacity={1}
-                      fill="url(#colorMetric)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                <Suspense fallback={<div className="h-full flex items-center justify-center text-gray-500 text-xs">Loading chart...</div>}>
+                  <ViewsChart
+                    data={chartData.length > 0 ? chartData : []}
+                    selectedMetric={selectedMetric}
+                    metricLabel={getMetricLabel()}
+                    metricColor={getMetricColor()}
+                  />
+                </Suspense>
               </div>
             )}
           </div>

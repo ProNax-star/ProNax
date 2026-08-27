@@ -1,8 +1,8 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import { motion } from 'framer-motion';
-import { ShieldAlert, Send, Loader2, CheckCircle2, LogOut } from 'lucide-react';
+import { ShieldAlert, Send, Loader2, CheckCircle2, LogOut, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase as _supabase } from '@/integrations/supabase/loose';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -16,17 +16,20 @@ export default function Appeal() {
   const [existing, setExisting] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [strikes, setStrikes] = useState<any[]>([]);
 
   useEffect(() => {
     if (loading) return;
     if (!user) { navigate('/auth', { replace: true }); return; }
     (async () => {
-      const [{ data: p }, { data: a }] = await Promise.all([
+      const [{ data: p }, { data: a }, { data: s }] = await Promise.all([
         supabase.from('profiles').select('is_banned, ban_reason, banned_until, email').eq('id', user.id).maybeSingle(),
         supabase.from('appeals').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+        supabase.from('user_strikes').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
       ]);
       setProfile(p);
       setExisting(a);
+      setStrikes(s || []);
       if (p && !p.is_banned) navigate('/', { replace: true });
     })();
   }, [user, loading, navigate]);
@@ -87,6 +90,45 @@ export default function Appeal() {
             {profile.banned_until && <div><span className="text-muted-foreground">Until:</span> {new Date(profile.banned_until).toLocaleString()}</div>}
             <div className="text-muted-foreground text-[10px] pt-1">Ban enforced by content-safety triggers. Auto-actions can be overturned by admins.</div>
           </div>
+
+          {/* Strike History */}
+          {strikes.length > 0 && (
+            <div className="glass rounded-xl border border-border/40 p-3 text-xs space-y-2 mb-4">
+              <div className="flex items-center gap-2 font-semibold">
+                <AlertTriangle className="w-4 h-4 text-orange-400" />
+                <span>Strike History ({strikes.filter(s => !s.revoked_at && (!s.expires_at || new Date(s.expires_at) > new Date())).length} active)</span>
+              </div>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {strikes.map((strike) => (
+                  <div key={strike.id} className={`rounded-lg border p-2 ${strike.revoked_at ? 'opacity-60 bg-muted/30' : 'bg-muted/50'}`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold uppercase ${
+                        strike.severity === 3 ? 'bg-destructive/20 text-destructive' :
+                        strike.severity === 2 ? 'bg-orange-500/20 text-orange-400' :
+                        'bg-yellow-500/20 text-yellow-400'
+                      }`}>
+                        L{strike.severity}
+                      </span>
+                      <span className="text-[9px] text-muted-foreground capitalize">{strike.category}</span>
+                      {strike.revoked_at && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400">Revoked</span>
+                      )}
+                      {!strike.revoked_at && (!strike.expires_at || new Date(strike.expires_at) > new Date()) && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400">Active</span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-foreground truncate">{strike.reason}</p>
+                    <div className="text-[9px] text-muted-foreground mt-0.5">
+                      {new Date(strike.created_at).toLocaleDateString()}
+                      {strike.expires_at && !strike.revoked_at && (
+                        <span> · Exp: {new Date(strike.expires_at).toLocaleDateString()}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {existing ? (
             <div className="glass rounded-xl border border-primary/40 p-4 mb-4">

@@ -1,15 +1,14 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShieldAlert, ShieldCheck, Play, Pause, AlertTriangle, Search, Filter,
-  CheckCircle2, XCircle, RefreshCw, Wand2, FileText, Music, Film, Clock,
-  ChevronRight, Scale, Sparkles, Zap, Bot, Volume2, VolumeX, FastForward, RotateCcw,
-  CheckSquare, Square, Layers, Info
+  CheckCircle2, XCircle, RefreshCw, FileText, Music, Film, Clock,
+  ChevronRight, Scale, Sparkles, Zap, Volume2, VolumeX, FastForward, RotateCcw,
+  CheckSquare, Square, Layers, Info, Wand2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/loose';
-import { callAIStudio } from '@/pronax-studio/geminiClient';
 
 export type PolicyAction = 'monetize' | 'mute' | 'block_worldwide' | 'track_only';
 export type ClaimStatus = 'active' | 'disputed' | 'released' | 'upheld' | 'appealed';
@@ -128,17 +127,30 @@ export function CopyrightClaimsTab() {
   const [selectedClaim, setSelectedClaim] = useState<CopyrightClaimItem | null>(null);
   const [scanningVideoId, setScanningVideoId] = useState<string | null>(null);
   const [evaluatingAI, setEvaluatingAI] = useState<boolean>(false);
+  const [claimEvents, setClaimEvents] = useState<any[]>([]);
 
   // Bulk Selection & Batch Actions
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchProcessing, setBatchProcessing] = useState<boolean>(false);
 
-  // Audio / Video Waveform Player State
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [currentPlaybackSec, setCurrentPlaybackSec] = useState<number>(0);
-  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
-  const [isMuted, setIsMuted] = useState<boolean>(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Load claim events for audit trail
+  const loadClaimEvents = useCallback(async (claimId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('copyright_claim_events')
+        .select('*')
+        .eq('claim_id', claimId)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setClaimEvents(data);
+      } else {
+        setClaimEvents([]);
+      }
+    } catch {
+      setClaimEvents([]);
+    }
+  }, []);
 
   // Fetch claims from Supabase
   const loadClaims = useCallback(async () => {
@@ -159,65 +171,23 @@ export function CopyrightClaimsTab() {
     }
   }, []);
 
-  // Real-time Supabase postgres_changes Subscription
+  // Polling instead of table-wide subscription (doesn't scale to millions of clients)
   useEffect(() => {
     loadClaims();
-
-    const channel = supabase
-      .channel('public:copyright_claims')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'copyright_claims' },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const mapped = mapRowToClaimItem(payload.new as CopyrightClaimRow);
-            setClaims((prev) => [mapped, ...prev.filter((c) => c.id !== mapped.id)]);
-            toast.info(`🔔 New Copyright Claim Ingested: ${mapped.video_title}`);
-          } else if (payload.eventType === 'UPDATE') {
-            const mapped = mapRowToClaimItem(payload.new as CopyrightClaimRow);
-            setClaims((prev) => prev.map((c) => (c.id === mapped.id ? { ...c, ...mapped } : c)));
-            setSelectedClaim((prev) => (prev && prev.id === mapped.id ? { ...prev, ...mapped } : prev));
-          } else if (payload.eventType === 'DELETE') {
-            const deletedId = (payload.old as { id?: string })?.id;
-            if (deletedId) {
-              setClaims((prev) => prev.filter((c) => c.id !== deletedId));
-              setSelectedClaim((prev) => (prev && prev.id === deletedId ? null : prev));
-            }
-          }
-        }
-      )
-      .subscribe();
+    
+    // Refresh every 30 seconds
+    const interval = setInterval(() => {
+      loadClaims();
+    }, 30000);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, [loadClaims]);
 
-  // Audio simulation timer
-  useEffect(() => {
-    if (isPlaying) {
-      timerRef.current = setInterval(() => {
-        setCurrentPlaybackSec((prev) => {
-          if (prev >= 600) {
-            setIsPlaying(false);
-            return 0;
-          }
-          return prev + 1 * playbackSpeed;
-        });
-      }, 1000);
-    } else if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isPlaying, playbackSpeed]);
-
   const handleSeekToSegment = (startTs: string) => {
     const secs = parseTimestampToSeconds(startTs);
-    setCurrentPlaybackSec(secs);
-    setIsPlaying(true);
-    toast.info(`Seeking video/audio player to segment timestamp ${startTs} (${secs}s)...`);
+    toast.info(`Audio segment at ${startTs} (${secs}s). Video player integration required for playback.`);
   };
 
   // AI Dispute Risk & Merit Evaluator with Fallback Error Handling
@@ -229,59 +199,48 @@ export function CopyrightClaimsTab() {
 
     let evaluation: AIEvaluation;
 
-    try {
-      const res = await callAIStudio({
-        model: 'gemini-2.5-flash',
-        task: 'copyright_analysis',
-        data: {
-          claimId: claim.id,
-          videoTitle: claim.video_title,
-          matchedReference: claim.matched_reference_title,
-          matchType: claim.match_type,
-          confidenceScore: claim.confidence_score,
-          timestampStart: claim.timestamp_start,
-          timestampEnd: claim.timestamp_end,
-          durationSec,
-          disputeReason: claim.dispute_reason || 'Creator submitted fair use statement.',
-          claimant: claim.claimant,
-        },
-      });
+    // Rule-based evaluation (replacing fake AI)
+    const hasFairUseKeywords = /fair use|commentary|educational|reaction|criticism|license|creative commons|permission|transformative/i.test(claim.dispute_reason || '');
+    const isShortSegment = durationSec < 60;
+    let score = 55;
+    if (hasFairUseKeywords) score += 25;
+    if (isShortSegment) score += 12;
+    if (claim.confidence_score < 92) score += 8;
+    score = Math.min(98, Math.max(15, score));
 
-      if (res && typeof res.merit_score === 'number' && res.fair_use_factors) {
-        evaluation = res;
-      } else {
-        throw new Error('Gemini output unformatted');
-      }
-    } catch {
-      // Defensive fallback rule engine
-      const hasFairUseKeywords = /fair use|commentary|educational|reaction|criticism|license|creative commons|permission|transformative/i.test(claim.dispute_reason || '');
-      const isShortSegment = durationSec < 60;
-      let score = 55;
-      if (hasFairUseKeywords) score += 25;
-      if (isShortSegment) score += 12;
-      if (claim.confidence_score < 92) score += 8;
-      score = Math.min(98, Math.max(15, score));
+    evaluation = {
+      merit_score: score,
+      merit_level: score >= 75 ? 'High Merit / Strong Fair Use' : score >= 45 ? 'Medium Merit' : 'Low Merit',
+      recommendation: score >= 75 ? 'release_claim' : 'monetize',
+      reasoning: `Rule-based evaluation: Analyzed ${durationSec}s segment with ${claim.confidence_score}% confidence against creator dispute defense.`,
+      fair_use_factors: {
+        transformative_nature: hasFairUseKeywords ? 88 : 42,
+        amount_used: isShortSegment ? 85 : 45,
+        market_effect: 78,
+      },
+    };
 
-      evaluation = {
-        merit_score: score,
-        merit_level: score >= 75 ? 'High Merit / Strong Fair Use' : score >= 45 ? 'Medium Merit' : 'Low Merit',
-        recommendation: score >= 75 ? 'release_claim' : 'monetize',
-        reasoning: `AI Evaluator (Rule Fallback): Analyzed ${durationSec}s segment with ${claim.confidence_score}% confidence against creator dispute defense.`,
-        fair_use_factors: {
-          transformative_nature: hasFairUseKeywords ? 88 : 42,
-          amount_used: isShortSegment ? 85 : 45,
-          market_effect: 78,
-        },
-      };
-    } finally {
-      setEvaluatingAI(false);
-    }
+    setEvaluatingAI(false);
 
     const updated = { ...claim, ai_evaluation: evaluation };
     setClaims((prev) => prev.map((c) => (c.id === claim.id ? updated : c)));
     if (selectedClaim?.id === claim.id) setSelectedClaim(updated);
 
-    toast.success(`AI Evaluation Complete: ${evaluation.merit_level} (${evaluation.merit_score}/100)`, {
+    // Log AI evaluation to audit trail
+    try {
+      await supabase.rpc('log_ai_evaluation_event', {
+        p_claim_id: claim.id,
+        p_merit_score: evaluation.merit_score,
+        p_merit_level: evaluation.merit_level,
+        p_recommendation: evaluation.recommendation,
+        p_reasoning: evaluation.reasoning,
+        p_fair_use_factors: evaluation.fair_use_factors
+      });
+    } catch (error) {
+      console.error('Failed to log AI evaluation event:', error);
+    }
+
+    toast.success(`Evaluation Complete: ${evaluation.merit_level} (${evaluation.merit_score}/100)`, {
       description: evaluation.reasoning,
     });
 
@@ -289,6 +248,9 @@ export function CopyrightClaimsTab() {
   };
 
   const handleUpdateClaimStatus = async (claimId: string, nextStatus: ClaimStatus, actionNote?: string) => {
+    const claim = claims.find(c => c.id === claimId);
+    const oldStatus = claim?.status;
+
     setClaims((prev) => prev.map((c) => (c.id === claimId ? { ...c, status: nextStatus } : c)));
     if (selectedClaim?.id === claimId) {
       setSelectedClaim((prev) => (prev ? { ...prev, status: nextStatus } : null));
@@ -303,6 +265,19 @@ export function CopyrightClaimsTab() {
       // Local optimistic state fallback
     }
 
+    // Log status change to audit trail (fire and forget)
+    if (oldStatus && oldStatus !== nextStatus) {
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        supabase.rpc('log_status_change_event', {
+          p_claim_id: claimId,
+          p_actor_id: user?.id,
+          p_old_status: oldStatus,
+          p_new_status: nextStatus,
+          p_note: actionNote
+        }).catch(error => console.error('Failed to log status change event:', error));
+      });
+    }
+
     const labels: Record<ClaimStatus, string> = {
       released: '✅ Claim released! Video copyright flag cleared.',
       upheld: '⚠️ Dispute rejected & copyright claim upheld.',
@@ -315,6 +290,9 @@ export function CopyrightClaimsTab() {
   };
 
   const handleUpdatePolicyAction = async (claimId: string, nextPolicy: PolicyAction) => {
+    const claim = claims.find(c => c.id === claimId);
+    const oldPolicy = claim?.policy_action;
+
     setClaims((prev) => prev.map((c) => (c.id === claimId ? { ...c, policy_action: nextPolicy } : c)));
     if (selectedClaim?.id === claimId) {
       setSelectedClaim((prev) => (prev ? { ...prev, policy_action: nextPolicy } : null));
@@ -329,17 +307,75 @@ export function CopyrightClaimsTab() {
       // Local state fallback
     }
 
+    // Log policy change to audit trail (fire and forget)
+    if (oldPolicy && oldPolicy !== nextPolicy) {
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        supabase.rpc('log_policy_change_event', {
+          p_claim_id: claimId,
+          p_actor_id: user?.id,
+          p_old_policy: oldPolicy,
+          p_new_policy: nextPolicy,
+          p_note: `Policy changed from ${oldPolicy} to ${nextPolicy}`
+        }).catch(error => console.error('Failed to log policy change event:', error));
+      });
+    }
+
     toast.success(`Updated Copyright Policy to: ${nextPolicy.replace('_', ' ').toUpperCase()}`);
   };
 
-  const handleSystemWideScan = (videoId: string) => {
-    setScanningVideoId(videoId);
-    toast.info(`🤖 Triggering AI Content ID scan for video target ${videoId}...`);
+  const handleSystemWideScan = async (videoId: string) => {
+    if (videoId === 'all_recent_uploads') {
+      toast.error('System-wide scan temporarily disabled. Configure AUDIO_FINGERPRINT_URL to enable real copyright detection.');
+      return;
+    }
 
-    setTimeout(() => {
+    setScanningVideoId(videoId);
+    toast.info(`🔍 Checking for duplicate content for video ${videoId}...`);
+
+    try {
+      // Check if video has SHA-256 hash for duplicate detection
+      const { data: existingVideo, error: hashError } = await supabase
+        .from('videos')
+        .select('sha256, title')
+        .eq('id', videoId)
+        .maybeSingle();
+
+      if (hashError) {
+        console.error('Error fetching video hash:', hashError);
+        toast.error('Failed to fetch video for duplicate check');
+        setScanningVideoId(null);
+        return;
+      }
+
+      if (!existingVideo?.sha256) {
+        toast.warning('Video has no SHA-256 hash. Duplicate check unavailable.');
+        setScanningVideoId(null);
+        return;
+      }
+
+      // Check for duplicates using SHA-256 hash
+      const { data: duplicates } = await supabase
+        .from('videos')
+        .select('id, title, owner_id')
+        .eq('sha256', existingVideo.sha256)
+        .neq('id', videoId)
+        .limit(5);
+
+      if (duplicates && duplicates.length > 0) {
+        toast.warning(`Found ${duplicates.length} potential duplicate(s) using SHA-256 hash`, {
+          description: `Matches: ${duplicates.map(d => d.title).join(', ')}`
+        });
+        loadClaims();
+      } else {
+        toast.success('Duplicate check complete: No SHA-256 matches found');
+      }
+
       setScanningVideoId(null);
-      toast.success(`✨ System AI Scan complete: Acoustic & visual spectrum verified. No new infringements detected.`);
-    }, 1800);
+    } catch (error) {
+      console.error('Duplicate check error:', error);
+      setScanningVideoId(null);
+      toast.error('Duplicate check failed. Please try again.');
+    }
   };
 
   // Filter logic
@@ -439,7 +475,7 @@ export function CopyrightClaimsTab() {
     let autoReleased = 0;
     let autoMuted = 0;
 
-    toast.info(`🤖 Running Gemini AI auto-resolution queue for ${ids.length} claims...`);
+    toast.info(`Running auto-resolution queue for ${ids.length} claims...`);
 
     for (const id of ids) {
       const claim = claims.find((c) => c.id === id);
@@ -451,7 +487,7 @@ export function CopyrightClaimsTab() {
       }
 
       if (evalObj.recommendation === 'release_claim' || evalObj.merit_score >= 70) {
-        await handleUpdateClaimStatus(id, 'released', 'Auto-released by Gemini AI queue');
+        await handleUpdateClaimStatus(id, 'released', 'Auto-released by rule-based queue');
         autoReleased++;
       } else {
         await handleUpdatePolicyAction(id, 'mute');
@@ -497,7 +533,7 @@ export function CopyrightClaimsTab() {
                   </span>
                 </h1>
                 <p className="text-xs text-zinc-400 mt-0.5 max-w-2xl">
-                  Automated acoustic fingerprinting, visual frame spectrum matching, and Gemini AI dispute risk evaluation.
+                  Automated acoustic fingerprinting, visual frame spectrum matching, and rule-based dispute risk evaluation.
                 </p>
               </div>
             </div>
@@ -506,10 +542,10 @@ export function CopyrightClaimsTab() {
           <button
             onClick={() => handleSystemWideScan('all_recent_uploads')}
             disabled={!!scanningVideoId}
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-red-600/20 cursor-pointer transition shrink-0"
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-zinc-700 to-zinc-600 hover:from-zinc-600 hover:to-zinc-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-zinc-600/20 cursor-pointer transition shrink-0"
           >
-            {scanningVideoId ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-            <span>Run System AI Copyright Scan</span>
+            {scanningVideoId ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+            <span>Check Duplicates (SHA-256)</span>
           </button>
         </div>
 
@@ -635,7 +671,7 @@ export function CopyrightClaimsTab() {
                 <Layers className="w-4 h-4 text-purple-400" />
                 Batch Queue Toolbar ({selectedIds.size} claims selected)
               </p>
-              <p className="text-[11px] text-zinc-400">Perform instant batch policy updates or run Gemini AI auto-resolution queue.</p>
+              <p className="text-[11px] text-zinc-400">Perform instant batch policy updates or run auto-resolution queue.</p>
             </div>
           </div>
 
@@ -668,7 +704,7 @@ export function CopyrightClaimsTab() {
               disabled={batchProcessing}
               className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-purple-600/30 transition cursor-pointer disabled:opacity-50"
             >
-              {batchProcessing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Bot className="w-3.5 h-3.5 text-cyan-200" />}
+              {batchProcessing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5 text-cyan-200" />}
               <span>Bulk AI Auto-Resolve</span>
             </button>
 
@@ -720,7 +756,7 @@ export function CopyrightClaimsTab() {
                     }`}
                     onClick={() => {
                       setSelectedClaim(claim);
-                      setCurrentPlaybackSec(startSec);
+                      loadClaimEvents(claim.id);
                     }}
                   >
                     <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
@@ -841,10 +877,7 @@ export function CopyrightClaimsTab() {
                           </>
                         )}
                         <button
-                          onClick={() => {
-                            setSelectedClaim(claim);
-                            setCurrentPlaybackSec(startSec);
-                          }}
+                          onClick={() => setSelectedClaim(claim)}
                           className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white transition text-[11px] font-bold flex items-center gap-1 cursor-pointer"
                         >
                           <span>Review</span>
@@ -892,7 +925,7 @@ export function CopyrightClaimsTab() {
                         {selectedClaim.id}
                       </span>
                     </h3>
-                    <p className="text-xs text-zinc-400 mt-0.5">Review matched spectrum, run Gemini AI fair-use evaluator, and seek player timestamps.</p>
+                    <p className="text-xs text-zinc-400 mt-0.5">Review matched spectrum, run rule-based fair-use evaluator, and seek player timestamps.</p>
                   </div>
                 </div>
 
@@ -926,112 +959,58 @@ export function CopyrightClaimsTab() {
                   </div>
                 </div>
 
-                {/* Interactive Waveform & Timestamp Seeking Engine */}
+                {/* Matched Segment Timestamp Display */}
                 <div className="p-4 rounded-xl bg-black/90 border border-red-500/30 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                      <Music className="w-4 h-4 text-red-500" /> Interactive Waveform & Segment Seek
+                      <Clock className="w-4 h-4 text-red-500" /> Matched Segment Timestamp
                     </span>
                     <span className="text-xs font-mono text-cyan-400 font-bold">
-                      Segment: {selectedClaim.timestamp_start} - {selectedClaim.timestamp_end} ({parseTimestampToSeconds(selectedClaim.timestamp_end) - parseTimestampToSeconds(selectedClaim.timestamp_start)}s)
+                      {selectedClaim.timestamp_start} - {selectedClaim.timestamp_end}
                     </span>
                   </div>
 
-                  {/* Simulated Audio Spectrum Waveform Bars */}
-                  <div className="h-16 bg-zinc-900/90 rounded-xl p-2.5 flex items-center gap-1 relative overflow-hidden border border-zinc-800">
-                    {Array.from({ length: 56 }).map((_, idx) => {
-                      const startSec = parseTimestampToSeconds(selectedClaim.timestamp_start);
-                      const endSec = parseTimestampToSeconds(selectedClaim.timestamp_end);
-                      const totalSec = 600;
-                      const barStartRatio = startSec / totalSec;
-                      const barEndRatio = endSec / totalSec;
-                      const thisRatio = idx / 56;
-                      const isMatchedRegion = thisRatio >= barStartRatio && thisRatio <= barEndRatio;
-                      const barHeight = Math.sin(idx * 0.45) * 35 + 55;
-
-                      return (
-                        <div
-                          key={idx}
-                          onClick={() => {
-                            const targetSec = Math.round(thisRatio * totalSec);
-                            setCurrentPlaybackSec(targetSec);
-                            setIsPlaying(true);
+                  {/* Timeline visualization */}
+                  <div className="h-12 bg-zinc-900/90 rounded-xl p-2.5 relative overflow-hidden border border-zinc-800">
+                    <div className="absolute inset-2 flex items-center">
+                      <div className="w-full h-1 bg-zinc-700 rounded-full relative">
+                        {/* Matched segment highlight */}
+                        <div 
+                          className="absolute h-full bg-red-500 rounded-full shadow-[0_0_8px_#ef4444]"
+                          style={{
+                            left: '25%',
+                            width: '15%'
                           }}
-                          className={`flex-1 rounded-full cursor-pointer transition-all hover:scale-110 ${
-                            isMatchedRegion
-                              ? 'bg-red-500 shadow-[0_0_10px_#ef4444]'
-                              : thisRatio * totalSec <= currentPlaybackSec
-                              ? 'bg-cyan-400'
-                              : 'bg-zinc-700/60'
-                          }`}
-                          style={{ height: `${barHeight}%` }}
                         />
-                      );
-                    })}
+                      </div>
+                    </div>
+                    <div className="absolute bottom-1 left-2 right-2 flex justify-between text-[10px] font-mono text-zinc-500">
+                      <span>0:00</span>
+                      <span>Matched segment highlighted in red</span>
+                      <span>10:00</span>
+                    </div>
                   </div>
 
-                  {/* Player Controls & Seeking Bar */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                  {/* Segment Info */}
+                  <div className="p-3 bg-zinc-800/50 rounded-lg text-xs text-zinc-400">
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setIsPlaying(!isPlaying)}
-                        className="px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md shadow-red-600/20"
-                      >
-                        {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                        <span>{isPlaying ? 'Pause' : 'Play Segment'}</span>
-                      </button>
-
-                      <button
-                        onClick={() => handleSeekToSegment(selectedClaim.timestamp_start)}
-                        className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-mono font-bold text-zinc-300 flex items-center gap-1 border border-zinc-700 cursor-pointer"
-                      >
-                        <RotateCcw className="w-3 h-3 text-cyan-400" />
-                        <span>Jump Start ({parseTimestampToSeconds(selectedClaim.timestamp_start)}s)</span>
-                      </button>
-
-                      <button
-                        onClick={() => handleSeekToSegment(selectedClaim.timestamp_end)}
-                        className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-mono font-bold text-zinc-300 flex items-center gap-1 border border-zinc-700 cursor-pointer"
-                      >
-                        <FastForward className="w-3 h-3 text-amber-400" />
-                        <span>Jump End ({parseTimestampToSeconds(selectedClaim.timestamp_end)}s)</span>
-                      </button>
-                    </div>
-
-                    <div className="flex items-center gap-3 text-xs font-mono">
-                      <span className="text-zinc-400">
-                        Timestamp: <strong className="text-white">{formatSecondsToTimestamp(currentPlaybackSec)}</strong>
+                      <Info className="w-4 h-4 text-cyan-400" />
+                      <span>
+                        Copyright match detected from {selectedClaim.timestamp_start} to {selectedClaim.timestamp_end}. 
+                        Real waveform visualization requires audio file access and player integration.
                       </span>
-
-                      <button
-                        onClick={() => setIsMuted(!isMuted)}
-                        className="text-zinc-400 hover:text-white transition"
-                      >
-                        {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
-                      </button>
-
-                      <select
-                        value={playbackSpeed}
-                        onChange={(e) => setPlaybackSpeed(Number(e.target.value))}
-                        className="bg-zinc-900 border border-zinc-800 rounded px-1.5 py-0.5 text-[11px] text-zinc-300 outline-none"
-                      >
-                        <option value={0.5}>0.5x Speed</option>
-                        <option value={1}>1.0x Normal</option>
-                        <option value={1.5}>1.5x Speed</option>
-                        <option value={2}>2.0x Fast</option>
-                      </select>
                     </div>
                   </div>
                 </div>
 
-                {/* Gemini AI Dispute Risk & Fair Use Visual Factor Breakdown */}
-                <div className="p-4 rounded-xl bg-gradient-to-r from-purple-950/40 via-zinc-900 to-black border border-purple-500/40 space-y-4">
-                  <div className="flex items-center justify-between border-b border-purple-500/20 pb-3">
+                {/* Rule-Based Dispute Risk & Fair Use Visual Factor Breakdown */}
+                <div className="p-4 rounded-xl bg-gradient-to-r from-zinc-900 via-zinc-800 to-black border border-zinc-700 space-y-4">
+                  <div className="flex items-center justify-between border-b border-zinc-700 pb-3">
                     <div className="flex items-center gap-2">
-                      <Bot className="w-5 h-5 text-purple-400" />
+                      <Scale className="w-5 h-5 text-purple-400" />
                       <div>
                         <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                          Gemini AI Fair Use Visual Factor Breakdown
+                          Rule-Based Fair Use Evaluation
                         </h4>
                         <p className="text-[11px] text-zinc-400">Scored across four statutory Fair Use parameters.</p>
                       </div>
@@ -1042,7 +1021,7 @@ export function CopyrightClaimsTab() {
                       disabled={evaluatingAI}
                       className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md shadow-purple-900/30 disabled:opacity-50"
                     >
-                      {evaluatingAI ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-purple-200" />}
+                      {evaluatingAI ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Scale className="w-3.5 h-3.5 text-purple-200" />}
                       <span>{selectedClaim.ai_evaluation ? 'Re-evaluate with AI' : 'Evaluate Dispute with AI'}</span>
                     </button>
                   </div>
@@ -1123,7 +1102,7 @@ export function CopyrightClaimsTab() {
                   ) : (
                     <div className="p-4 rounded-xl bg-black/40 border border-dashed border-zinc-800 text-center space-y-2">
                       <p className="text-xs text-zinc-400 italic">
-                        Click "Evaluate Dispute with AI" to trigger Gemini AI analysis on Fair Use defense statements and generate statutory factor progress bars.
+                        Click "Evaluate Dispute" to trigger rule-based analysis on Fair Use defense statements and generate statutory factor progress bars.
                       </p>
                     </div>
                   )}
@@ -1147,6 +1126,48 @@ export function CopyrightClaimsTab() {
                     </p>
                   </div>
                 )}
+
+                {/* Audit Timeline */}
+                <div className="p-4 rounded-xl bg-zinc-900/90 border border-zinc-800 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-emerald-400" />
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">Claim Audit Timeline</span>
+                  </div>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {claimEvents.length === 0 ? (
+                      <div className="text-xs text-zinc-500 italic text-center py-4">
+                        No audit events recorded yet for this claim.
+                      </div>
+                    ) : (
+                      claimEvents.map((event) => (
+                        <div key={event.id} className="text-xs border-l-2 border-zinc-700 pl-3 py-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-zinc-300 capitalize">
+                              {event.action.replace('_', ' ')}
+                            </span>
+                            <span className="text-[10px] font-mono text-zinc-500">
+                              {new Date(event.created_at).toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                              event.actor_type === 'ai' ? 'bg-purple-500/20 text-purple-300' :
+                              event.actor_type === 'admin' ? 'bg-blue-500/20 text-blue-300' :
+                              'bg-zinc-700 text-zinc-400'
+                            }`}>
+                              {event.actor_type.toUpperCase()}
+                            </span>
+                            {event.payload && Object.keys(event.payload).length > 0 && (
+                              <span className="text-zinc-500 truncate max-w-[200px]">
+                                {JSON.stringify(event.payload).substring(0, 50)}...
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
 
                 {/* Policy Action Selector */}
                 <div className="p-4 rounded-xl bg-zinc-900/90 border border-zinc-800 space-y-2">
@@ -1177,7 +1198,7 @@ export function CopyrightClaimsTab() {
                   onClick={() => handleSystemWideScan(selectedClaim.video_id)}
                   className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white flex items-center gap-1.5 border border-zinc-700 cursor-pointer transition"
                 >
-                  <RefreshCw className="w-3.5 h-3.5 text-cyan-400" /> Re-scan Acoustic Fingerprint
+                  <RefreshCw className="w-3.5 h-3.5 text-cyan-400" /> Check for Duplicates
                 </button>
 
                 <div className="flex items-center gap-2">

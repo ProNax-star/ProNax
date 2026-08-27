@@ -95,7 +95,7 @@ export default function WithdrawalMethods({ userId, onChange }: Props) {
   // Realtime
   useEffect(() => {
     const ch = supabase
-      .channel(`uwm:${userId}:${Math.random().toString(36).slice(2)}`)
+      .channel(`withdrawal-methods:${userId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_withdrawal_methods', filter: `user_id=eq.${userId}` }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(ch); };

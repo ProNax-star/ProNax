@@ -1,6 +1,7 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { createFileRoute } from "@tanstack/react-router";
 import Watch from "@/features/pages/Watch";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export const Route = createFileRoute("/watch/$id")({
   head: () => ({
@@ -11,5 +12,9 @@ export const Route = createFileRoute("/watch/$id")({
       { property: "og:description", content: "Watch videos, comment and support creators on ProNax." },
     ],
   }),
-  component: Watch,
+  component: () => (
+    <ErrorBoundary>
+      <Watch />
+    </ErrorBoundary>
+  ),
 });

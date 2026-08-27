@@ -7,6 +7,7 @@
 import { supabase } from "@/integrations/supabase/loose";
 import { recordAudit, AuditActions } from "@/lib/audit";
 import { createLogger } from "@/lib/logger";
+import { getItem, setItem, getJSON, setJSON } from '@/lib/safeStorage';
 
 const log = createLogger("consent");
 
@@ -25,8 +26,7 @@ export type Consent = {
 const listeners = new Set<(c: Consent | null) => void>();
 
 export function anonId(): string {
-  if (typeof window === "undefined") return "ssr";
-  let id = localStorage.getItem(ANON_KEY);
+  let id = getItem(ANON_KEY);
   if (!id) {
     // Browser-compatible unique ID generation
     const generateId = () => {
@@ -37,16 +37,15 @@ export function anonId(): string {
       return `anon-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     };
     id = generateId();
-    localStorage.setItem(ANON_KEY, id);
+    setItem(ANON_KEY, id);
   }
   return id;
 }
 
 export function getConsent(): Consent | null {
-  if (typeof window === "undefined") return null;
+  const raw = getItem(STORAGE_KEY);
+  if (!raw) return null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
     const parsed = JSON.parse(raw) as Consent;
     if (parsed.policyVersion !== POLICY_VERSION) return null;
     return { ...parsed, necessary: true };
@@ -75,11 +74,7 @@ export async function setConsent(choice: {
     policyVersion: POLICY_VERSION,
     decidedAt: new Date().toISOString(),
   };
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(consent));
-  } catch {
-    /* private mode */
-  }
+  setJSON(STORAGE_KEY, consent);
   for (const l of listeners) l(consent);
 
   try {

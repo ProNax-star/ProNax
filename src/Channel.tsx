@@ -1,6 +1,6 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from '@/lib/router-compat';
 import { motion } from 'framer-motion';
 import {
   BadgeCheck, Ban, Flag, Loader2, MoreVertical, Search, Settings,

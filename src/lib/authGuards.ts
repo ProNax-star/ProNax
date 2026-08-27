@@ -40,10 +40,15 @@ export async function ensureUserProfile(userId: string): Promise<boolean> {
       .from('profiles')
       .select('id')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
     if (profile && !profileError) {
       return true; // Profile already exists
+    }
+
+    if (profileError && profileError.code !== 'PGRST116') {
+      console.error('Error checking profile:', profileError);
+      return false;
     }
 
     // Profile doesn't exist, create it

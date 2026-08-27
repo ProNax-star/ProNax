@@ -1,6 +1,6 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from '@/lib/router-compat';
 import {
   ChevronLeft, Save, Trash2, Globe, Lock, Link2, Eye,
 } from 'lucide-react';

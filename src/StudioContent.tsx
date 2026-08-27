@@ -1,6 +1,6 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from '@/lib/router-compat';
 import { Search, Filter, Upload, RefreshCw } from 'lucide-react';
 import { useStudio } from './StudioLayout';
 import { ChannelContentDashboard } from '@/components/ChannelContentDashboard';

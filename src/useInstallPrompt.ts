@@ -11,22 +11,44 @@ function isStandalone() {
   return window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
 }
 
+function getDismissed() {
+  if (typeof window === 'undefined') return false;
+  try {
+    return localStorage.getItem('pronax_install_dismissed') === '1';
+  } catch {
+    return false;
+  }
+}
+
+function setDismissed(value: boolean) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (value) {
+      localStorage.setItem('pronax_install_dismissed', '1');
+    } else {
+      localStorage.removeItem('pronax_install_dismissed');
+    }
+  } catch {
+    // Ignore localStorage errors
+  }
+}
+
 export function useInstallPrompt() {
   const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(isStandalone);
-  const [dismissed, setDismissed] = useState(() => localStorage.getItem('pronax_install_dismissed') === '1');
+  const [dismissed, setDismissedState] = useState(getDismissed());
 
   useEffect(() => {
     const onPrompt = (event: Event) => {
       event.preventDefault();
       setPromptEvent(event as BeforeInstallPromptEvent);
+      setDismissedState(false);
       setDismissed(false);
-      localStorage.removeItem('pronax_install_dismissed');
     };
     const onInstalled = () => {
       setInstalled(true);
       setPromptEvent(null);
-      localStorage.setItem('pronax_install_dismissed', '1');
+      setDismissed(true);
     };
     window.addEventListener('beforeinstallprompt', onPrompt);
     window.addEventListener('appinstalled', onInstalled);
@@ -51,8 +73,8 @@ export function useInstallPrompt() {
   }, [promptEvent]);
 
   const dismiss = useCallback(() => {
+    setDismissedState(true);
     setDismissed(true);
-    localStorage.setItem('pronax_install_dismissed', '1');
   }, []);
 
   return { canInstall, installed, install, dismiss };

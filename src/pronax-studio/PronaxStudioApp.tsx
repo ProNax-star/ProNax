@@ -25,11 +25,6 @@ import { AIAssistantDrawer } from "./components/AIAssistantDrawer";
 
 import { ViewMode, Video, AudioTrack, ChannelStats, SubtitleTrack } from "./types";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import {
-  initialChannelStats,
-  initialAudioTracks,
-  initialSubtitleTracks,
-} from "./mockData";
 import { useLiveStudio } from "./useLiveStudio";
 
 export default function App() {
@@ -39,14 +34,26 @@ export default function App() {
 
   // Live data from the backend (videos, comments, channel stats)
   const live = useLiveStudio();
-  const channelStats: ChannelStats = live.channelStats ?? initialChannelStats;
-  const videos = live.videos;
-  const comments = live.comments;
-  const realUsers = live.realUsers;
+  const channelStats: ChannelStats | null = live.isAuthed ? (live.channelStats ?? {
+    name: "",
+    handle: "",
+    avatar: "",
+    banner: "",
+    subscribers: 0,
+    subscriberChange28Days: 0,
+    views28Days: 0,
+    watchTimeHours28Days: 0,
+    estimatedRevenue28Days: 0,
+    realtime48HoursViews: 0,
+    realtime60MinsViews: 0,
+  }) : null;
+  const videos = live.isAuthed ? live.videos : [];
+  const comments = live.isAuthed ? live.comments : [];
+  const realUsers = live.isAuthed ? live.realUsers : [];
 
   // Local-only libraries (no backend tables yet)
-  const [audioTracks, setAudioTracks] = useState<AudioTrack[]>(initialAudioTracks);
-  const [subtitleTracks, setSubtitleTracks] = useState<SubtitleTrack[]>(initialSubtitleTracks);
+  const [audioTracks, setAudioTracks] = useState<AudioTrack[]>([]);
+  const [subtitleTracks, setSubtitleTracks] = useState<SubtitleTrack[]>([]);
 
   // Search & Navigation Filters
   const [globalSearch, setGlobalSearch] = useState("");
@@ -182,22 +189,25 @@ export default function App() {
         onOpenAIAssistant={() => setIsAIAssistantOpen(true)}
         searchQuery={globalSearch}
         onSearchChange={setGlobalSearch}
+        isAuthed={live.isAuthed}
       />
 
       {/* Main Container */}
       <div className="flex flex-1 relative">
-        {/* Sidebar Menu */}
-        <Sidebar
-          currentView={currentView}
-          onSelectView={handleSelectView}
-          channelStats={channelStats}
-          isCollapsed={isSidebarCollapsed}
-          isMobileOpen={isMobileSidebarOpen}
-          onCloseMobile={() => setIsMobileSidebarOpen(false)}
-        />
+        {/* Sidebar Menu - Only show when authenticated */}
+        {live.isAuthed && (
+          <Sidebar
+            currentView={currentView}
+            onSelectView={handleSelectView}
+            channelStats={channelStats}
+            isCollapsed={isSidebarCollapsed}
+            isMobileOpen={isMobileSidebarOpen}
+            onCloseMobile={() => setIsMobileSidebarOpen(false)}
+          />
+        )}
 
         {/* View Content Canvas */}
-        <main className="flex-1 min-w-0 bg-[#0f0f0f] overflow-x-hidden">
+        <main className={`flex-1 min-w-0 bg-[#0f0f0f] overflow-x-hidden ${!live.isAuthed ? 'w-full' : ''}`}>
           <ErrorBoundary>
             {live.loading && (
               <div className="flex items-center justify-center min-h-[50vh]">
@@ -209,13 +219,29 @@ export default function App() {
             )}
 
             {!live.authLoading && !live.isAuthed && (
-              <div className="m-4 rounded-lg border border-yellow-600/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-200">
-                You are signed out — sign in to load your real channel data.{" "}
-                <a href="/auth" className="underline font-medium">Sign in</a>
+              <div className="flex flex-col items-center justify-center min-h-[60vh] p-8">
+                <div className="text-center max-w-md">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+                    <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-xl font-bold text-white mb-2">Sign in to access Studio</h2>
+                  <p className="text-sm text-gray-400 mb-6">Manage your videos, analytics, and revenue with ProNax Studio.</p>
+                  <a
+                    href="/auth"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-red-600 to-red-500 text-white font-semibold text-sm hover:from-red-500 hover:to-red-400 transition-all shadow-lg"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                    </svg>
+                    Sign in to Studio
+                  </a>
+                </div>
               </div>
             )}
 
-            {!live.loading && currentView === "dashboard" && (
+            {live.isAuthed && !live.loading && currentView === "dashboard" && (
               <DashboardView
                 channelStats={channelStats}
                 latestVideo={videos[0]}
@@ -227,7 +253,7 @@ export default function App() {
               />
             )}
 
-            {!live.loading && currentView === "content" && (
+            {live.isAuthed && !live.loading && currentView === "content" && (
               <ContentView
                 videos={videos}
                 onOpenUploadModal={handleTriggerUpload}
@@ -240,7 +266,7 @@ export default function App() {
               />
             )}
 
-            {!live.loading && currentView === "analytics" && (
+            {live.isAuthed && !live.loading && currentView === "analytics" && (
               <AnalyticsView
                 channelStats={channelStats}
                 selectedVideo={selectedVideoForAnalytics}
@@ -248,7 +274,7 @@ export default function App() {
               />
             )}
 
-            {!live.loading && currentView === "comments" && (
+            {live.isAuthed && !live.loading && currentView === "comments" && (
               <CommentsView
                 comments={comments}
                 onAddReply={handleAddCommentReply}
@@ -257,11 +283,11 @@ export default function App() {
               />
             )}
 
-            {!live.loading && currentView === "earn" && (
+            {live.isAuthed && !live.loading && currentView === "earn" && (
               <EarnView channelStats={channelStats} />
             )}
 
-            {!live.loading && currentView === "customization" && (
+            {live.isAuthed && !live.loading && currentView === "customization" && (
               <CustomizationView
                 channelStats={channelStats}
                 onUpdateChannelStats={(updated) => void live.updateChannel(updated)}
@@ -269,14 +295,14 @@ export default function App() {
               />
             )}
 
-            {!live.loading && currentView === "audio-library" && (
+            {live.isAuthed && !live.loading && currentView === "audio-library" && (
               <AudioLibraryView
                 tracks={audioTracks}
                 onToggleStarTrack={handleToggleStarTrack}
               />
             )}
 
-            {!live.loading && currentView === "subtitles" && (
+            {live.isAuthed && !live.loading && currentView === "subtitles" && (
               <SubtitlesView
                 videos={videos}
                 subtitleTracks={subtitleTracks}

@@ -1,6 +1,7 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { createFileRoute } from "@tanstack/react-router";
 import Shorts from "@/features/pages/Shorts";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export const Route = createFileRoute("/shorts/")({
   head: () => ({
@@ -11,5 +12,9 @@ export const Route = createFileRoute("/shorts/")({
       { property: "og:description", content: "Swipe through short vertical videos on ProNax." },
     ],
   }),
-  component: Shorts,
+  component: () => (
+    <ErrorBoundary>
+      <Shorts />
+    </ErrorBoundary>
+  ),
 });

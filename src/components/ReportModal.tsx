@@ -88,30 +88,12 @@ export function ReportModal({
         },
       ]);
 
-      // 2. Local fallback storage for instant feedback
-      const existingReports = JSON.parse(localStorage.getItem('pronax_user_reports') || '[]');
-      existingReports.unshift({
-        id: `rep_${Date.now()}`,
-        target_type: targetType,
-        target_id: targetId,
-        target_title: targetTitle || targetId,
-        channel_name: targetChannelName || 'Unknown',
-        category: selectedCategory,
-        reason: details,
-        timestamp: timestamp || '00:00',
-        original_url: originalUrl || '',
-        status: 'pending',
-        created_at: new Date().toISOString(),
-      });
-      localStorage.setItem('pronax_user_reports', JSON.stringify(existingReports));
-
       setSubmitted(true);
       toast.success('Report submitted successfully to ProNax Moderation Team!', {
         description: 'Our Automated Safety & Legal System will review this ticket within 24 hours.',
       });
     } catch {
-      toast.success('Report logged locally to moderation queue!');
-      setSubmitted(true);
+      toast.error('Failed to submit report. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

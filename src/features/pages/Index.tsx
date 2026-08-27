@@ -217,8 +217,6 @@ export default function Index() {
         q = q.order('created_at', { ascending: false });
       }
       const { data, error } = await q.range(offset, offset + PAGE - 1);
-      console.log('[Home Feed] Direct query result:', { data, error, count: data?.length });
-      console.log('[Home Feed] Query filters:', { visibility: 'public', status: 'ready', category: catParam, kind });
       
       if (!error && Array.isArray(data) && data.length > 0) {
         // Filter out already-watched videos for "foryou" feed (YouTube-style personalization)
@@ -238,23 +236,10 @@ export default function Index() {
       if (catParam) q = q.ilike('category', catParam);
       q = q.order('created_at', { ascending: false });
       const { data, error } = await q.range(offset, offset + PAGE - 1);
-      console.log('[Home Feed] Fallback query result:', { data, error, count: data?.length });
       if (!error && Array.isArray(data) && data.length > 0) {
         return data as FeedVideo[];
       }
     } catch { /* fall through */ }
-
-    // DEBUG: Check what videos exist without filters
-    try {
-      const { data: allVideos, error: allError } = await supabase
-        .from('videos')
-        .select('id, title, visibility, status, created_at')
-        .order('created_at', { ascending: false })
-        .limit(5);
-      console.log('[Home Feed] DEBUG - All recent videos:', { allVideos, allError });
-    } catch (debugError) {
-      console.log('[Home Feed] DEBUG error:', debugError);
-    }
 
     // 4. Return empty array when database has no videos
     return [];
@@ -310,20 +295,8 @@ export default function Index() {
     return () => io.disconnect();
   }, [loading, hasMore, loadingMore, videos.length, feedKind, cat]);
 
-  // Realtime — auto-prepend brand-new public videos as they land.
-  useEffect(() => {
-    const channel = supabase
-      .channel('feed:videos')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'videos' }, async (payload: { new: FeedVideo & { visibility?: string | null; status?: string | null } }) => {
-        const v = payload.new;
-        if (!v || v.visibility !== 'public' || v.status !== 'ready' || v.is_short) return;
-        if (cat !== 'All' && (v.category || '').toLowerCase() !== cat.toLowerCase()) return;
-        const [enriched] = await enrich([v]);
-        setVideos((prev) => (prev.some((x) => x.id === enriched.id) ? prev : [enriched, ...prev]));
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [cat]);
+  // Removed table-wide subscription (doesn't scale to millions of clients)
+  // Rely on 10-second auto-refresh below instead
 
   // 10-second auto-refresh for new content (YouTube-style)
   useEffect(() => {

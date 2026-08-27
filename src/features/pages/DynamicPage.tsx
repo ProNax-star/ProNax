@@ -1,6 +1,6 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from '@/lib/router-compat';
 import { Loader2 } from 'lucide-react';
 import { DynamicWidgetItem } from '@/components/DynamicWidget';
 import type { DynamicWidget } from '@/hooks/useDynamicWidgets';

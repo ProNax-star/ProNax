@@ -1,7 +1,8 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import { CheckCircle2, MoreVertical } from 'lucide-react';
+import { useState } from 'react';
 
 interface VideoCardProps {
   id: string;
@@ -31,6 +32,7 @@ export function VideoCard({
   is_short = false,
 }: VideoCardProps) {
   const navigate = useNavigate();
+  const [imgError, setImgError] = useState(false);
 
   const initials = channel
     ? channel.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
@@ -48,13 +50,16 @@ export function VideoCard({
         className="group flex w-full cursor-pointer gap-3 px-3 py-1.5 active:bg-white/5 transition-colors"
       >
         <div className="relative aspect-video w-36 sm:w-40 shrink-0 overflow-hidden rounded-xl bg-neutral-900">
-          {thumbnail && (
+          {thumbnail ? (
             <img
               src={thumbnail}
               alt={title}
               loading="lazy"
+              onError={() => setImgError(true)}
               className="h-full w-full object-cover"
             />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/15 to-accent/20" />
           )}
           <span className="absolute bottom-1 right-1 rounded bg-black/80 px-1 py-0.5 text-[10px] font-semibold text-white">
             {duration}
@@ -90,13 +95,16 @@ export function VideoCard({
       {/* Thumbnail: full-bleed on mobile, elevated card on larger screens */}
       <div className="px-0 sm:px-0">
         <div className="v3d-thumb relative aspect-video w-full overflow-hidden rounded-none sm:rounded-2xl bg-neutral-900">
-          {thumbnail && (
+          {thumbnail ? (
             <img
               src={thumbnail}
               alt={title}
               loading="lazy"
+              onError={() => setImgError(true)}
               className="absolute inset-0 h-full w-full object-cover"
             />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/15 to-accent/20" />
           )}
 
           {/* Duration badge */}

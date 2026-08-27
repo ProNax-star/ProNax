@@ -1,6 +1,6 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 import { motion } from 'framer-motion';
 import {
   Wallet as WalletIcon, TrendingUp, DollarSign, LogIn, BarChart3, Activity, Clock, RefreshCw, LogOut, ShieldCheck, Banknote, Lock, History,
@@ -158,7 +158,7 @@ export default function WalletPage() {
   useEffect(() => {
     if (!user) return;
     const ch = supabase
-      .channel('revenue-' + user.id + '-' + Math.random().toString(36).slice(2))
+      .channel(`revenue:${user.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'revenue_logs', filter: `user_id=eq.${user.id}` }, () => fetchAll())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_wallets', filter: `user_id=eq.${user.id}` }, () => fetchAll())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'wallet_transactions', filter: `user_id=eq.${user.id}` }, () => fetchAll())

@@ -7,10 +7,17 @@ import subprocess
 import traceback
 from os import listdir, makedirs, walk
 from os.path import basename, exists, isfile, join, splitext
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 from pydub import AudioSegment
+
+# Configure FFmpeg path to use project's ffmpeg
+project_root = Path(__file__).parent.parent.parent.parent
+ffmpeg_dir = str(project_root / "ffmpeg" / "bin")
+import os
+os.environ["PATH"] = ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
 
 from dejavu.config.settings import (DEFAULT_FS, DEFAULT_OVERLAP_RATIO,
                                     DEFAULT_WINDOW_SIZE, HASHES_MATCHED,

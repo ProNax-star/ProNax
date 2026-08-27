@@ -95,7 +95,7 @@ export function SaveToPlaylistDialog({ open, onOpenChange, videoId, videoThumbUr
     setBusy(true);
     const title = newTitle.trim();
     const { data, error } = await supabase
-      .from('playlists').insert({ user_id: uid, title, visibility: 'private' }).select().single();
+      .from('playlists').insert({ user_id: uid, title, visibility: 'private' }).select().maybeSingle();
     if (error || !data) { toast.error(error?.message ?? 'Could not create playlist'); setBusy(false); return; }
     const pid = (data as any).id as string;
     await supabase.from('playlist_items').insert({ playlist_id: pid, video_id: videoId });

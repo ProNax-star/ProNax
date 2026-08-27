@@ -52,24 +52,37 @@ export function useAppSettings() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from('app_settings').select('*').eq('id', 1).maybeSingle();
-    setSettings(data ?? DEFAULT_APP_SETTINGS);
+    try {
+      const { data } = await supabase.from('app_settings').select('*').eq('id', 1).maybeSingle();
+      setSettings(data ?? DEFAULT_APP_SETTINGS);
+    } catch (error) {
+      console.error('Failed to load app settings:', error);
+      setSettings(DEFAULT_APP_SETTINGS);
+    }
     setLoading(false);
   }, []);
 
   useEffect(() => {
     load();
-    const ch = supabase
-      .channel(`app_settings_live_${Math.random().toString(36).slice(2, 10)}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'app_settings' },
-        () => load()
-      )
-      .subscribe();
-    return () => {
-      try { supabase.removeChannel(ch); } catch { /* noop */ }
-    };
+    
+    // Realtime temporarily disabled due to subscription issues
+    // useEffect(() => {
+    //   const ch = supabase
+    //     .channel('app:settings')
+    //     .on(
+    //       'postgres_changes',
+    //       { event: '*', schema: 'public', table: 'app_settings' },
+    //       () => load()
+    //     )
+    //     .subscribe((status) => {
+    //       if (status === 'SUBSCRIPTION_ERROR') {
+    //         console.error('App settings realtime subscription error');
+    //       }
+    //     });
+    //   return () => {
+    //     try { supabase.removeChannel(ch); } catch { /* noop */ }
+    //   };
+    // }, [load]);
   }, [load]);
 
   return { settings, loading, reload: load };

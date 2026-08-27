@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 import {
   Eye, DollarSign, Users, Clock, Upload, TrendingUp,
   MousePointerClick, PlaySquare, BarChart2, MessageSquare,

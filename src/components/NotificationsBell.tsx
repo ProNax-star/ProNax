@@ -1,7 +1,7 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { Bell, Heart, MessageCircle, UserPlus, ShieldAlert, Wallet, Flag, Video } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 import { useNotifications } from '@/hooks/useInteractions';
 import { supabase } from '@/integrations/supabase/loose';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';

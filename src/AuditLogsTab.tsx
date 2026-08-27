@@ -51,7 +51,7 @@ export function AuditLogsTab() {
 
   useEffect(() => {
     const ch = supabase
-      .channel(`admin:audit-logs-${Math.random().toString(36).slice(2)}`)
+      .channel('admin:audit-logs')
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "audit_logs" },

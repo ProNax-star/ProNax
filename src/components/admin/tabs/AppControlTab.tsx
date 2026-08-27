@@ -5,6 +5,7 @@ import { Save, Loader2, Palette, Upload, Radio, Film, MessageCircle, Megaphone, 
 import { toast } from 'sonner';
 import { supabase as _supabase } from '@/integrations/supabase/loose';
 import { useAppSettings, DEFAULT_APP_SETTINGS, type AppSettings } from '@/hooks/useAppSettings';
+import { getItem, setItem, removeItem } from '@/lib/safeStorage';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const supabase: any = _supabase;
 
@@ -51,29 +52,39 @@ export function AppControlTab() {
   const lastRemoteRef = useRef<string>('');
 
   // Cloudflare R2 Storage State
-  const [r2AccountId, setR2AccountId] = useState(() => localStorage.getItem('pronax_r2_account_id') || '8f92a10b471c2e01a884');
-  const [r2BucketName, setR2BucketName] = useState(() => localStorage.getItem('pronax_r2_bucket') || 'pronax-video-storage-vault');
-  const [r2AccessKey, setR2AccessKey] = useState(() => localStorage.getItem('pronax_r2_access_key') || 'r2_key_pronax_live_772091');
-  const [r2SecretKey, setR2SecretKey] = useState(() => {
+  const [r2AccountId, setR2AccountId] = useState('8f92a10b471c2e01a884');
+  const [r2BucketName, setR2BucketName] = useState('pronax-video-storage-vault');
+  const [r2AccessKey, setR2AccessKey] = useState('r2_key_pronax_live_772091');
+  const [r2SecretKey, setR2SecretKey] = useState('••••••••••••••••••••••••••••••••');
+  const [r2CdnDomain, setR2CdnDomain] = useState('https://cdn.pronax.tv');
+  const [r2Provider, setR2Provider] = useState('cloudflare_r2');
+  const [r2ChunkedUploads, setR2ChunkedUploads] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    setR2AccountId(getItem('pronax_r2_account_id', '8f92a10b471c2e01a884'));
+    setR2BucketName(getItem('pronax_r2_bucket', 'pronax-video-storage-vault'));
+    setR2AccessKey(getItem('pronax_r2_access_key', 'r2_key_pronax_live_772091'));
     const raw = sessionStorage.getItem('pronax_r2_secret_session');
-    return raw || '••••••••••••••••••••••••••••••••';
-  });
-  const [r2CdnDomain, setR2CdnDomain] = useState(() => localStorage.getItem('pronax_r2_cdn_domain') || 'https://cdn.pronax.tv');
-  const [r2Provider, setR2Provider] = useState(() => localStorage.getItem('pronax_r2_provider') || 'cloudflare_r2');
-  const [r2ChunkedUploads, setR2ChunkedUploads] = useState(() => localStorage.getItem('pronax_r2_chunked') !== 'false');
+    if (raw) setR2SecretKey(raw);
+    setR2CdnDomain(getItem('pronax_r2_cdn_domain', 'https://cdn.pronax.tv'));
+    setR2Provider(getItem('pronax_r2_provider', 'cloudflare_r2'));
+    setR2ChunkedUploads(getItem('pronax_r2_chunked') !== 'false');
+  }, []);
 
   const saveR2StorageSettings = () => {
-    localStorage.setItem('pronax_r2_account_id', r2AccountId);
-    localStorage.setItem('pronax_r2_bucket', r2BucketName);
-    localStorage.setItem('pronax_r2_access_key', r2AccessKey);
+    setItem('pronax_r2_account_id', r2AccountId);
+    setItem('pronax_r2_bucket', r2BucketName);
+    setItem('pronax_r2_access_key', r2AccessKey);
     // Store secret in encrypted session storage rather than plain localStorage to prevent XSS leaks
     if (r2SecretKey && !r2SecretKey.includes('•')) {
       sessionStorage.setItem('pronax_r2_secret_session', r2SecretKey);
     }
-    localStorage.removeItem('pronax_r2_secret_key'); // Remove legacy plaintext key
-    localStorage.setItem('pronax_r2_cdn_domain', r2CdnDomain);
-    localStorage.setItem('pronax_r2_provider', r2Provider);
-    localStorage.setItem('pronax_r2_chunked', String(r2ChunkedUploads));
+    removeItem('pronax_r2_secret_key'); // Remove legacy plaintext key
+    setItem('pronax_r2_cdn_domain', r2CdnDomain);
+    setItem('pronax_r2_provider', r2Provider);
+    setItem('pronax_r2_chunked', String(r2ChunkedUploads));
     toast.success('Cloudflare R2 Storage Credentials Saved Securely!', {
       description: `Targeting bucket "${r2BucketName}" on CDN domain ${r2CdnDomain}`,
     });

@@ -19,6 +19,7 @@ import { Route as PlaylistsRouteImport } from './routes/playlists'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PronaxStudioRouteImport } from './routes/pronax-studio'
 import { Route as SavedRouteImport } from './routes/saved'
+import { Route as SearchRouteImport } from './routes/search'
 import { Route as SecurityRouteImport } from './routes/security'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StudioLegacyRouteImport } from './routes/studio-legacy'
@@ -26,8 +27,7 @@ import { Route as SubscriptionsRouteImport } from './routes/subscriptions'
 import { Route as TrendingRouteImport } from './routes/trending'
 import { Route as UploadRouteImport } from './routes/upload'
 import { Route as WalletRouteImport } from './routes/wallet'
-import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as AdminEngineRouteImport } from './routes/admin.engine'
+import { Route as AdminAdminRouteImport } from './routes/admin._admin'
 import { Route as ChannelHandleRouteImport } from './routes/channel.$handle'
 import { Route as LiveIndexRouteImport } from './routes/live.index'
 import { Route as LivePlaybackIdRouteImport } from './routes/live.$playbackId'
@@ -40,7 +40,10 @@ import { Route as ShortsIdRouteImport } from './routes/shorts.$id'
 import { Route as SoundIdRouteImport } from './routes/sound.$id'
 import { Route as StudioIndexRouteImport } from './routes/studio.index'
 import { Route as StudioSplatRouteImport } from './routes/studio.$'
+import { Route as StudioDashboardRouteImport } from './routes/studio.dashboard'
 import { Route as WatchIdRouteImport } from './routes/watch.$id'
+import { Route as AdminAdminIndexRouteImport } from './routes/admin._admin/index'
+import { Route as AdminAdminEngineRouteImport } from './routes/admin._admin/engine'
 import { Route as PronaxOauthConsentRouteImport } from './routes/pronax.oauth.consent'
 
 const IndexRoute = IndexRouteImport.update({
@@ -93,6 +96,11 @@ const SavedRoute = SavedRouteImport.update({
   path: '/saved',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SecurityRoute = SecurityRouteImport.update({
   id: '/security',
   path: '/security',
@@ -128,14 +136,9 @@ const WalletRoute = WalletRouteImport.update({
   path: '/wallet',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/admin/',
-  path: '/admin/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminEngineRoute = AdminEngineRouteImport.update({
-  id: '/admin/engine',
-  path: '/admin/engine',
+const AdminAdminRoute = AdminAdminRouteImport.update({
+  id: '/admin/_admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChannelHandleRoute = ChannelHandleRouteImport.update({
@@ -198,10 +201,25 @@ const StudioSplatRoute = StudioSplatRouteImport.update({
   path: '/studio/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StudioDashboardRoute = StudioDashboardRouteImport.update({
+  id: '/studio/dashboard',
+  path: '/studio/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WatchIdRoute = WatchIdRouteImport.update({
   id: '/watch/$id',
   path: '/watch/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAdminIndexRoute = AdminAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
+const AdminAdminEngineRoute = AdminAdminEngineRouteImport.update({
+  id: '/engine',
+  path: '/engine',
+  getParentRoute: () => AdminAdminRoute,
 } as any)
 const PronaxOauthConsentRoute = PronaxOauthConsentRouteImport.update({
   id: '/pronax/oauth/consent',
@@ -220,6 +238,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/pronax-studio': typeof PronaxStudioRoute
   '/saved': typeof SavedRoute
+  '/search': typeof SearchRoute
   '/security': typeof SecurityRoute
   '/settings': typeof SettingsRoute
   '/studio-legacy': typeof StudioLegacyRoute
@@ -227,7 +246,7 @@ export interface FileRoutesByFullPath {
   '/trending': typeof TrendingRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
-  '/admin/engine': typeof AdminEngineRoute
+  '/admin': typeof AdminAdminRouteWithChildren
   '/channel/$handle': typeof ChannelHandleRoute
   '/live/$playbackId': typeof LivePlaybackIdRoute
   '/p/$slug': typeof PSlugRoute
@@ -236,13 +255,15 @@ export interface FileRoutesByFullPath {
   '/shorts/$id': typeof ShortsIdRoute
   '/sound/$id': typeof SoundIdRoute
   '/studio/$': typeof StudioSplatRoute
+  '/studio/dashboard': typeof StudioDashboardRoute
   '/watch/$id': typeof WatchIdRoute
-  '/admin/': typeof AdminIndexRoute
   '/live/': typeof LiveIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/shorts/': typeof ShortsIndexRoute
   '/studio/': typeof StudioIndexRoute
+  '/admin/engine': typeof AdminAdminEngineRoute
   '/pronax/oauth/consent': typeof PronaxOauthConsentRoute
+  '/admin/': typeof AdminAdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -255,6 +276,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/pronax-studio': typeof PronaxStudioRoute
   '/saved': typeof SavedRoute
+  '/search': typeof SearchRoute
   '/security': typeof SecurityRoute
   '/settings': typeof SettingsRoute
   '/studio-legacy': typeof StudioLegacyRoute
@@ -262,7 +284,6 @@ export interface FileRoutesByTo {
   '/trending': typeof TrendingRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
-  '/admin/engine': typeof AdminEngineRoute
   '/channel/$handle': typeof ChannelHandleRoute
   '/live/$playbackId': typeof LivePlaybackIdRoute
   '/p/$slug': typeof PSlugRoute
@@ -271,13 +292,15 @@ export interface FileRoutesByTo {
   '/shorts/$id': typeof ShortsIdRoute
   '/sound/$id': typeof SoundIdRoute
   '/studio/$': typeof StudioSplatRoute
+  '/studio/dashboard': typeof StudioDashboardRoute
   '/watch/$id': typeof WatchIdRoute
-  '/admin': typeof AdminIndexRoute
   '/live': typeof LiveIndexRoute
   '/profile': typeof ProfileIndexRoute
   '/shorts': typeof ShortsIndexRoute
   '/studio': typeof StudioIndexRoute
+  '/admin/engine': typeof AdminAdminEngineRoute
   '/pronax/oauth/consent': typeof PronaxOauthConsentRoute
+  '/admin': typeof AdminAdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -291,6 +314,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/pronax-studio': typeof PronaxStudioRoute
   '/saved': typeof SavedRoute
+  '/search': typeof SearchRoute
   '/security': typeof SecurityRoute
   '/settings': typeof SettingsRoute
   '/studio-legacy': typeof StudioLegacyRoute
@@ -298,7 +322,7 @@ export interface FileRoutesById {
   '/trending': typeof TrendingRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
-  '/admin/engine': typeof AdminEngineRoute
+  '/admin/_admin': typeof AdminAdminRouteWithChildren
   '/channel/$handle': typeof ChannelHandleRoute
   '/live/$playbackId': typeof LivePlaybackIdRoute
   '/p/$slug': typeof PSlugRoute
@@ -307,13 +331,15 @@ export interface FileRoutesById {
   '/shorts/$id': typeof ShortsIdRoute
   '/sound/$id': typeof SoundIdRoute
   '/studio/$': typeof StudioSplatRoute
+  '/studio/dashboard': typeof StudioDashboardRoute
   '/watch/$id': typeof WatchIdRoute
-  '/admin/': typeof AdminIndexRoute
   '/live/': typeof LiveIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/shorts/': typeof ShortsIndexRoute
   '/studio/': typeof StudioIndexRoute
+  '/admin/_admin/engine': typeof AdminAdminEngineRoute
   '/pronax/oauth/consent': typeof PronaxOauthConsentRoute
+  '/admin/_admin/': typeof AdminAdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -328,6 +354,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/pronax-studio'
     | '/saved'
+    | '/search'
     | '/security'
     | '/settings'
     | '/studio-legacy'
@@ -335,7 +362,7 @@ export interface FileRouteTypes {
     | '/trending'
     | '/upload'
     | '/wallet'
-    | '/admin/engine'
+    | '/admin'
     | '/channel/$handle'
     | '/live/$playbackId'
     | '/p/$slug'
@@ -344,13 +371,15 @@ export interface FileRouteTypes {
     | '/shorts/$id'
     | '/sound/$id'
     | '/studio/$'
+    | '/studio/dashboard'
     | '/watch/$id'
-    | '/admin/'
     | '/live/'
     | '/profile/'
     | '/shorts/'
     | '/studio/'
+    | '/admin/engine'
     | '/pronax/oauth/consent'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -363,6 +392,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/pronax-studio'
     | '/saved'
+    | '/search'
     | '/security'
     | '/settings'
     | '/studio-legacy'
@@ -370,7 +400,6 @@ export interface FileRouteTypes {
     | '/trending'
     | '/upload'
     | '/wallet'
-    | '/admin/engine'
     | '/channel/$handle'
     | '/live/$playbackId'
     | '/p/$slug'
@@ -379,13 +408,15 @@ export interface FileRouteTypes {
     | '/shorts/$id'
     | '/sound/$id'
     | '/studio/$'
+    | '/studio/dashboard'
     | '/watch/$id'
-    | '/admin'
     | '/live'
     | '/profile'
     | '/shorts'
     | '/studio'
+    | '/admin/engine'
     | '/pronax/oauth/consent'
+    | '/admin'
   id:
     | '__root__'
     | '/'
@@ -398,6 +429,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/pronax-studio'
     | '/saved'
+    | '/search'
     | '/security'
     | '/settings'
     | '/studio-legacy'
@@ -405,7 +437,7 @@ export interface FileRouteTypes {
     | '/trending'
     | '/upload'
     | '/wallet'
-    | '/admin/engine'
+    | '/admin/_admin'
     | '/channel/$handle'
     | '/live/$playbackId'
     | '/p/$slug'
@@ -414,13 +446,15 @@ export interface FileRouteTypes {
     | '/shorts/$id'
     | '/sound/$id'
     | '/studio/$'
+    | '/studio/dashboard'
     | '/watch/$id'
-    | '/admin/'
     | '/live/'
     | '/profile/'
     | '/shorts/'
     | '/studio/'
+    | '/admin/_admin/engine'
     | '/pronax/oauth/consent'
+    | '/admin/_admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -434,6 +468,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   PronaxStudioRoute: typeof PronaxStudioRoute
   SavedRoute: typeof SavedRoute
+  SearchRoute: typeof SearchRoute
   SecurityRoute: typeof SecurityRoute
   SettingsRoute: typeof SettingsRoute
   StudioLegacyRoute: typeof StudioLegacyRoute
@@ -441,7 +476,7 @@ export interface RootRouteChildren {
   TrendingRoute: typeof TrendingRoute
   UploadRoute: typeof UploadRoute
   WalletRoute: typeof WalletRoute
-  AdminEngineRoute: typeof AdminEngineRoute
+  AdminAdminRoute: typeof AdminAdminRouteWithChildren
   ChannelHandleRoute: typeof ChannelHandleRoute
   LivePlaybackIdRoute: typeof LivePlaybackIdRoute
   PSlugRoute: typeof PSlugRoute
@@ -450,8 +485,8 @@ export interface RootRouteChildren {
   ShortsIdRoute: typeof ShortsIdRoute
   SoundIdRoute: typeof SoundIdRoute
   StudioSplatRoute: typeof StudioSplatRoute
+  StudioDashboardRoute: typeof StudioDashboardRoute
   WatchIdRoute: typeof WatchIdRoute
-  AdminIndexRoute: typeof AdminIndexRoute
   LiveIndexRoute: typeof LiveIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
   ShortsIndexRoute: typeof ShortsIndexRoute
@@ -531,6 +566,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SavedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/security': {
       id: '/security'
       path: '/security'
@@ -580,18 +622,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WalletRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/': {
-      id: '/admin/'
+    '/admin/_admin': {
+      id: '/admin/_admin'
       path: '/admin'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/engine': {
-      id: '/admin/engine'
-      path: '/admin/engine'
-      fullPath: '/admin/engine'
-      preLoaderRoute: typeof AdminEngineRouteImport
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/channel/$handle': {
@@ -678,12 +713,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/studio/dashboard': {
+      id: '/studio/dashboard'
+      path: '/studio/dashboard'
+      fullPath: '/studio/dashboard'
+      preLoaderRoute: typeof StudioDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/watch/$id': {
       id: '/watch/$id'
       path: '/watch/$id'
       fullPath: '/watch/$id'
       preLoaderRoute: typeof WatchIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/_admin/': {
+      id: '/admin/_admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminAdminIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/engine': {
+      id: '/admin/_admin/engine'
+      path: '/engine'
+      fullPath: '/admin/engine'
+      preLoaderRoute: typeof AdminAdminEngineRouteImport
+      parentRoute: typeof AdminAdminRoute
     }
     '/pronax/oauth/consent': {
       id: '/pronax/oauth/consent'
@@ -694,6 +750,20 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AdminAdminRouteChildren {
+  AdminAdminEngineRoute: typeof AdminAdminEngineRoute
+  AdminAdminIndexRoute: typeof AdminAdminIndexRoute
+}
+
+const AdminAdminRouteChildren: AdminAdminRouteChildren = {
+  AdminAdminEngineRoute: AdminAdminEngineRoute,
+  AdminAdminIndexRoute: AdminAdminIndexRoute,
+}
+
+const AdminAdminRouteWithChildren = AdminAdminRoute._addFileChildren(
+  AdminAdminRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -706,6 +776,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   PronaxStudioRoute: PronaxStudioRoute,
   SavedRoute: SavedRoute,
+  SearchRoute: SearchRoute,
   SecurityRoute: SecurityRoute,
   SettingsRoute: SettingsRoute,
   StudioLegacyRoute: StudioLegacyRoute,
@@ -713,7 +784,7 @@ const rootRouteChildren: RootRouteChildren = {
   TrendingRoute: TrendingRoute,
   UploadRoute: UploadRoute,
   WalletRoute: WalletRoute,
-  AdminEngineRoute: AdminEngineRoute,
+  AdminAdminRoute: AdminAdminRouteWithChildren,
   ChannelHandleRoute: ChannelHandleRoute,
   LivePlaybackIdRoute: LivePlaybackIdRoute,
   PSlugRoute: PSlugRoute,
@@ -722,8 +793,8 @@ const rootRouteChildren: RootRouteChildren = {
   ShortsIdRoute: ShortsIdRoute,
   SoundIdRoute: SoundIdRoute,
   StudioSplatRoute: StudioSplatRoute,
+  StudioDashboardRoute: StudioDashboardRoute,
   WatchIdRoute: WatchIdRoute,
-  AdminIndexRoute: AdminIndexRoute,
   LiveIndexRoute: LiveIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,
   ShortsIndexRoute: ShortsIndexRoute,

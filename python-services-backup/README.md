@@ -7,22 +7,9 @@ This service provides comprehensive copyright detection using:
 
 ## Setup Instructions
 
-### 1. Install FFmpeg (Required)
+### 1. FFmpeg Configuration
 
-**Windows:**
-```bash
-choco install ffmpeg
-```
-
-**Mac:**
-```bash
-brew install ffmpeg
-```
-
-**Linux:**
-```bash
-sudo apt-get install ffmpeg
-```
+FFmpeg 9.0.1 is already included in the project at `../ffmpeg/bin/`. The audio fingerprinting service automatically configures the FFmpeg path. No external installation is required.
 
 ### 2. Install Python Dependencies
 

@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/loose";
 import { recordAudit, AuditActions } from "@/lib/audit";
+import { getItem, setItem } from '@/lib/safeStorage';
 
 export const IDLE_LIMIT_MS = 30 * 60 * 1000; // 30 minutes
 const WARN_BEFORE_MS = 2 * 60 * 1000;
@@ -27,11 +28,7 @@ export function useSessionTimeout(enabled = true) {
     let warned = false;
     const touch = () => {
       warned = false;
-      try {
-        localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
-      } catch {
-        /* noop */
-      }
+      setItem(LAST_ACTIVE_KEY, String(Date.now()));
     };
     touch();
     for (const evt of ACTIVITY_EVENTS) window.addEventListener(evt, touch, { passive: true });
@@ -39,7 +36,7 @@ export function useSessionTimeout(enabled = true) {
     const tick = window.setInterval(async () => {
       const { data } = await supabase.auth.getSession();
       if (!data.session) return;
-      const last = Number(localStorage.getItem(LAST_ACTIVE_KEY) ?? Date.now());
+      const last = Number(getItem(LAST_ACTIVE_KEY) ?? Date.now());
       const idle = Date.now() - last;
 
       if (idle > IDLE_LIMIT_MS) {

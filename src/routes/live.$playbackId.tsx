@@ -5,10 +5,12 @@ import LiveWatch from "@/features/pages/LiveWatch";
 export const Route = createFileRoute("/live/$playbackId")({
   head: () => ({
     meta: [
-      { title: "Live — ProNax" },
-      { name: "description", content: "Watch a live stream on ProNax." },
-      { property: "og:title", content: "Live — ProNax" },
-      { property: "og:description", content: "Watch a live stream on ProNax." },
+      { title: "Live Stream — ProNax" },
+      { name: "description", content: "Watch live streams on ProNax." },
+      { property: "og:title", content: "Live Stream — ProNax" },
+      { property: "og:description", content: "Watch live streams on ProNax." },
+      { property: "og:type", content: "video.other" },
+      { name: "twitter:card", content: "player" },
     ],
   }),
   component: LiveWatch,

@@ -19,6 +19,13 @@ from audio_fingerprint_worker import AudioFingerprintWorker, load_config
 def check_ffmpeg():
     """Check if FFmpeg is installed"""
     try:
+        # Configure FFmpeg path to use project's ffmpeg
+        from pathlib import Path
+        project_root = Path(__file__).parent.parent
+        ffmpeg_dir = str(project_root / "ffmpeg" / "bin")
+        import os
+        os.environ["PATH"] = ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
+        
         result = subprocess.run(['ffmpeg', '-version'], capture_output=True, text=True)
         if result.returncode == 0:
             print("✓ FFmpeg is installed")
@@ -117,7 +124,7 @@ def main():
     # Check FFmpeg
     if not check_ffmpeg():
         print("\nERROR: FFmpeg is required for audio processing")
-        print("Install FFmpeg: https://ffmpeg.org/download.html")
+        print("FFmpeg should be available in the project's ffmpeg/bin directory")
         sys.exit(1)
     
     # Load configuration

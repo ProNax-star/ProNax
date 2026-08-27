@@ -25,7 +25,6 @@ import { generateVideoFingerprint, checkForCopyrightMatch } from '@/lib/videoFin
 import { validateFile, videoMetadataSchema, firstIssue } from '@/lib/validation';
 import { requireVerifiedUser, ensureUserProfile } from '@/lib/authGuards';
 import { uploadVideoWithCopyrightDetection } from '@/lib/videoUpload';
-import { uploadVideoFormData } from '@/routes/-api.video-upload-formdata';
 
 type WizardStep = 1 | 2 | 3; // 1: Details & Media Setup, 2: Checks & Monetization, 3: Visibility & Schedule
 

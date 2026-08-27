@@ -1,7 +1,7 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Bell, Check, EyeOff, History, LifeBuoy, Loader2, Lock, LogOut, Palette, PlayCircle, Shield, Smartphone, Upload, User, Video, Wallet } from 'lucide-react';
+import { Link, useNavigate } from '@/lib/router-compat';
+import { Bell, Check, EyeOff, History, LifeBuoy, Loader2, Lock, LogOut, Palette, PlayCircle, Shield, Smartphone, Upload, User, Video, Wallet, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/loose';
+import { useUserSettings } from '@/hooks/useUserSettings';
+import { getItem, setItem } from '@/lib/safeStorage';
 
 const THEMES = [
   { id: 'deep-dark', label: 'Deep Dark', bg: '220 20% 4%', card: '220 20% 8%', primary: '190 100% 50%' },
@@ -18,7 +20,7 @@ const THEMES = [
   { id: 'amoled-black', label: 'AMOLED Black', bg: '0 0% 0%', card: '0 0% 4%', primary: '160 100% 50%' },
 ];
 
-function applyTheme(id: string) {
+async function applyTheme(id: string) {
   const t = THEMES.find((x) => x.id === id) || THEMES[0];
   const root = document.documentElement;
   root.style.setProperty('--background', t.bg);
@@ -26,7 +28,7 @@ function applyTheme(id: string) {
   root.style.setProperty('--popover', t.card);
   root.style.setProperty('--primary', t.primary);
   root.style.setProperty('--ring', t.primary);
-  localStorage.setItem('pronax_theme', id);
+  setItem('pronax_theme', id);
 }
 
 export default function Settings() {
@@ -44,10 +46,18 @@ export default function Settings() {
   const [password, setPassword] = useState('');
   const [appealMessage, setAppealMessage] = useState('');
   const [busy, setBusy] = useState(false);
-  const [theme, setTheme] = useState(() => localStorage.getItem('pronax_theme') || 'deep-dark');
-  const [settings, setSettings] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('pronax_settings') || '{}'); } catch { return {}; }
-  });
+  const [theme, setTheme] = useState('deep-dark');
+  const [mounted, setMounted] = useState(false);
+  const [strikes, setStrikes] = useState<any[]>([]);
+  const [loadingStrikes, setLoadingStrikes] = useState(false);
+  
+  // Use the new user settings hook
+  const { settings, loading: settingsLoading, updateSettings, setCustomSetting, getCustomSetting } = useUserSettings();
+
+  useEffect(() => {
+    setMounted(true);
+    setTheme(getItem('pronax_theme', 'deep-dark'));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,10 +67,11 @@ export default function Settings() {
       setUser(data.user);
       setEmail(data.user?.email || '');
       if (data.user) {
-        const [p, w, v] = await Promise.all([
+        const [p, w, v, st] = await Promise.all([
           supabase.from('profiles').select('*').eq('id', data.user.id).maybeSingle(),
           supabase.from('user_wallets').select('*').eq('user_id', data.user.id).maybeSingle(),
           supabase.from('videos').select('id', { count: 'exact', head: true }).eq('owner_id', data.user.id),
+          supabase.from('user_strikes').select('*').eq('user_id', data.user.id).order('created_at', { ascending: false }),
         ]);
         const prof = p.data as any;
         setProfile(prof);
@@ -69,6 +80,7 @@ export default function Settings() {
         setDisplayName(prof?.display_name ?? '');
         setBio(prof?.bio ?? '');
         setAvatarUrl(prof?.avatar_url ?? '');
+        setStrikes(st.data || []);
       }
       applyTheme(theme);
       setLoading(false);
@@ -76,17 +88,15 @@ export default function Settings() {
     return () => { cancelled = true; };
   }, []);
 
-  const saveLocal = (key: string, value: boolean) => {
-    const next = { ...settings, [key]: value };
-    setSettings(next);
-    localStorage.setItem('pronax_settings', JSON.stringify(next));
+  const saveLocal = async (key: string, value: boolean) => {
+    setCustomSetting(key, value);
     toast({ title: 'Saved', description: 'Your preference was updated.' });
   };
 
   const saveProfile = async () => {
     if (!user) return;
     setBusy(true);
-    const { error } = await supabase.from('profiles').update({ display_name: displayName.trim(), bio: bio.trim(), email_notifications: settings.emailAlerts !== false } as any).eq('id', user.id);
+    const { error } = await supabase.from('profiles').update({ display_name: displayName.trim(), bio: bio.trim(), email_notifications: getCustomSetting('emailAlerts', true) } as any).eq('id', user.id);
     setBusy(false);
     if (error) return toast({ title: 'Save failed', description: error.message, variant: 'destructive' });
     toast({ title: 'Channel settings saved' });
@@ -162,19 +172,19 @@ export default function Settings() {
               </div>
             </div>
           </Panel>
-          <div className="grid md:grid-cols-3 gap-3"><Stat icon={Video} label="Videos" value={String(videoCount)} /><Stat icon={Upload} label="Upload limit" value={`${profile?.upload_limit_mb ?? 1024} MB`} /><Stat icon={Bell} label="Email alerts" value={settings.emailAlerts === false ? 'Off' : 'On'} /></div>
+          <div className="grid md:grid-cols-3 gap-3"><Stat icon={Video} label="Videos" value={String(videoCount)} /><Stat icon={Upload} label="Upload limit" value={`${profile?.upload_limit_mb ?? 1024} MB`} /><Stat icon={Bell} label="Email alerts" value={getCustomSetting('emailAlerts', true) ? 'On' : 'Off'} /></div>
         </TabsContent>
 
         <TabsContent value="privacy" className="space-y-3">
-          <Toggle icon={Lock} label="Private profile" desc="Limit visible activity to approved followers." checked={!!settings.privateProfile} onChange={(v) => saveLocal('privateProfile', v)} />
-          <Toggle icon={EyeOff} label="Hide liked videos" desc="Keep liked videos off your public profile." checked={!!settings.hideLikes} onChange={(v) => saveLocal('hideLikes', v)} />
-          <Toggle icon={History} label="Hide watch history" desc="Do not expose recent viewing activity." checked={!!settings.hideHistory} onChange={(v) => saveLocal('hideHistory', v)} />
+          <Toggle icon={Lock} label="Private profile" desc="Limit visible activity to approved followers." checked={!!getCustomSetting('privateProfile')} onChange={(v) => saveLocal('privateProfile', v)} />
+          <Toggle icon={EyeOff} label="Hide liked videos" desc="Keep liked videos off your public profile." checked={!!getCustomSetting('hideLikes')} onChange={(v) => saveLocal('hideLikes', v)} />
+          <Toggle icon={History} label="Hide watch history" desc="Do not expose recent viewing activity." checked={!!getCustomSetting('hideHistory')} onChange={(v) => saveLocal('hideHistory', v)} />
         </TabsContent>
 
         <TabsContent value="playback" className="space-y-3">
-          <Toggle icon={PlayCircle} label="Autoplay next video" desc="Continue recommended playback automatically." checked={settings.autoplay !== false} onChange={(v) => saveLocal('autoplay', v)} />
-          <Toggle icon={Smartphone} label="Data saver" desc="Prefer smoother low-bandwidth playback when networks are slow." checked={!!settings.dataSaver} onChange={(v) => saveLocal('dataSaver', v)} />
-          <Toggle icon={Palette} label="Ambient neon player" desc="Keep polished lighting around the watch player." checked={settings.ambient !== false} onChange={(v) => saveLocal('ambient', v)} />
+          <Toggle icon={PlayCircle} label="Autoplay next video" desc="Continue recommended playback automatically." checked={settings.autoplay_videos} onChange={(v) => updateSettings({ autoplay_videos: v })} />
+          <Toggle icon={Smartphone} label="Data saver" desc="Prefer smoother low-bandwidth playback when networks are slow." checked={!!getCustomSetting('dataSaver')} onChange={(v) => saveLocal('dataSaver', v)} />
+          <Toggle icon={Palette} label="Ambient neon player" desc="Keep polished lighting around the watch player." checked={!!getCustomSetting('ambient', true)} onChange={(v) => saveLocal('ambient', v)} />
         </TabsContent>
 
         <TabsContent value="monetization" className="space-y-4">
@@ -185,7 +195,57 @@ export default function Settings() {
 
         <TabsContent value="security" className="space-y-4">
           <Panel title="Password" desc="Change account password."><div className="flex gap-2"><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="New password" /><Button onClick={updatePassword}>Change</Button></div></Panel>
-          <Toggle icon={Shield} label="Two-factor authentication" desc="Require extra verification for sensitive actions." checked={!!settings.twoFactor} onChange={(v) => saveLocal('twoFactor', v)} />
+          <Toggle icon={Shield} label="Two-factor authentication" desc="Require extra verification for sensitive actions." checked={!!getCustomSetting('twoFactor')} onChange={(v) => saveLocal('twoFactor', v)} />
+          
+          {/* Strike History Section */}
+          <Panel title="Account strikes" desc="View your violation history and active strikes." full>
+            <div className="space-y-3">
+              {strikes.length === 0 ? (
+                <div className="text-center py-4 text-muted-foreground text-sm">
+                  <AlertTriangle className="w-5 h-5 mx-auto mb-2 opacity-50" />
+                  No strikes on record
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {strikes.map((strike) => (
+                    <div key={strike.id} className={`glass rounded-lg border p-3 ${strike.revoked_at ? 'opacity-60' : ''}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-[10px] px-2 py-0.5 rounded font-semibold uppercase ${
+                              strike.severity === 3 ? 'bg-destructive/20 text-destructive' :
+                              strike.severity === 2 ? 'bg-orange-500/20 text-orange-400' :
+                              'bg-yellow-500/20 text-yellow-400'
+                            }`}>
+                              Level {strike.severity}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground capitalize">{strike.category}</span>
+                            {strike.revoked_at && (
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">Revoked</span>
+                            )}
+                            {!strike.revoked_at && (!strike.expires_at || new Date(strike.expires_at) > new Date()) && (
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-red-500/20 text-red-400">Active</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-foreground">{strike.reason}</p>
+                          <div className="text-[10px] text-muted-foreground mt-1">
+                            {new Date(strike.created_at).toLocaleString()}
+                            {strike.expires_at && !strike.revoked_at && (
+                              <span> · Expires: {new Date(strike.expires_at).toLocaleDateString()}</span>
+                            )}
+                          </div>
+                          {strike.revoked_reason && (
+                            <p className="text-[10px] text-emerald-400 mt-1">Revoked: {strike.revoked_reason}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Panel>
+          
           <Button variant="destructive" onClick={async () => { await supabase.auth.signOut(); navigate('/auth', { replace: true }); }}><LogOut className="w-4 h-4" /> Sign out securely</Button>
         </TabsContent>
 

@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, Clock, TrendingUp, X, SlidersHorizontal, Loader2, Mic, MicOff } from 'lucide-react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import { supabase } from '@/integrations/supabase/loose';
 import { Button } from '@/components/ui/button';
 import { SearchResultSkeleton } from '@/components/NeonSkeleton';

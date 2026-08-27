@@ -57,7 +57,7 @@ export function AppConfigProvider({ children }: { children: ReactNode }) {
     load();
 
     const ch = supabase
-      .channel(`app_config_${Math.random().toString(36).slice(2, 8)}`)
+      .channel('app:config')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'feature_flags' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'system_config' }, load)
       .subscribe();

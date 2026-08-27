@@ -73,6 +73,7 @@ export function FeedVideoCard({
 }: FeedVideoCardProps) {
   const [playlistOpen, setPlaylistOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const path = href ?? `/watch/${id}`;
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}${path}` : path;
 
@@ -92,6 +93,7 @@ export function FeedVideoCard({
               loading={index < 3 ? 'eager' : 'lazy'}
               decoding="async"
               fetchPriority={index === 0 ? 'high' : 'auto'}
+              onError={() => setImgError(true)}
               className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.025]"
             />
           ) : (

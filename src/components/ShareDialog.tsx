@@ -5,27 +5,36 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Copy, Check, Share2, MessageCircle, Facebook, Twitter, Send, Mail, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useVideoShare, type SharePlatform } from '@/hooks/useVideoShare';
 
 type Props = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   url: string;
   title?: string;
+  videoId?: string;
 };
 
-export function ShareDialog({ open, onOpenChange, url, title = 'Check this out on Pro Nax' }: Props) {
+export function ShareDialog({ open, onOpenChange, url, title = 'Check this out on Pro Nax', videoId }: Props) {
   const [copied, setCopied] = useState(false);
   const enc = encodeURIComponent(url);
   const encT = encodeURIComponent(title);
+  const { recordShare } = useVideoShare();
 
-  const channels: { label: string; icon: React.ComponentType<{ className?: string }>; color: string; href: string }[] = [
-    { label: 'WhatsApp', icon: MessageCircle, color: 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30', href: `https://wa.me/?text=${encT}%20${enc}` },
-    { label: 'X / Twitter', icon: Twitter, color: 'bg-sky-500/20 text-sky-300 hover:bg-sky-500/30', href: `https://twitter.com/intent/tweet?text=${encT}&url=${enc}` },
-    { label: 'Facebook', icon: Facebook, color: 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30', href: `https://www.facebook.com/sharer/sharer.php?u=${enc}` },
-    { label: 'Telegram', icon: Send, color: 'bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30', href: `https://t.me/share/url?url=${enc}&text=${encT}` },
-    { label: 'Email', icon: Mail, color: 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30', href: `mailto:?subject=${encT}&body=${enc}` },
-    { label: 'Embed', icon: Link2, color: 'bg-violet-500/20 text-violet-300 hover:bg-violet-500/30', href: `#embed` },
+  const channels: { label: string; icon: React.ComponentType<{ className?: string }>; color: string; href: string; platform: SharePlatform }[] = [
+    { label: 'WhatsApp', icon: MessageCircle, color: 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30', href: `https://wa.me/?text=${encT}%20${enc}`, platform: 'whatsapp' },
+    { label: 'X / Twitter', icon: Twitter, color: 'bg-sky-500/20 text-sky-300 hover:bg-sky-500/30', href: `https://twitter.com/intent/tweet?text=${encT}&url=${enc}`, platform: 'twitter' },
+    { label: 'Facebook', icon: Facebook, color: 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30', href: `https://www.facebook.com/sharer/sharer.php?u=${enc}`, platform: 'facebook' },
+    { label: 'Telegram', icon: Send, color: 'bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30', href: `https://t.me/share/url?url=${enc}&text=${encT}`, platform: 'telegram' },
+    { label: 'Email', icon: Mail, color: 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30', href: `mailto:?subject=${encT}&body=${enc}`, platform: 'other' },
+    { label: 'Embed', icon: Link2, color: 'bg-violet-500/20 text-violet-300 hover:bg-violet-500/30', href: `#embed`, platform: 'clipboard' },
   ];
+
+  const handleShare = async (platform: SharePlatform) => {
+    if (videoId) {
+      await recordShare(videoId, platform);
+    }
+  };
 
   const copy = async () => {
     try {
@@ -33,6 +42,7 @@ export function ShareDialog({ open, onOpenChange, url, title = 'Check this out o
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
       toast.success('Link copied');
+      await handleShare('clipboard');
     } catch {
       toast.error('Copy failed');
     }
@@ -42,6 +52,7 @@ export function ShareDialog({ open, onOpenChange, url, title = 'Check this out o
     if (navigator.share) {
       try {
         await navigator.share({ title, url });
+        await handleShare('native');
       } catch {/* user cancelled */}
     } else {
       copy();
@@ -63,7 +74,14 @@ export function ShareDialog({ open, onOpenChange, url, title = 'Check this out o
               href={c.href}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={(e) => { if (c.href === '#embed') { e.preventDefault(); copy(); } }}
+              onClick={(e) => { 
+                if (c.href === '#embed') { 
+                  e.preventDefault(); 
+                  copy(); 
+                } else {
+                  handleShare(c.platform);
+                }
+              }}
               className={`flex flex-col items-center gap-2 p-3 rounded-xl transition ${c.color}`}
             >
               <c.icon className="w-5 h-5" />

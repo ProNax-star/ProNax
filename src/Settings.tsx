@@ -1,6 +1,6 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from '@/lib/router-compat';
 import { Bell, Check, EyeOff, History, LifeBuoy, Loader2, Lock, LogOut, Palette, PlayCircle, Shield, Smartphone, Upload, User, Video, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

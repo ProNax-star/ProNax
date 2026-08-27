@@ -32,15 +32,52 @@ export interface PDQCompareResult {
 
 class ThreatExchangeService {
   private workerUrl: string;
+  private isServiceAvailable: boolean = true;
 
   constructor(workerUrl: string = 'http://localhost:8000') {
     this.workerUrl = workerUrl;
   }
 
   /**
+   * Check if the service is available with timeout
+   */
+  private async checkServiceAvailability(): Promise<boolean> {
+    if (!this.isServiceAvailable) {
+      return false; // Already marked as unavailable
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+
+      const response = await fetch(`${this.workerUrl}/health`, {
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      this.isServiceAvailable = response.ok;
+      return this.isServiceAvailable;
+    } catch (error) {
+      console.warn('ThreatExchange service health check failed:', error);
+      this.isServiceAvailable = false;
+      return false;
+    }
+  }
+
+  /**
    * Compute PDQ hash for an image file
    */
   async computePDQHash(imageFile: File): Promise<PDQHashResult> {
+    // Check service availability first
+    const isAvailable = await this.checkServiceAvailability();
+    if (!isAvailable) {
+      console.warn('ThreatExchange service unavailable, skipping PDQ hashing');
+      return {
+        success: false,
+        error: 'ThreatExchange service unavailable - please ensure Python services are running',
+      };
+    }
+
     try {
       const formData = new FormData();
       formData.append('file', imageFile);
@@ -58,6 +95,7 @@ class ThreatExchangeService {
       return await response.json();
     } catch (error) {
       console.error('Error computing PDQ hash:', error);
+      this.isServiceAvailable = false; // Mark as unavailable on error
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -69,6 +107,16 @@ class ThreatExchangeService {
    * Compute vPDQ hash for a video file
    */
   async computeVPDQHash(videoFile: File): Promise<VPDQHashResult> {
+    // Check service availability first
+    const isAvailable = await this.checkServiceAvailability();
+    if (!isAvailable) {
+      console.warn('ThreatExchange service unavailable, skipping vPDQ hashing');
+      return {
+        success: false,
+        error: 'ThreatExchange service unavailable - please ensure Python services are running',
+      };
+    }
+
     try {
       const formData = new FormData();
       formData.append('file', videoFile);
@@ -86,6 +134,7 @@ class ThreatExchangeService {
       return await response.json();
     } catch (error) {
       console.error('Error computing vPDQ hash:', error);
+      this.isServiceAvailable = false; // Mark as unavailable on error
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

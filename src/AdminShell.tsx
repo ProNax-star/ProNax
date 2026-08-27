@@ -126,7 +126,7 @@ export function AdminShell({
     };
     load();
     const ch = supabase
-      .channel(`admin-shell-notifs-${Math.random().toString(36).slice(2)}`)
+      .channel('admin:shell-notifications')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_logs' }, load)
       .subscribe();
     return () => {

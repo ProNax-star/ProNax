@@ -1,1 +1,46 @@
 project_id = "kdjahrjuzqndbadfgyqc"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[api.tls]
+enabled = false
+
+[realtime]
+enabled = false
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[healthcheck]
+timeout = 1800
+retries = 30
+
+[studio]
+enabled = false
+port = 54323
+api_url = "http://127.0.0.1:54321"
+
+[local_smtp]
+enabled = false
+port = 54324
+
+[storage]
+enabled = false
+file_size_limit = "2000 MiB"
+image_transformation_enabled = true
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+jwt_expiry = 3600
+
+[analytics]
+enabled = false

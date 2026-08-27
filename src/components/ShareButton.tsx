@@ -1,6 +1,7 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useState } from "react";
 import { toast } from "sonner";
+import { useVideoShare, type SharePlatform } from "@/hooks/useVideoShare";
 
 interface ShareButtonProps {
   title: string;
@@ -12,11 +13,13 @@ interface ShareButtonProps {
   onShareClick?: () => void;
   formatCount?: (n: number) => string;
   shortId?: string;
+  videoId?: string;
 }
 
-export default function ShareButton({ title, text, url, className, variant = 'default', shareCount, onShareClick, formatCount, shortId }: ShareButtonProps) {
+export default function ShareButton({ title, text, url, className, variant = 'default', shareCount, onShareClick, formatCount, shortId, videoId }: ShareButtonProps) {
   const [shared, setShared] = useState(false);
   const shareUrl = url || (typeof window !== "undefined" ? window.location.href : "");
+  const { recordShare } = useVideoShare();
 
   const copyToClipboard = async (text: string) => {
     if (navigator.clipboard && window.isSecureContext) {
@@ -48,10 +51,14 @@ export default function ShareButton({ title, text, url, className, variant = 'de
       url: shareUrl,
     };
 
+    let platform: SharePlatform = 'other';
+
     try {
       if (navigator.share) {
+        platform = 'native';
         await navigator.share(shareData);
       } else {
+        platform = 'clipboard';
         await copyToClipboard(shareUrl);
         toast.success("Link copied to clipboard");
       }
@@ -62,6 +69,11 @@ export default function ShareButton({ title, text, url, className, variant = 'de
       
       setShared(true);
       window.setTimeout(() => setShared(false), 1600);
+
+      // Record the share to database
+      if (videoId) {
+        await recordShare(videoId, platform);
+      }
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
       toast.error("Could not share this link");

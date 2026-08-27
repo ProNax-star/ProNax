@@ -12,7 +12,7 @@ import {
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/loose';
 import { useAuthSession } from '@/hooks/useAuthSession';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 import { ShareDialog } from '@/components/ShareDialog';
 import { config } from '@/config/app.config';
 
@@ -95,7 +95,7 @@ export default function GoLive() {
 
   useEffect(() => {
     if (!stream?.id) return;
-    const ch = supabase.channel(`stream-${stream.id}-${Math.random().toString(36).slice(2)}`)
+    const ch = supabase.channel(`stream:${stream.id}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'streams', filter: `id=eq.${stream.id}` },
         (p) => setStream((s) => s ? { ...s, ...(p.new as StreamRow) } : s))
       .subscribe();

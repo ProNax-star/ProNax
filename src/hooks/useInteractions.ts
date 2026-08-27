@@ -58,10 +58,17 @@ export function useLike(videoId: string, creatorId?: string | null) {
   // Realtime
   useEffect(() => {
     const ch = supabase
-      .channel(`likes:${videoId}:${Math.random().toString(36).slice(2)}`)
+      .channel(`likes:${videoId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'video_likes', filter: `video_id=eq.${videoId}` }, refresh)
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+      .subscribe((status) => {
+        if (status === 'SUBSCRIPTION_ERROR') {
+          console.error('Likes realtime subscription error');
+        }
+      });
+    
+    return () => { 
+      supabase.removeChannel(ch); 
+    };
   }, [videoId, refresh]);
 
   const toggle = useCallback(async () => {
@@ -130,10 +137,17 @@ export function useSave(videoId: string) {
   // Realtime
   useEffect(() => {
     const ch = supabase
-      .channel(`saves:${videoId}:${Math.random().toString(36).slice(2)}`)
+      .channel(`saves:${videoId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'video_saves', filter: `video_id=eq.${videoId}` }, refresh)
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+      .subscribe((status) => {
+        if (status === 'SUBSCRIPTION_ERROR') {
+          console.error('Saves realtime subscription error');
+        }
+      });
+    
+    return () => { 
+      supabase.removeChannel(ch); 
+    };
   }, [videoId, refresh]);
 
   const toggle = useCallback(async () => {
@@ -189,14 +203,27 @@ export function useFollow(targetUserId: string | undefined | null) {
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  useEffect(() => {
-    if (!targetUserId) return;
-    const ch = supabase
-      .channel(`follows:${targetUserId}:${Math.random().toString(36).slice(2)}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'follows', filter: `following_id=eq.${targetUserId}` }, refresh)
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [targetUserId, refresh]);
+  // Realtime temporarily disabled due to channel subscription issues
+  // useEffect(() => {
+  //   if (!targetUserId) return;
+  //   const channelName = `follows:${targetUserId}`;
+  //   
+  //   // Clean up existing channel first
+  //   supabase.removeChannel(channelName);
+  //   
+  //   const ch = supabase
+  //     .channel(channelName)
+  //     .on('postgres_changes', { event: '*', schema: 'public', table: 'follows', filter: `following_id=eq.${targetUserId}` }, refresh)
+  //     .subscribe((status) => {
+  //       if (status === 'SUBSCRIPTION_ERROR') {
+  //         console.error('Follow realtime subscription error');
+  //       }
+  //     });
+  //   
+  //   return () => { 
+  //     supabase.removeChannel(ch); 
+  //   };
+  // }, [targetUserId, refresh]);
 
   const toggle = useCallback(async () => {
     const uid = await requireAuth();
@@ -263,10 +290,17 @@ export function useComments(videoId: string, creatorId?: string | null) {
 
   useEffect(() => {
     const ch = supabase
-      .channel(`comments:${videoId}:${Math.random().toString(36).slice(2)}`)
+      .channel(`comments:${videoId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'video_comments', filter: `video_id=eq.${videoId}` }, load)
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+      .subscribe((status) => {
+        if (status === 'SUBSCRIPTION_ERROR') {
+          console.error('Comments realtime subscription error');
+        }
+      });
+    
+    return () => { 
+      supabase.removeChannel(ch); 
+    };
   }, [videoId, load]);
 
   const post = useCallback(async (text: string, parentId?: string | null) => {
@@ -345,10 +379,17 @@ export function useNotifications() {
   useEffect(() => {
     if (!userId) return;
     const ch = supabase
-      .channel(`notif:${userId}:${Math.random().toString(36).slice(2)}`)
+      .channel(`notifications:${userId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, load)
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+      .subscribe((status) => {
+        if (status === 'SUBSCRIPTION_ERROR') {
+          console.error('Notifications realtime subscription error');
+        }
+      });
+    
+    return () => { 
+      supabase.removeChannel(ch); 
+    };
   }, [userId, load]);
 
   const markAllRead = useCallback(async () => {

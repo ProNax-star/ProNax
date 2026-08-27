@@ -1,7 +1,3 @@
-// Import AsyncLocalStorage polyfill FIRST before any other imports
-// This is required for TanStack Start server functions to work in browser environment
-import "./async-local-storage-polyfill";
-
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";

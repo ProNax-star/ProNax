@@ -23,6 +23,7 @@ export interface AppConfig {
   supabase: {
     url: string;
     anonKey: string;
+    publishableKey: string;
     serviceRoleKey?: string;
   };
   storage: {
@@ -41,6 +42,7 @@ export interface AppConfig {
     enabled: boolean;
     audioFingerprintUrl?: string;
     detectionThreshold?: number;
+    pythonServices?: PythonServicesConfig;
   };
   payments: {
     enabled: boolean;
@@ -80,6 +82,15 @@ export interface S3Config {
 export interface LocalConfig {
   uploadPath: string;
   publicUrl: string;
+}
+
+export interface PythonServicesConfig {
+  dbHost: string;
+  dbUser: string;
+  dbPassword: string;
+  dbName: string;
+  dbPort: number;
+  fingerprintLimit: number;
 }
 
 /**
@@ -130,7 +141,8 @@ export const config: AppConfig = {
   
   supabase: {
     url: getEnv('SUPABASE_URL'),
-    anonKey: getEnv('SUPABASE_PUBLISHABLE_KEY'),
+    anonKey: getEnv('SUPABASE_ANON_KEY'),
+    publishableKey: getEnv('SUPABASE_PUBLISHABLE_KEY'),
     serviceRoleKey: getEnv('SUPABASE_SERVICE_ROLE_KEY'),
   },
   
@@ -167,6 +179,14 @@ export const config: AppConfig = {
     enabled: getBoolEnv('COPYRIGHT_DETECTION_ENABLED', true),
     audioFingerprintUrl: getEnv('AUDIO_FINGERPRINT_URL', 'http://localhost:8000'),
     detectionThreshold: getNumberEnv('COPYRIGHT_DETECTION_THRESHOLD', 75),
+    pythonServices: getBoolEnv('COPYRIGHT_DETECTION_ENABLED', true) ? {
+      dbHost: getEnv('PYTHON_DB_HOST'),
+      dbUser: getEnv('PYTHON_DB_USER'),
+      dbPassword: getEnv('PYTHON_DB_PASSWORD'),
+      dbName: getEnv('PYTHON_DB_NAME'),
+      dbPort: getNumberEnv('PYTHON_DB_PORT', 5432),
+      fingerprintLimit: getNumberEnv('PYTHON_FINGERPRINT_LIMIT', -1),
+    } : undefined,
   },
   
   payments: {
@@ -200,6 +220,9 @@ export function validateConfig(): { valid: boolean; errors: string[] } {
     errors.push('SUPABASE_URL is required');
   }
   if (!config.supabase.anonKey) {
+    errors.push('SUPABASE_ANON_KEY is required');
+  }
+  if (!config.supabase.publishableKey) {
     errors.push('SUPABASE_PUBLISHABLE_KEY is required');
   }
   
@@ -215,6 +238,21 @@ export function validateConfig(): { valid: boolean; errors: string[] } {
   
   if (config.copyright.enabled && !config.copyright.audioFingerprintUrl) {
     errors.push('AUDIO_FINGERPRINT_URL is required when copyright detection is enabled');
+  }
+
+  if (config.copyright.enabled && config.copyright.pythonServices) {
+    if (!config.copyright.pythonServices.dbHost) {
+      errors.push('PYTHON_DB_HOST is required when copyright detection is enabled');
+    }
+    if (!config.copyright.pythonServices.dbUser) {
+      errors.push('PYTHON_DB_USER is required when copyright detection is enabled');
+    }
+    if (!config.copyright.pythonServices.dbPassword) {
+      errors.push('PYTHON_DB_PASSWORD is required when copyright detection is enabled');
+    }
+    if (!config.copyright.pythonServices.dbName) {
+      errors.push('PYTHON_DB_NAME is required when copyright detection is enabled');
+    }
   }
   
   return {
@@ -247,6 +285,13 @@ export function getSafeConfig(): Partial<AppConfig> {
     payments: {
       ...config.payments,
       stripeSecretKey: config.payments.stripeSecretKey ? '***HIDDEN***' : undefined,
+    },
+    copyright: {
+      ...config.copyright,
+      pythonServices: config.copyright.pythonServices ? {
+        ...config.copyright.pythonServices,
+        dbPassword: '***HIDDEN***',
+      } : undefined,
     },
   };
 }

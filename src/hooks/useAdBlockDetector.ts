@@ -1,5 +1,6 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState, useCallback } from 'react';
+import { getItem, setItem } from '@/lib/safeStorage';
 
 const DISMISS_KEY = 'pronax_adblock_dismissed_at';
 const PREMIUM_KEY = 'pronax_premium';
@@ -15,9 +16,15 @@ const DISMISS_WINDOW_MS = 1000 * 60 * 60 * 6; // re-prompt every 6h
 export function useAdBlockDetector() {
   const [adBlocked, setAdBlocked] = useState(false);
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const detect = useCallback(async () => {
-    if (localStorage.getItem(PREMIUM_KEY) === '1') return false;
+    if (typeof window === 'undefined') return false;
+    if (getItem(PREMIUM_KEY) === '1') return false;
 
     let positives = 0;
 
@@ -54,13 +61,15 @@ export function useAdBlockDetector() {
     setAdBlocked(blocked);
 
     if (blocked) {
-      const last = Number(localStorage.getItem(DISMISS_KEY) || 0);
+      const last = Number(getItem(DISMISS_KEY) || 0);
       if (Date.now() - last > DISMISS_WINDOW_MS) setOpen(true);
     }
     return blocked;
   }, []);
 
   useEffect(() => {
+    if (!mounted) return;
+    
     // Defer detection until well after LCP so it doesn't compete with initial render.
     const kickoff = () => {
       const idle = (cb: () => void) =>
@@ -84,10 +93,10 @@ export function useAdBlockDetector() {
       clearInterval(interval);
       window.removeEventListener('focus', onFocus);
     };
-  }, [detect]);
+  }, [detect, mounted]);
 
   const dismiss = useCallback(() => {
-    localStorage.setItem(DISMISS_KEY, String(Date.now()));
+    setItem(DISMISS_KEY, String(Date.now()));
     setOpen(false);
   }, []);
 
@@ -98,7 +107,7 @@ export function useAdBlockDetector() {
   }, [detect]);
 
   const activatePremium = useCallback(() => {
-    localStorage.setItem(PREMIUM_KEY, '1');
+    setItem(PREMIUM_KEY, '1');
     setOpen(false);
     setAdBlocked(false);
   }, []);

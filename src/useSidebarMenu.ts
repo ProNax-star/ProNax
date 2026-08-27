@@ -35,7 +35,7 @@ export function useSidebarMenu(section = 'sidebar') {
     };
     load();
     const ch = supabase
-      .channel(`sidebar_menu_${section}_${Math.random().toString(36).slice(2, 8)}`)
+      .channel(`sidebar:${section}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sidebar_menu' }, load)
       .subscribe();
     return () => { alive = false; try { supabase.removeChannel(ch); } catch { /* noop */ } };

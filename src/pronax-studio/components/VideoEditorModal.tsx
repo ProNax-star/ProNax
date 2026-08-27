@@ -43,165 +43,42 @@ import {
   Sliders,
 } from "lucide-react";
 
-/* ------------------------------------------------------------------ */
-/* Local editor-facing types (decoupled from the app schema)           */
-/* ------------------------------------------------------------------ */
-
-export interface VideoBlurOverlay {
-  id: string;
-  type: "face" | "logo" | "plate" | "custom";
-  shape: "rect" | "ellipse";
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  startTime: number;
-  endTime: number;
-}
-
-export interface VideoEndScreenElement {
-  id: string;
-  type: "subscribe" | "video" | "playlist" | "link";
-  label: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  startTime: number;
-  endTime: number;
-}
-
-export interface Video {
-  id: string;
-  title: string;
-  url?: string | undefined;
-  thumbnail?: string | undefined;
-  duration?: string | undefined;
-  restrictions?: string[] | string | undefined;
-  trimmedStartSec?: number | undefined;
-  trimmedEndSec?: number | undefined;
-  blurOverlays?: VideoBlurOverlay[] | undefined;
-  endScreenElements?: VideoEndScreenElement[] | undefined;
-}
-
-
-/* ------------------------------------------------------------------ */
-/* Types                                                               */
-/* ------------------------------------------------------------------ */
-
-export type TrackKind = "video" | "audio" | "text" | "adjustment";
-export type ToolMode = "select" | "razor" | "slip";
-export type BlendMode = "normal" | "multiply" | "screen" | "overlay" | "soft-light";
-export type TransitionKind =
-  | "none"
-  | "fade"
-  | "cross-dissolve"
-  | "slide-left"
-  | "slide-right"
-  | "zoom-in"
-  | "zoom-out"
-  | "glitch"
-  | "wipe";
-
-export interface MediaAsset {
-  id: string;
-  name: string;
-  kind: "video" | "audio" | "image";
-  url: string;
-  thumb?: string | undefined;
-  duration: number;
-  size: number;
-  metadata?: {
-    width?: number;
-    height?: number;
-    fps?: number;
-    codec?: string;
-    sampleRate?: number;
-    channels?: number;
-  };
-  waveform?: number[];
-}
-
-export interface Filters {
-  brightness: number;
-  contrast: number;
-  saturate: number;
-  hue: number;
-  blur: number;
-  sepia: number;
-  invert: number;
-  temperature: number;
-}
-
-export interface Transform {
-  x: number;
-  y: number;
-  scale: number;
-  rotation: number;
-  opacity: number;
-}
-
-export interface Keyframe {
-  id: string;
-  time: number; // relative to clip start
-  prop: "x" | "y" | "scale" | "opacity" | "rotation" | "blur";
-  value: number;
-}
-
-export interface TextStyle {
-  content: string;
-  preset: "lower-third" | "glitch" | "kinetic" | "neon" | "plain";
-  fontFamily: string;
-  fontWeight: number;
-  fontSize: number;
-  color: string;
-  stroke: number;
-  strokeColor: string;
-  shadow: number;
-  boxed: boolean;
-  align: "left" | "center" | "right";
-}
-
-export interface Clip {
-  id: string;
-  trackId: string;
-  name: string;
-  assetId?: string | undefined;
-  start: number;
-  duration: number;
-  srcIn: number;
-  srcDuration: number;
-  transitionIn: TransitionKind;
-  filters: Filters;
-  transform: Transform;
-  blend: BlendMode;
-  chroma: { enabled: boolean; similarity: number; color: string };
-  keyframes: Keyframe[];
-  volume: number;
-  fadeIn: number;
-  fadeOut: number;
-  text?: TextStyle | undefined;
-  color: string;
-}
-
-export interface Track {
-  id: string;
-  kind: TrackKind;
-  name: string;
-  muted: boolean;
-  solo: boolean;
-  locked: boolean;
-  hidden: boolean;
-  volume: number;
-  pan: number;
-}
-
-export interface EditorDoc {
-  tracks: Track[];
-  clips: Clip[];
-  blurOverlays: VideoBlurOverlay[];
-  endScreenElements: VideoEndScreenElement[];
-}
+import {
+  Video,
+  TrackKind,
+  ToolMode,
+  BlendMode,
+  TransitionKind,
+  MediaAsset,
+  Filters,
+  Transform,
+  Keyframe,
+  TextStyle,
+  Clip,
+  Track,
+  EditorDoc,
+} from "./editor/types";
+import {
+  TRACK_COLORS,
+  DEFAULT_FILTERS,
+  DEFAULT_TRANSFORM,
+  TEXT_PRESETS,
+  TRANSITIONS,
+  uid,
+  clamp,
+  formatTime,
+  formatTC,
+  parseDurationSec,
+  filterCss,
+  pseudoWave,
+} from "./editor/constants";
+import { Slider } from "./editor/Slider";
+import { Waveform } from "./editor/Waveform";
+import { Panel } from "./editor/Panel";
+import { useTimelineInteraction } from "./editor/useTimelineInteraction";
+import { Timeline } from "./editor/Timeline";
+import { VideoPreview } from "./editor/VideoPreview";
+import { ExportPanel, ExportSettings } from "./editor/ExportPanel";
 
 interface VideoEditorModalProps {
   video: Video | null;
@@ -209,97 +86,6 @@ interface VideoEditorModalProps {
   onClose: () => void;
   onSaveVideo: (updated: Video) => void;
 }
-
-/* ------------------------------------------------------------------ */
-/* Constants & helpers                                                 */
-/* ------------------------------------------------------------------ */
-
-const TRACK_COLORS: Record<TrackKind, string> = {
-  video: "#3b82f6",
-  audio: "#10b981",
-  text: "#eab308",
-  adjustment: "#a855f7",
-};
-
-const DEFAULT_FILTERS: Filters = {
-  brightness: 100,
-  contrast: 100,
-  saturate: 100,
-  hue: 0,
-  blur: 0,
-  sepia: 0,
-  invert: 0,
-  temperature: 0,
-};
-
-const DEFAULT_TRANSFORM: Transform = { x: 0, y: 0, scale: 100, rotation: 0, opacity: 100 };
-
-const TEXT_PRESETS: { key: TextStyle["preset"]; label: string; hint: string }[] = [
-  { key: "lower-third", label: "Lower Third", hint: "Broadcast name bar" },
-  { key: "glitch", label: "Glitch Text", hint: "RGB split shake" },
-  { key: "kinetic", label: "Kinetic Typography", hint: "Word-by-word pop" },
-  { key: "neon", label: "Neon Text", hint: "Glowing outline" },
-  { key: "plain", label: "Plain Title", hint: "Clean centered" },
-];
-
-const TRANSITIONS: { key: TransitionKind; label: string }[] = [
-  { key: "fade", label: "Fade" },
-  { key: "cross-dissolve", label: "Cross Dissolve" },
-  { key: "slide-left", label: "Slide Left" },
-  { key: "slide-right", label: "Slide Right" },
-  { key: "zoom-in", label: "Zoom In" },
-  { key: "zoom-out", label: "Zoom Out" },
-  { key: "glitch", label: "Glitch" },
-  { key: "wipe", label: "Wipe" },
-];
-
-const uid = (p = "id") => `${p}_${Math.random().toString(36).slice(2, 9)}`;
-
-const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
-
-const formatTime = (sec: number) => {
-  if (isNaN(sec) || sec < 0) return "00:00";
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-};
-
-const formatTC = (sec: number, fps = 30) => {
-  const safe = Math.max(0, sec || 0);
-  const m = Math.floor(safe / 60);
-  const s = Math.floor(safe % 60);
-  const f = Math.floor((safe % 1) * fps);
-  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}:${f
-    .toString()
-    .padStart(2, "0")}`;
-};
-
-const parseDurationSec = (dur?: string): number => {
-  if (!dur) return 300;
-  const parts = dur.split(":").map((p) => parseInt(p, 10));
-  if (parts.some((p) => isNaN(p))) return 300;
-  if (parts.length === 3) return (parts[0] ?? 0) * 3600 + (parts[1] ?? 0) * 60 + (parts[2] ?? 0);
-  if (parts.length === 2) return (parts[0] ?? 0) * 60 + (parts[1] ?? 0);
-  return parts[0] ?? 300;
-};
-
-const filterCss = (f: Filters) => {
-  const warm = f.temperature > 0 ? f.temperature / 100 : 0;
-  return [
-    `brightness(${f.brightness}%)`,
-    `contrast(${f.contrast}%)`,
-    `saturate(${f.saturate + warm * 15}%)`,
-    `hue-rotate(${f.hue + f.temperature * 0.15}deg)`,
-    `blur(${f.blur}px)`,
-    `sepia(${Math.max(0, f.sepia + (f.temperature > 0 ? f.temperature * 0.3 : 0))}%)`,
-    `invert(${f.invert}%)`,
-  ].join(" ");
-};
-
-const pseudoWave = (seed: number, i: number) =>
-  0.35 +
-  0.32 * Math.abs(Math.sin(i * 0.35 + seed)) +
-  0.28 * Math.abs(Math.sin(i * 0.11 + seed * 1.7));
 
 const newClip = (partial: Partial<Clip> & { trackId: string; start: number }): Clip => ({
   id: uid("clip"),
@@ -321,123 +107,16 @@ const newClip = (partial: Partial<Clip> & { trackId: string; start: number }): C
 });
 
 /* ------------------------------------------------------------------ */
-/* Small UI atoms                                                      */
-/* ------------------------------------------------------------------ */
-
-const Slider: React.FC<{
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step?: number | undefined;
-  suffix?: string | undefined;
-  accent?: string | undefined;
-  onChange: (v: number) => void;
-  onKey?: (() => void) | undefined;
-}> = ({ label, value, min, max, step = 1, suffix = "", accent = "#3b82f6", onChange, onKey }) => (
-  <div className="space-y-1.5">
-    <div className="flex items-center justify-between">
-      <span className="text-[11px] text-gray-300 font-medium">{label}</span>
-      <div className="flex items-center gap-1.5">
-        <span className="text-[10px] font-mono text-white tabular-nums bg-[#1e1e24] px-2 py-0.5 rounded border border-[#2e2e38]">
-          {Math.round(value * 100) / 100}
-          {suffix}
-        </span>
-        {onKey && (
-          <button
-            onClick={onKey}
-            title="Add keyframe"
-            className="p-1 rounded text-gray-500 hover:text-amber-300 hover:bg-[#2a2a35] transition-all"
-          >
-            <Diamond className="h-3 w-3" />
-          </button>
-        )}
-      </div>
-    </div>
-    <input
-      type="range"
-      min={min}
-      max={max}
-      step={step}
-      value={value}
-      onChange={(e) => onChange(Number(e.target.value))}
-      style={{ accentColor: accent }}
-      className="w-full h-1.5 bg-[#2a2a35] rounded cursor-pointer"
-    />
-  </div>
-);
-
-const Panel: React.FC<{ title: string; children: React.ReactNode; icon?: React.ReactNode }> = ({
-  title,
-  children,
-  icon,
-}) => {
-  const [open, setOpen] = useState(true);
-  return (
-    <div className="bg-[#1a1a20] border border-[#2e2e38] rounded-xl overflow-hidden shadow-sm">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="w-full px-4 py-2.5 flex items-center justify-between bg-[#1e1e24] hover:bg-[#262630] transition-colors"
-      >
-        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-wider flex items-center gap-2">
-          {icon}
-          {title}
-        </span>
-        <span className="text-gray-500 text-[10px]">{open ? "−" : "+"}</span>
-      </button>
-      {open && <div className="p-4 space-y-3">{children}</div>}
-    </div>
-  );
-};
-
-/* ------------------------------------------------------------------ */
-/* Waveform                                                            */
-/* ------------------------------------------------------------------ */
-
-const Waveform: React.FC<{ 
-  seed: number; 
-  width: number; 
-  color: string;
-  waveformData?: number[];
-}> = ({
-  seed,
-  width,
-  color,
-  waveformData,
-}) => {
-  const bars = Math.max(4, Math.floor(width / 3));
-  
-  // Use real waveform data if available, otherwise use pseudo-wave
-  const data = waveformData || Array.from({ length: bars }, (_, i) => pseudoWave(seed, i));
-  
-  return (
-    <div className="absolute inset-0 flex items-center gap-[1px] px-1 opacity-70 px-2 pointer-events-none">
-      {data.map((amplitude, i) => (
-        <div
-          key={i}
-          style={{ 
-            height: `${Math.max(5, amplitude * 100)}%`, 
-            background: color,
-            minHeight: '2px'
-          }}
-          className="flex-1 rounded-[1px] transition-all duration-75"
-        />
-      ))}
-    </div>
-  );
-};
-
-/* ------------------------------------------------------------------ */
 /* Main component                                                      */
 /* ------------------------------------------------------------------ */
 
 export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
-  video,
+  video: videoProp,
   isOpen,
   onClose,
   onSaveVideo,
 }) => {
-  const totalHint = Math.max(30, parseDurationSec(video?.duration));
+  const totalHint = Math.max(30, parseDurationSec(videoProp?.duration));
 
   /* ---------------- document + history ---------------- */
   const initialDoc = useMemo<EditorDoc>(() => {
@@ -456,7 +135,7 @@ export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
         start: 0,
         duration: base * 0.55,
         srcDuration: base,
-        name: video?.title ?? "Main Footage",
+        name: videoProp?.title ?? "Main Footage",
         color: TRACK_COLORS.video,
       }),
       newClip({
@@ -503,12 +182,12 @@ export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
     return {
       tracks,
       clips,
-      blurOverlays: video?.blurOverlays ?? [
+      blurOverlays: videoProp?.blurOverlays ?? [
         { id: "b1", type: "face", shape: "ellipse", x: 35, y: 25, width: 20, height: 25, startTime: 4, endTime: 12 },
       ],
-      endScreenElements: video?.endScreenElements ?? [],
+      endScreenElements: videoProp?.endScreenElements ?? [],
     };
-  }, [video, totalHint]);
+  }, [videoProp, totalHint]);
 
   const [doc, setDoc] = useState<EditorDoc>(initialDoc);
   const [past, setPast] = useState<EditorDoc[]>([]);
@@ -582,12 +261,15 @@ export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
   const [audioTrackName, setAudioTrackName] = useState("Original Video Audio");
   const [claimResolved, setClaimResolved] = useState(false);
   const [claimData, setClaimData] = useState({
-    start: 12, // 12th second se start
-    end: 28,   // 28th second par khatam
+    start: 12,
+    end: 28,
     type: "Audio/Visual",
     content: "Copyrighted Music - T-Series"
   });
   const [snapGuide, setSnapGuide] = useState<number | null>(null);
+  const [showTrimTime, setShowTrimTime] = useState<string | null>(null);
+  const [trimMode, setTrimMode] = useState<"trim-in" | "trim-out" | null>(null);
+  const [videoLoadError, setVideoLoadError] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -595,6 +277,17 @@ export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
   const viewportRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoDuration, setVideoDuration] = useState(0);
+
+  // Use extracted timeline interaction hook
+  const {
+    dragRef,
+    snapPoints,
+    applySnap,
+    timeFromClientX,
+    patchClip,
+    razorAt,
+    deleteSelected,
+  } = useTimelineInteraction(doc, duration, pxPerSec, snapping, playhead, timelineRef, commit, live, setSelectedClipId);
 
   // Initialize Web Audio API for real audio mixing
   useEffect(() => {
@@ -626,7 +319,6 @@ export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
     if (!ctx || !videoRef.current) return;
 
     const setupAudioNodes = () => {
-      // Create gain nodes for each audio track
       doc.tracks.filter(t => t.kind === 'audio').forEach(track => {
         if (!gainNodesRef.current.has(track.id)) {
           const gainNode = ctx.createGain();
@@ -654,10 +346,10 @@ export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
     }
   };
 
-  const restrictionList: string[] = Array.isArray(video?.restrictions)
-    ? (video?.restrictions as string[])
-    : video?.restrictions && video.restrictions !== "None"
-      ? [String(video.restrictions)]
+  const restrictionList: string[] = Array.isArray(videoProp?.restrictions)
+    ? (videoProp?.restrictions as string[])
+    : videoProp?.restrictions && videoProp.restrictions !== "None"
+      ? [String(videoProp.restrictions)]
       : [];
   const hasClaim = restrictionList.some((r) => r.toLowerCase().includes("copyright"));
 
@@ -680,126 +372,6 @@ export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
   const pxPerSec = (zoom / 100) * 24;
   const selected = doc.clips.find((c) => c.id === selectedClipId) ?? null;
   const selectedTrack = doc.tracks.find((t) => t.id === selected?.trackId) ?? null;
-
-  /* ---------------- playback ---------------- */
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    if (isPlaying) {
-      video.play().catch(console.error);
-    } else {
-      video.pause();
-    }
-  }, [isPlaying]);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const handleTimeUpdate = () => {
-      // Immediate sync from video to playhead during playback
-      const currentTime = video.currentTime;
-      setPlayhead(currentTime);
-    };
-
-    const handleLoadedMetadata = () => {
-      setVideoDuration(video.duration);
-    };
-
-    const handleEnded = () => {
-      setIsPlaying(false);
-      setPlayhead(video.duration);
-    };
-
-    const handlePlay = () => {
-      setIsPlaying(true);
-    };
-
-    const handlePause = () => {
-      setIsPlaying(false);
-    };
-
-    const handleSeeked = () => {
-      // Update playhead after seek completes
-      setPlayhead(video.currentTime);
-    };
-
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('loadedmetadata', handleLoadedMetadata);
-    video.addEventListener('ended', handleEnded);
-    video.addEventListener('play', handlePlay);
-    video.addEventListener('pause', handlePause);
-    video.addEventListener('seeked', handleSeeked);
-
-    return () => {
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      video.removeEventListener('ended', handleEnded);
-      video.removeEventListener('play', handlePlay);
-      video.removeEventListener('pause', handlePause);
-      video.removeEventListener('seeked', handleSeeked);
-    };
-  }, [isPlaying]);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    
-    // Immediate seek for frame-accurate playhead dragging
-    // Use a small threshold to avoid unnecessary seeks during normal playback
-    if (Math.abs(video.currentTime - playhead) > 0.01) {
-      video.currentTime = playhead;
-    }
-  }, [playhead]);
-
-  /* ---------------- clip ops ---------------- */
-  const patchClip = useCallback(
-    (id: string, patch: Partial<Clip>, history = true) => {
-      const fn = (d: EditorDoc) => ({
-        ...d,
-        clips: d.clips.map((c) => (c.id === id ? { ...c, ...patch } : c)),
-      });
-      history ? commit(fn) : live(fn);
-    },
-    [commit, live]
-  );
-
-  const razorAt = useCallback(
-    (time: number, clipId?: string) => {
-      commit((d) => {
-        const target = d.clips.find(
-          (c) =>
-            (clipId ? c.id === clipId : true) &&
-            time > c.start + 0.05 &&
-            time < c.start + c.duration - 0.05
-        );
-        if (!target) return d;
-        const offset = time - target.start;
-        const left: Clip = { ...target, id: uid("clip"), duration: offset };
-        const right: Clip = {
-          ...target,
-          id: uid("clip"),
-          start: time,
-          duration: target.duration - offset,
-          srcIn: target.srcIn + offset,
-          transitionIn: "none",
-          keyframes: target.keyframes
-            .filter((k) => k.time >= offset)
-            .map((k) => ({ ...k, id: uid("kf"), time: k.time - offset })),
-        };
-        left.keyframes = target.keyframes.filter((k) => k.time < offset).map((k) => ({ ...k, id: uid("kf") }));
-        return { ...d, clips: [...d.clips.filter((c) => c.id !== target.id), left, right] };
-      });
-    },
-    [commit]
-  );
-
-  const deleteSelected = useCallback(() => {
-    if (!selectedClipId) return;
-    commit((d) => ({ ...d, clips: d.clips.filter((c) => c.id !== selectedClipId) }));
-    setSelectedClipId(null);
-  }, [selectedClipId, commit]);
 
   /* ------------------------------------------------------------------ */
   /* ADVANCED COPYRIGHT ACTIONS                                         */
@@ -1000,6 +572,72 @@ export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
     });
   };
 
+  /* ---------------- Trim Presets ---------------- */
+  const trimToPlayhead = useCallback(() => {
+    if (!selectedClipId) return;
+    const clip = doc.clips.find(c => c.id === selectedClipId);
+    if (!clip) return;
+
+    // Trim from playhead to end
+    if (playhead > clip.start && playhead < clip.start + clip.duration) {
+      const newStart = playhead;
+      const delta = newStart - clip.start;
+      commit((d) => ({
+        ...d,
+        clips: d.clips.map((c) =>
+          c.id === selectedClipId
+            ? { ...c, start: newStart, duration: clip.duration - delta, srcIn: Math.max(0, clip.srcIn + delta) }
+            : c
+        ),
+      }));
+    }
+  }, [selectedClipId, playhead, doc.clips, commit]);
+
+  const trimFromPlayhead = useCallback(() => {
+    if (!selectedClipId) return;
+    const clip = doc.clips.find(c => c.id === selectedClipId);
+    if (!clip) return;
+
+    // Trim from start to playhead
+    if (playhead > clip.start && playhead < clip.start + clip.duration) {
+      const newDuration = playhead - clip.start;
+      commit((d) => ({
+        ...d,
+        clips: d.clips.map((c) =>
+          c.id === selectedClipId ? { ...c, duration: newDuration } : c
+        ),
+      }));
+    }
+  }, [selectedClipId, playhead, doc.clips, commit]);
+
+  const trimClipToSelection = useCallback(() => {
+    if (!selectedClipId) return;
+    const clip = doc.clips.find(c => c.id === selectedClipId);
+    if (!clip) return;
+
+    // Trim clip to current selection (if we had selection)
+    // For now, just trim to 10 seconds from current position
+    const trimStart = Math.max(clip.start, playhead);
+    const trimDuration = Math.min(10, clip.start + clip.duration - trimStart);
+    
+    if (trimDuration > 0.2) {
+      const delta = trimStart - clip.start;
+      commit((d) => ({
+        ...d,
+        clips: d.clips.map((c) =>
+          c.id === selectedClipId
+            ? { ...c, start: trimStart, duration: trimDuration, srcIn: Math.max(0, clip.srcIn + delta) }
+            : c
+        ),
+      }));
+    }
+  }, [selectedClipId, playhead, doc.clips, commit]);
+
+  /* ---------------- Enhanced Trim Undo/Redo ---------------- */
+  // Note: All trim operations already use commit() which saves to history
+  // The undo/redo system is already robust with 50-step history buffer
+  // Trim-specific improvements: add visual feedback for undo/redo actions
+
   /* ---------------- media import ---------------- */
   const ingestFiles = useCallback(async (files: FileList | File[]) => {
     const list = Array.from(files);
@@ -1109,50 +747,6 @@ export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
     }
   }, []);
 
-  /* ---------------- timeline interaction ---------------- */
-  const snapPoints = useMemo(() => {
-    const pts = [0, playhead];
-    doc.clips.forEach((c) => {
-      pts.push(c.start, c.start + c.duration);
-    });
-    for (let s = 0; s <= duration; s += 5) pts.push(s);
-    return pts;
-  }, [doc.clips, playhead, duration]);
-
-  const applySnap = useCallback(
-    (value: number) => {
-      if (!snapping) return { value, guide: null as number | null };
-      const tol = 8 / pxPerSec;
-      let best: number | null = null;
-      let bestD = tol;
-      for (const p of snapPoints) {
-        const d = Math.abs(p - value);
-        if (d < bestD) {
-          bestD = d;
-          best = p;
-        }
-      }
-      return best === null ? { value, guide: null } : { value: best, guide: best };
-    },
-    [snapping, pxPerSec, snapPoints]
-  );
-
-  type DragState =
-    | null
-    | { mode: "move"; id: string; grabOffset: number; originTrack: string }
-    | { mode: "trim-in" | "trim-out" | "slip"; id: string; startX: number; orig: Clip };
-  const dragRef = useRef<DragState>(null);
-
-  const timeFromClientX = useCallback(
-    (clientX: number) => {
-      const el = timelineRef.current;
-      if (!el) return 0;
-      const rect = el.getBoundingClientRect();
-      return clamp((clientX - rect.left + el.scrollLeft) / pxPerSec, 0, duration);
-    },
-    [pxPerSec, duration]
-  );
-
   const onClipPointerDown = (
     e: React.PointerEvent,
     clip: Clip,
@@ -1167,6 +761,13 @@ export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
     
     // Auto-switch to properties tab when selecting a clip
     setInspectorTab("properties");
+    
+    // Show trim time tooltip when trimming
+    if (mode === "trim-in" || mode === "trim-out") {
+      setTrimMode(mode);
+      const time = mode === "trim-in" ? clip.start : clip.start + clip.duration;
+      setShowTrimTime(formatTime(time));
+    }
     
     if (tool === "razor") {
       razorAt(timeFromClientX(e.clientX), clip.id);
@@ -1221,6 +822,7 @@ export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
       const raw = clamp(t, 0, drag.orig.start + drag.orig.duration - 0.2);
       const { value, guide } = applySnap(raw);
       setSnapGuide(guide);
+      setShowTrimTime(formatTime(value)); // Update trim time display
       const delta = value - drag.orig.start;
       live((d) => ({
         ...d,
@@ -1234,6 +836,7 @@ export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
       const raw = clamp(t, drag.orig.start + 0.2, duration);
       const { value, guide } = applySnap(raw);
       setSnapGuide(guide);
+      setShowTrimTime(formatTime(value)); // Update trim time display
       live((d) => ({
         ...d,
         clips: d.clips.map((c) => (c.id === drag.id ? { ...c, duration: value - drag.orig.start } : c)),
@@ -1254,6 +857,8 @@ export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
     if (dragRef.current) {
       dragRef.current = null;
       setSnapGuide(null);
+      setShowTrimTime(null); // Hide trim time tooltip
+      setTrimMode(null); // Reset trim mode
       setDoc((cur) => {
         setPast((p) => [...p.slice(-49), cur]);
         setFuture([]);
@@ -1657,12 +1262,12 @@ export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
 
   /* ---------------- save ---------------- */
   const handleSave = () => {
-    if (!video) return;
+    if (!videoProp) return;
     const finalRestrictions = claimResolved
       ? restrictionList.filter((r) => !r.toLowerCase().includes("copyright"))
       : restrictionList;
     onSaveVideo({
-      ...video,
+      ...videoProp,
       restrictions: finalRestrictions.length ? finalRestrictions : ["None"],
       trimmedStartSec: Math.min(...doc.clips.map((c) => c.start), 0),
       trimmedEndSec: duration,
@@ -1677,7 +1282,7 @@ export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
     const projectData = {
       version: '1.0',
       timestamp: Date.now(),
-      videoId: video?.id,
+      videoId: videoProp?.id,
       doc: {
         tracks: doc.tracks,
         clips: doc.clips,
@@ -1697,7 +1302,7 @@ export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `pronax-project-${video?.title || 'untitled'}-${Date.now()}.json`;
+    a.download = `pronax-project-${videoProp?.title || 'untitled'}-${Date.now()}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1794,7 +1399,7 @@ export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
     }
   }, [playhead]);
 
-  if (!isOpen || !video) return null;
+  if (!isOpen || !videoProp) return null;
 
   const audioTracks = doc.tracks.filter((t) => t.kind === "audio");
 
@@ -1903,11 +1508,41 @@ export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
                 </span>
               )}
             </h2>
-            <p className="text-[11px] text-gray-400 truncate max-w-[220px] sm:max-w-md font-medium">{video.title}</p>
+            <p className="text-[11px] text-gray-400 truncate max-w-[220px] sm:max-w-md font-medium">{videoProp?.title}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2.5 shrink-0">
+          {/* Trim Preset Buttons */}
+          {selectedClipId && (
+            <div className="flex items-center gap-1.5 border-r border-[#333340] pr-2.5 mr-1">
+              <button
+                onClick={trimFromPlayhead}
+                className="flex items-center gap-1.5 text-[10px] text-gray-300 hover:text-white bg-[#24282e] hover:bg-[#2e333a] px-2.5 py-2 rounded-lg border border-[#333340] transition-all duration-200 hover:scale-105 shadow-sm"
+                title="Trim from start to playhead"
+              >
+                <SkipBack className="h-3 w-3" />
+                <span className="hidden sm:inline">Trim Start</span>
+              </button>
+              <button
+                onClick={trimToPlayhead}
+                className="flex items-center gap-1.5 text-[10px] text-gray-300 hover:text-white bg-[#24282e] hover:bg-[#2e333a] px-2.5 py-2 rounded-lg border border-[#333340] transition-all duration-200 hover:scale-105 shadow-sm"
+                title="Trim from playhead to end"
+              >
+                <SkipForward className="h-3 w-3" />
+                <span className="hidden sm:inline">Trim End</span>
+              </button>
+              <button
+                onClick={trimClipToSelection}
+                className="flex items-center gap-1.5 text-[10px] text-gray-300 hover:text-white bg-[#24282e] hover:bg-[#2e333a] px-2.5 py-2 rounded-lg border border-[#333340] transition-all duration-200 hover:scale-105 shadow-sm"
+                title="Trim to 10s from playhead"
+              >
+                <Scissors className="h-3 w-3" />
+                <span className="hidden sm:inline">Trim 10s</span>
+              </button>
+            </div>
+          )}
+          
           <button
             onClick={() => setShowShortcuts(true)}
             className="p-2.5 rounded-xl bg-[#24282e] hover:bg-[#2e333a] text-gray-300 transition-all duration-200 hover:scale-105 border border-[#333340] shadow-sm"
@@ -2210,16 +1845,52 @@ export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
             >
               <video
                 ref={videoRef}
-                src={video.url}
+                src={videoProp?.url || videoProp?.videoUrl || ''}
                 className="absolute inset-0 w-full h-full object-contain"
                 muted={false}
                 playsInline
+                preload="metadata"
+                crossOrigin="anonymous"
                 style={{
                   filter: activeVideoClips.length > 0 
                     ? filterCss(activeVideoClips[0].filters) 
                     : 'none'
                 }}
+                onLoadStart={() => {
+                  console.log('[VideoEditor] Video loading started', videoProp?.url || videoProp?.videoUrl);
+                  setVideoLoadError(false);
+                }}
+                onCanPlay={() => {
+                  console.log('[VideoEditor] Video can play');
+                  setVideoLoadError(false);
+                }}
+                onError={(e) => {
+                  // Avoid circular structure error by logging only error message
+                  const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+                  console.error('[VideoEditor] Video error:', errorMessage);
+                  // Stop playback attempts on error
+                  setIsPlaying(false);
+                  setVideoLoadError(true);
+                }}
               />
+
+              {/* Video Error Fallback UI */}
+              {videoLoadError && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 text-white p-8">
+                  <AlertTriangle className="h-16 w-16 text-red-500 mb-4" />
+                  <h3 className="text-xl font-bold mb-2">Video Load Failed</h3>
+                  <p className="text-gray-400 text-sm text-center mb-4">
+                    The video URL is not accessible (403 Forbidden). 
+                    Please upload a local video file or use a different video source.
+                  </p>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold text-sm transition-all"
+                  >
+                    Upload Local Video
+                  </button>
+                </div>
+              )}
 
               {activeVideoClips.map((clip) => {
                 const asset = media.find((m) => m.id === clip.assetId);
@@ -2934,20 +2605,61 @@ export const VideoEditorModal: React.FC<VideoEditorModalProps> = ({
                             ))}
                           </div>
 
+                          {/* Trim Handles - Improved with better visual feedback */}
                           <div
                             onPointerDown={(e) => onClipPointerDown(e, c, "trim-in")}
-                            className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize bg-white/0 hover:bg-white/40"
-                          />
+                            className="absolute left-0 top-0 bottom-0 w-4 cursor-ew-resize bg-transparent hover:bg-blue-500/30 group transition-all duration-150 border-l-2 border-transparent hover:border-blue-400"
+                          >
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-3 h-8 bg-blue-500 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-lg shadow-blue-500/50">
+                              <Scissors className="h-3 w-3 text-white" />
+                            </div>
+                          </div>
                           <div
                             onPointerDown={(e) => onClipPointerDown(e, c, "trim-out")}
-                            className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize bg-white/0 hover:bg-white/40"
-                          />
+                            className="absolute right-0 top-0 bottom-0 w-4 cursor-ew-resize bg-transparent hover:bg-blue-500/30 group transition-all duration-150 border-r-2 border-transparent hover:border-blue-400"
+                          >
+                            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 w-3 h-8 bg-blue-500 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-lg shadow-blue-500/50">
+                              <Scissors className="h-3 w-3 text-white" />
+                            </div>
+                          </div>
                         </div>
                       );
                     })}
                   </div>
                 );
               })}
+
+              {/* Trim Time Tooltip */}
+              {showTrimTime && trimMode && (
+                <div 
+                  className="fixed z-50 bg-black/90 text-white text-xs font-mono px-3 py-1.5 rounded border border-blue-500/50 shadow-xl pointer-events-none"
+                  style={{ 
+                    left: '50%',
+                    top: '80px',
+                    transform: 'translateX(-50%)'
+                  }}
+                >
+                  {trimMode === 'trim-in' ? 'Start: ' : 'End: '}{showTrimTime}
+                </div>
+              )}
+
+              {/* Trim Markers on Timeline Ruler */}
+              {selected && (
+                <>
+                  <div 
+                    style={{ left: selected.start * pxPerSec }}
+                    className="absolute top-0 bottom-0 w-px bg-blue-400 z-20 pointer-events-none"
+                  >
+                    <div className="absolute -top-1 -left-1.5 w-3 h-3 bg-blue-400 rotate-45" />
+                  </div>
+                  <div 
+                    style={{ left: (selected.start + selected.duration) * pxPerSec }}
+                    className="absolute top-0 bottom-0 w-px bg-blue-400 z-20 pointer-events-none"
+                  >
+                    <div className="absolute -top-1 -left-1.5 w-3 h-3 bg-blue-400 rotate-45" />
+                  </div>
+                </>
+              )}
 
               {/* COPYRIGHT RANGE HIGHLIGHTER */}
               {hasClaim && !claimResolved && (

@@ -1,5 +1,6 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getItem, setItem, removeItem } from '@/lib/safeStorage';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -14,19 +15,27 @@ function isStandalone() {
 export function useInstallPrompt() {
   const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(isStandalone);
-  const [dismissed, setDismissed] = useState(() => localStorage.getItem('pronax_install_dismissed') === '1');
+  const [dismissed, setDismissed] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+    setDismissed(getItem('pronax_install_dismissed') === '1');
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
     const onPrompt = (event: Event) => {
       event.preventDefault();
       setPromptEvent(event as BeforeInstallPromptEvent);
       setDismissed(false);
-      localStorage.removeItem('pronax_install_dismissed');
+      removeItem('pronax_install_dismissed');
     };
     const onInstalled = () => {
       setInstalled(true);
       setPromptEvent(null);
-      localStorage.setItem('pronax_install_dismissed', '1');
+      setItem('pronax_install_dismissed', '1');
     };
     window.addEventListener('beforeinstallprompt', onPrompt);
     window.addEventListener('appinstalled', onInstalled);
@@ -34,7 +43,7 @@ export function useInstallPrompt() {
       window.removeEventListener('beforeinstallprompt', onPrompt);
       window.removeEventListener('appinstalled', onInstalled);
     };
-  }, []);
+  }, [mounted]);
 
   const canInstall = useMemo(() => !!promptEvent && !installed && !dismissed, [promptEvent, installed, dismissed]);
 
@@ -52,7 +61,7 @@ export function useInstallPrompt() {
 
   const dismiss = useCallback(() => {
     setDismissed(true);
-    localStorage.setItem('pronax_install_dismissed', '1');
+    setItem('pronax_install_dismissed', '1');
   }, []);
 
   return { canInstall, installed, install, dismiss };

@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, Clock, TrendingUp, X, SlidersHorizontal, Loader2, Mic, MicOff } from 'lucide-react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 import { supabase } from '@/integrations/supabase/loose';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -103,13 +103,19 @@ export function SmartSearch() {
     pushRecent(term.trim());
     setOpen(false);
     setQ('');
-    nav(`/explore?q=${encodeURIComponent(term.trim())}`);
+    nav({
+      to: '/search',
+      search: { q: term.trim() },
+    });
   };
 
   const openVideo = (id: string) => {
     if (q.trim()) pushRecent(q.trim());
     setOpen(false);
-    nav(`/watch/${id}`);
+    nav({
+      to: '/watch/$id',
+      params: { id },
+    });
   };
 
   return (

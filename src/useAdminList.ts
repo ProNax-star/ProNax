@@ -128,7 +128,7 @@ export function useAdminList(opts: UseAdminListOptions) {
       if (timer) return;
       timer = setTimeout(() => { timer = null; void loadRef.current(); }, 1000);
     };
-    const ch = supabase.channel(`admin:${table}-${Math.random().toString(36).slice(2)}`);
+    const ch = supabase.channel(`admin:${table}`);
     for (const t of rtKey.split(',')) {
       ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, ping);
     }

@@ -2,41 +2,20 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
 import tailwindcss from '@tailwindcss/vite';
-import obfuscator from 'rollup-plugin-obfuscator';
+import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Plugin to polyfill node:async_hooks for browser
-function asyncLocalStoragePolyfill() {
-  return {
-    name: 'async-local-storage-polyfill',
-    enforce: 'pre' as const,
-    transform(code: string, id: string) {
-      // Replace node:async_hooks imports with our polyfill
-      if (code.includes('node:async_hooks')) {
-        return code.replace(
-          /from ['"]node:async_hooks['"]/g,
-          `from '${__dirname}/src/async-local-storage-polyfill.ts'`
-        );
-      }
-    },
-  };
-}
-
 export default defineConfig({
   base: '/',
   server: {
     port: 8080,
     host: true,
-    headers: {
-      'Content-Security-Policy': "default-src 'self' 'unsafe-eval' 'unsafe-inline' data: blob: *; script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval' data: blob: *; style-src 'self' 'unsafe-inline' *; img-src 'self' data: blob: *; font-src 'self' data: *; connect-src 'self' *; media-src 'self' data: blob: *; worker-src 'self' blob: *;"
-    }
   },
   plugins: [
-    asyncLocalStoragePolyfill(),
     tailwindcss(),
     TanStackRouterVite({
       routesDirectory: './src/routes',
@@ -44,12 +23,63 @@ export default defineConfig({
       autoCodeSplitting: true,
     }),
     react(),
-    // Disable obfuscator in production to prevent runtime errors
-    // process.env.NODE_ENV === 'production' ? obfuscator() : null,
-  ].filter(Boolean),
-  ssr: {
-    noExternal: ['@tanstack/react-start', '@tanstack/react-router', '@tanstack/react-query'],
-  },
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      manifest: {
+        name: 'ProNax',
+        short_name: 'ProNax',
+        description: 'Discover trending videos, shorts and live streams on ProNax.',
+        theme_color: '#0f0f0f',
+        background_color: '#0f0f0f',
+        display: 'standalone',
+        icons: [
+          {
+            src: '/icon-192x192.svg',
+            sizes: '192x192',
+            type: 'image/svg+xml',
+            purpose: 'any'
+          },
+          {
+            src: '/icon-512x512.svg',
+            sizes: '512x512',
+            type: 'image/svg+xml',
+            purpose: 'any'
+          },
+          {
+            src: '/icon-maskable-192x192.svg',
+            sizes: '192x192',
+            type: 'image/svg+xml',
+            purpose: 'maskable'
+          },
+          {
+            src: '/icon-maskable-512x512.svg',
+            sizes: '512x512',
+            type: 'image/svg+xml',
+            purpose: 'maskable'
+          }
+        ]
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/.*/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'jsdelivr-cdn',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 30 * 24 * 60 * 60,
+              },
+            },
+          },
+        ],
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/\/api\/.*/, /\/supabase\/.*/],
+      },
+    }),
+  ],
   resolve: {
     tsconfigPaths: true,
     dedupe: ['react', 'react-dom'],
@@ -60,24 +90,5 @@ export default defineConfig({
   define: {
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
     global: 'globalThis',
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0'),
-    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
-    __PRODUCTION__: JSON.stringify(process.env.NODE_ENV === 'production'),
-    __LICENSE_ENABLED__: JSON.stringify(true),
-    __HWID_BINDING__: JSON.stringify(true),
-    __DOMAIN_RESTRICTION__: JSON.stringify(true),
   },
-  build: {
-    outDir: 'dist',
-    sourcemap: true,
-    minify: 'esbuild',
-    rollupOptions: {
-      output: {
-        manualChunks: undefined,
-        chunkFileNames: 'assets/[name].js',
-        entryFileNames: 'assets/[name].js',
-        assetFileNames: 'assets/[name].[ext]',
-      }
-    }
-  }
 });

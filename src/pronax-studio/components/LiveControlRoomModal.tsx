@@ -14,7 +14,7 @@ import { ChannelStats } from "../types";
 interface LiveControlRoomModalProps {
   isOpen: boolean;
   onClose: () => void;
-  channelStats: ChannelStats;
+  channelStats: ChannelStats | null;
   currentVideo?: {
     id: string;
     views: number;
@@ -155,8 +155,8 @@ export const LiveControlRoomModal: React.FC<LiveControlRoomModalProps> = ({
 
     const newMsg: ChatMessage = {
       id: "msg_owner_" + Date.now(),
-      author: `${channelStats.name} (Host)`,
-      avatar: channelStats.avatar,
+      author: `${channelStats?.name || "Host"} (Host)`,
+      avatar: channelStats?.avatar || "",
       text: inputChatText,
       timestamp: new Date().toLocaleTimeString([], {
         hour: "2-digit",
@@ -228,12 +228,16 @@ export const LiveControlRoomModal: React.FC<LiveControlRoomModalProps> = ({
             <div className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden border border-[#333] flex items-center justify-center">
               {isLive ? (
                 <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-tr from-slate-900 to-zinc-900">
-                  <img
-                    src={channelStats.banner}
-                    alt="Stream Feed"
-                    className="w-full h-full object-cover opacity-60"
-                    referrerPolicy="no-referrer"
-                  />
+                  {channelStats?.banner ? (
+                    <img
+                      src={channelStats.banner}
+                      alt="Stream Feed"
+                      className="w-full h-full object-cover opacity-60"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-red-900/20 to-black" />
+                  )}
                   <div className="absolute top-4 left-4 flex items-center gap-2 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
                     <span className="h-2 w-2 rounded-full bg-white animate-ping" />
                     LIVE | 1080p60

@@ -1,6 +1,6 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from '@/lib/router-compat';
 import { ArrowLeft, Music2, Play, Bookmark, Video as VideoIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/loose';
@@ -12,6 +12,17 @@ interface SoundVideo {
   src: string;
 }
 
+interface TrendingSound {
+  id: string;
+  title: string | null;
+  artist: string | null;
+  cover_url: string | null;
+  audio_track_id: string;
+  usage_count: number;
+  trend_score: number;
+  category: string | null;
+}
+
 export default function SoundPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -20,30 +31,48 @@ export default function SoundPage() {
   const [creator, setCreator] = useState<{ handle: string; name: string; avatar?: string } | null>(null);
   const [cover, setCover] = useState<string | null>(null);
   const [videos, setVideos] = useState<SoundVideo[]>([]);
+  const [soundData, setSoundData] = useState<TrendingSound | null>(null);
 
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data: origin } = await supabase
-        .from('videos')
-        .select('id,title,thumb_url,video_url,owner_id,audio_track_title')
-        .eq('id', id)
+      
+      // First try to get from trending_sounds table
+      const { data: sound } = await supabase
+        .from('trending_sounds')
+        .select('*')
+        .eq('audio_track_id', id)
         .maybeSingle();
 
-      if (origin && !cancelled) {
-        setCover(origin.thumb_url ?? null);
-        const { data: prof } = await supabase
-          .from('profiles')
-          .select('handle,display_name,avatar_url')
-          .eq('id', origin.owner_id)
+      if (sound && !cancelled) {
+        setSoundData(sound);
+        setCover(sound.cover_url ?? null);
+        setSoundTitle(sound.title || `Original Sound`);
+        setCreator({ handle: sound.artist || 'creator', name: sound.artist || 'creator' });
+      } else {
+        // Fallback to original video if not in trending_sounds
+        const { data: origin } = await supabase
+          .from('videos')
+          .select('id,title,thumb_url,video_url,owner_id,audio_track_title')
+          .eq('id', id)
           .maybeSingle();
-        const name = prof?.display_name || prof?.handle || 'creator';
-        setSoundTitle(origin.audio_track_title || `Original Sound — ${name}`);
-        setCreator({ handle: prof?.handle || name, name, avatar: prof?.avatar_url ?? undefined });
+
+        if (origin && !cancelled) {
+          setCover(origin.thumb_url ?? null);
+          const { data: prof } = await supabase
+            .from('profiles')
+            .select('handle,display_name,avatar_url')
+            .eq('id', origin.owner_id)
+            .maybeSingle();
+          const name = prof?.display_name || prof?.handle || 'creator';
+          setSoundTitle(origin.audio_track_title || `Original Sound — ${name}`);
+          setCreator({ handle: prof?.handle || name, name, avatar: prof?.avatar_url ?? undefined });
+        }
       }
 
+      // Get videos using this sound
       const { data } = await supabase
         .from('videos')
         .select('id,title,thumb_url,video_url')

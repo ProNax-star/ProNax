@@ -17,7 +17,7 @@ import { BarChart, Bar, Tooltip, ResponsiveContainer } from "recharts";
 import { ChannelStats, Video } from "../types";
 
 interface DashboardViewProps {
-  channelStats: ChannelStats;
+  channelStats: ChannelStats | null;
   latestVideo?: Video;
   allVideos: Video[];
   onOpenUploadModal: () => void;

@@ -25,7 +25,14 @@ import { generateVideoFingerprint, checkForCopyrightMatch } from '@/lib/videoFin
 import { validateFile, videoMetadataSchema, firstIssue } from '@/lib/validation';
 import { requireVerifiedUser, ensureUserProfile } from '@/lib/authGuards';
 import { uploadVideoWithCopyrightDetection } from '@/lib/videoUpload';
-import { uploadVideoFormData } from '@/routes/-api.video-upload-formdata';
+import { 
+  initializeUploadState, 
+  performResumableUpload, 
+  getIncompleteUploads, 
+  resumeUpload, 
+  cancelUpload,
+  type UploadState 
+} from '@/lib/resumableUpload';
 
 type WizardStep = 1 | 2 | 3; // 1: Details & Media Setup, 2: Checks & Monetization, 3: Visibility & Schedule
 
@@ -155,8 +162,10 @@ export function UploadModal({
     let url: string | null = null;
     let videoEl: HTMLVideoElement | null = null;
     let timeoutId: NodeJS.Timeout | null = null;
+    let aborted = false;
 
     const cleanup = () => {
+      aborted = true;
       if (timeoutId) clearTimeout(timeoutId);
       if (url) URL.revokeObjectURL(url);
       if (videoEl) {
@@ -166,6 +175,7 @@ export function UploadModal({
         videoEl.src = '';
         videoEl.load();
         videoEl.remove();
+        videoEl = null;
       }
     };
 
@@ -203,13 +213,17 @@ export function UploadModal({
       }, 10000);
 
       videoEl.onloadedmetadata = () => {
+        if (aborted || !videoEl) {
+          cleanup();
+          return;
+        }
         if (timeoutId) clearTimeout(timeoutId);
         
-        const dur = isFinite(videoEl!.duration) && videoEl!.duration > 0 ? videoEl!.duration : 10;
+        const dur = isFinite(videoEl.duration) && videoEl.duration > 0 ? videoEl.duration : 10;
         setDuration(dur);
         
         // Detect ProNax Shorts format: <= 120s & vertical/square aspect ratio
-        const aspect = (videoEl!.videoWidth || 16) / (videoEl!.videoHeight || 9);
+        const aspect = (videoEl.videoWidth || 16) / (videoEl.videoHeight || 9);
         setIsShort(dur <= 120 && aspect <= 1.05);
 
         const timestamps = [dur * 0.15, dur * 0.50, dur * 0.85];
@@ -217,27 +231,32 @@ export function UploadModal({
         let idx = 0;
 
         const captureNext = () => {
-          if (idx >= timestamps.length) {
+          if (aborted || !videoEl || idx >= timestamps.length) {
             setAutoThumbnails(captured);
             setGeneratingThumbs(false);
             cleanup();
             return;
           }
-          videoEl!.currentTime = timestamps[idx];
+          videoEl.currentTime = timestamps[idx];
         };
 
-        videoEl!.onseeked = () => {
+        videoEl.onseeked = () => {
+          if (aborted || !videoEl) {
+            cleanup();
+            return;
+          }
           try {
+            
             // Use smaller dimensions for thumbnails to reduce memory
             const maxDimension = 320;
-            const scale = Math.min(maxDimension / (videoEl!.videoWidth || 640), maxDimension / (videoEl!.videoHeight || 360));
+            const scale = Math.min(maxDimension / (videoEl.videoWidth || 640), maxDimension / (videoEl.videoHeight || 360));
             const canvas = document.createElement('canvas');
-            canvas.width = (videoEl!.videoWidth || 640) * scale;
-            canvas.height = (videoEl!.videoHeight || 360) * scale;
+            canvas.width = (videoEl.videoWidth || 640) * scale;
+            canvas.height = (videoEl.videoHeight || 360) * scale;
             
             const ctx = canvas.getContext('2d');
             if (ctx) {
-              ctx.drawImage(videoEl!, 0, 0, canvas.width, canvas.height);
+              ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
               // Use lower quality for thumbnails to reduce memory
               captured.push(canvas.toDataURL('image/jpeg', 0.5));
             }
@@ -253,6 +272,7 @@ export function UploadModal({
           }
         };
 
+        // Start thumbnail generation
         captureNext();
       };
 
@@ -267,7 +287,7 @@ export function UploadModal({
         ]);
       };
     } catch (error) {
-      console.error('Error in thumbnail generation:', error);
+      console.error('Error during thumbnail generation:', error);
       cleanup();
       setGeneratingThumbs(false);
       setAutoThumbnails([
@@ -607,8 +627,8 @@ export function UploadModal({
         return;
       }
 
-      // Step 4: Try R2 upload first, fall back to FormData if it fails
-      console.log('Attempting R2 upload with pre-signed URL');
+      // Step 4: Upload video using unified upload function
+      console.log('Starting video upload with pre-signed URL');
       console.log('[UploadModal] Upload params:', {
         visibility: isScheduled ? 'scheduled' : visibility,
         isScheduled,
@@ -616,58 +636,23 @@ export function UploadModal({
         title: title || 'Untitled Video'
       });
       
-      let uploadResult: any = null;
-      
-      try {
-        uploadResult = await uploadVideoWithCopyrightDetection({
-          file: file,
-          title: title || 'Untitled Video',
-          description: finalDescription || '',
-          tags: tags || [],
-          category: category || 'entertainment',
-          visibility: isScheduled ? 'scheduled' : visibility,
-          scheduledAt: isScheduled ? scheduledDateTime : null,
-          monetizationEnabled: monetizationEnabled || false,
-          isShort: isShort || false,
-          duration: duration ? Math.round(duration) : 180,
-          thumbnailUrl: chosenThumb,
-          ownerId: user.id
-        });
-        
-        console.log('R2 upload result:', uploadResult);
-      } catch (r2Error) {
-        console.warn('R2 upload failed, falling back to FormData:', r2Error);
-        toast({
-          title: 'R2 upload failed, trying alternative method',
-          description: 'Falling back to direct upload',
-          variant: 'default'
-        });
-        
-        // Fallback to FormData upload
-        uploadResult = await uploadVideoFormData({
-          file: file,
-          fileName: file.name,
-          fileType: file.type,
-          fileSize: file.size,
-          title: title || 'Untitled Video',
-          description: finalDescription || '',
-          tags: tags || [],
-          category: category || 'entertainment',
-          visibility: isScheduled ? 'scheduled' : visibility,
-          scheduledAt: isScheduled ? scheduledDateTime : null,
-          monetizationEnabled: monetizationEnabled || false,
-          isShort: isShort || false,
-          duration: duration ? Math.round(duration) : 180,
-          thumbnailUrl: chosenThumb,
-          ownerId: user.id
-        });
-        
-        console.log('FormData upload result:', uploadResult);
-      }
-
-      if (!uploadResult) {
-        throw new Error('Upload result is undefined');
-      }
+      const uploadResult = await uploadVideoWithCopyrightDetection({
+        file: file,
+        title: title || 'Untitled Video',
+        description: finalDescription || '',
+        tags: tags || [],
+        category: category || 'entertainment',
+        visibility: isScheduled ? 'scheduled' : visibility,
+        scheduledAt: isScheduled ? scheduledDateTime : null,
+        monetizationEnabled: monetizationEnabled || false,
+        isShort: isShort || false,
+        duration: duration ? Math.round(duration) : 180,
+        thumbnailUrl: chosenThumb,
+        ownerId: user.id,
+        onProgress: (progress) => {
+          console.log('Upload progress:', progress);
+        }
+      });
 
       console.log('Upload result:', uploadResult);
 

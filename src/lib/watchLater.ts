@@ -18,11 +18,15 @@ export async function getOrCreateWatchLater(): Promise<{ id: string | null; uid:
     .maybeSingle();
   if (existing?.id) return { id: (existing as any).id as string, uid };
 
-  const { data: created } = await supabase
+  const { data: created, error: insertError } = await supabase
     .from('playlists')
     .insert({ user_id: uid, title: WATCH_LATER_TITLE, visibility: 'private' })
     .select('id')
-    .single();
+    .maybeSingle();
+  if (insertError || !created) {
+    console.error('Failed to create Watch Later playlist:', insertError);
+    return { id: null, uid };
+  }
   return { id: (created as any)?.id ?? null, uid };
 }
 

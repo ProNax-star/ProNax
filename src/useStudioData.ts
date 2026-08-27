@@ -135,11 +135,11 @@ export function useStudioData(userId: string | undefined) {
   useEffect(() => {
     if (!userId) return;
     const ch = supabase
-      .channel('studio-' + userId + '-' + Math.random().toString(36).slice(2))
+      .channel(`studio:${userId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'videos', filter: `owner_id=eq.${userId}` }, fetchAll)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'revenue_logs', filter: `user_id=eq.${userId}` }, fetchAll)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'channel_notices', filter: `user_id=eq.${userId}` }, fetchAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'copyright_claims' }, fetchAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'copyright_claims', filter: `owner_id=eq.${userId}` }, fetchAll)
       .subscribe();
     return () => {
       supabase.removeChannel(ch);

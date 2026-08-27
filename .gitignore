@@ -1,6 +1,9 @@
 # Local envs
 .env
 
+# FFmpeg binaries (optional - uncomment if you want to add ffmpeg to your repo)
+# ffmpeg/
+
 # Logs
 logs
 *.log

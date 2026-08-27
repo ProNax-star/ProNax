@@ -214,7 +214,7 @@ export function useWalletData(userId: string | undefined, range: DateRange) {
     const subscribe = () => {
       if (channel) return;
       channel = supabase
-        .channel(`wallet:${userId}:${Math.random().toString(36).slice(2)}`)
+        .channel(`wallet:${userId}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'wallet_ledger', filter: `user_id=eq.${userId}` }, () => void refresh())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'withdrawal_requests', filter: `user_id=eq.${userId}` }, () => void refresh())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'user_wallets', filter: `user_id=eq.${userId}` }, () => void refresh())

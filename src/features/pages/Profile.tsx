@@ -1,8 +1,8 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Check, Edit3, Image as ImageIcon, UserPlus, UserCheck, Share2, Settings, BadgeCheck, MoreVertical, Wallet, LogOut, Users, Loader2, Home, Compass, PlaySquare, TrendingUp, History as HistoryIcon, ListVideo, Heart, Bookmark, Upload, Radio, SlidersHorizontal } from 'lucide-react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Camera, Check, Edit3, Image as ImageIcon, UserPlus, UserCheck, Share2, Settings, BadgeCheck, MoreVertical, Wallet, LogOut, Users, Loader2, Home, Compass, PlaySquare, TrendingUp, History as HistoryIcon, ListVideo, Heart, Bookmark, Upload, Radio, SlidersHorizontal, MessageSquare, Heart as HeartIcon, Send } from 'lucide-react';
+import { Link, useNavigate, useParams } from '@/lib/router-compat';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/loose';
 import { OrbBackground } from '@/components/ui/orb-background';
@@ -15,8 +15,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-type Tab = 'videos' | 'liked' | 'saved' | 'following' | 'followers';
+type Tab = 'videos' | 'liked' | 'saved' | 'following' | 'followers' | 'community';
 
 interface VideoRow {
   id: string;
@@ -37,6 +39,26 @@ interface UserRow {
   initials: string;
   avatar_url?: string | null;
   followerCount?: number;
+}
+
+interface CommunityPost {
+  id: string;
+  content: string;
+  created_at: string;
+  creator_id: string;
+  creator_name: string;
+  creator_handle: string;
+  creator_avatar: string;
+  is_pinned: boolean;
+  likes_count: number;
+  comments_count: number;
+  shares_count: number;
+  media_urls: string[] | null;
+  poll_options: any;
+  poll_expires_at: string | null;
+  post_type: string;
+  visibility: string;
+  updated_at: string;
 }
 
 function timeAgo(iso: string) {
@@ -85,6 +107,7 @@ export default function Profile() {
   const [savedVideos, setSavedVideos] = useState<VideoRow[]>([]);
   const [following, setFollowing] = useState<UserRow[]>([]);
   const [followers, setFollowers] = useState<UserRow[]>([]);
+  const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([]);
   const [videoFilter, setVideoFilter] = useState<'all' | 'shorts' | 'long'>('all');
 
   const [followingCount, setFollowingCount] = useState(0);
@@ -119,7 +142,7 @@ export default function Profile() {
         // Viewing another user's profile by handle
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id,display_name,username,handle,avatar_url,bio,is_creator,is_verified,subscribers_count,videos_count')
           .or(`handle.eq.${targetHandle},display_name.eq.${targetHandle}`)
           .maybeSingle();
 
@@ -290,6 +313,13 @@ export default function Profile() {
         } else {
           setFollowers([]);
         }
+      } else if (tab === 'community') {
+        const { data } = await supabase.rpc('get_channel_community_posts', {
+          p_creator_id: userId,
+          p_limit: 20,
+          p_offset: 0
+        });
+        setCommunityPosts(data ?? []);
       }
     } finally {
       setLoading(false);
@@ -303,12 +333,14 @@ export default function Profile() {
   useEffect(() => {
     if (!userId) return;
     const ch = supabase
-      .channel(`profile:${userId}-${Math.random().toString(36).slice(2)}`)
+      .channel(`profile:${userId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'follows', filter: `follower_id=eq.${userId}` }, () => { loadStats(); loadTabData(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'follows', filter: `following_id=eq.${userId}` }, () => { loadStats(); loadTabData(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'video_saves', filter: `user_id=eq.${userId}` }, () => { loadStats(); if (tab === 'saved') loadTabData(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'video_likes', filter: `user_id=eq.${userId}` }, () => { loadStats(); if (tab === 'liked') loadTabData(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'videos', filter: `owner_id=eq.${userId}` }, () => { loadStats(); if (tab === 'videos') loadTabData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_posts', filter: `creator_id=eq.${userId}` }, () => { if (tab === 'community') loadTabData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_post_likes', filter: `user_id=eq.${userId}` }, () => { if (tab === 'community') loadTabData(); })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [userId, tab, loadStats, loadTabData]);
@@ -465,6 +497,7 @@ export default function Profile() {
     ...(isOwnProfile ? [{ label: 'Saved', value: savedCount, tab: 'saved' as Tab }] : []),
     { label: 'Following', value: followingCount, tab: 'following' as Tab },
     { label: 'Followers', value: followersCount, tab: 'followers' as Tab },
+    { label: 'Community', value: communityPosts.length, tab: 'community' as Tab },
   ];
 
   return (
@@ -648,7 +681,7 @@ export default function Profile() {
 
         {/* Tabs */}
         <div className="flex items-center gap-6 mt-6 overflow-x-auto no-scrollbar border-b border-border/30">
-          {(['videos', ...(isOwnProfile ? ['liked', 'saved'] : []), 'following', 'followers'] as Tab[]).map((t) => (
+          {(['videos', ...(isOwnProfile ? ['liked', 'saved'] : []), 'following', 'followers', 'community'] as Tab[]).map((t) => (
             <button key={t} onClick={() => setTab(t)} className={`px-4 py-2.5 text-xs font-semibold capitalize whitespace-nowrap border-b-2 transition ${tab === t ? 'text-cyan-400 border-cyan-400' : 'text-muted-foreground border-transparent hover:text-foreground'}`}>
               {t}
             </button>
@@ -704,9 +737,15 @@ export default function Profile() {
                 : <VideoGrid videos={savedVideos} />
               ) : tab === 'following' ? (
                 <UserList items={following} kind="following" meId={authUserId} onChange={loadTabData} />
-              ) : (
+              ) : tab === 'followers' ? (
                 <UserList items={followers} kind="followers" meId={authUserId} onChange={loadTabData} />
-              )}
+              ) : tab === 'community' ? (
+                communityPosts.length === 0 ? (
+                  <EmptyState text="No community posts yet." />
+                ) : (
+                  <CommunityPosts posts={communityPosts} isOwnProfile={isOwnProfile} />
+                )
+              ) : null}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -888,6 +927,241 @@ function UserList({ items, kind, meId, onChange }: { items: UserRow[]; kind: 'fo
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function CommunityPosts({ posts, isOwnProfile }: { posts: CommunityPost[]; isOwnProfile: boolean }) {
+  const [newPostContent, setNewPostContent] = useState('');
+  const [posting, setPosting] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const mediaInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setCurrentUser(data.user);
+    });
+  }, []);
+
+  const handleCreatePost = async () => {
+    if (!newPostContent.trim() && mediaFiles.length === 0) return;
+    if (!currentUser) {
+      toast({ title: 'Please login to post', variant: 'destructive' });
+      return;
+    }
+
+    setPosting(true);
+    try {
+      // Upload media files if any
+      let mediaUrls: string[] = [];
+      if (mediaFiles.length > 0) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        if (!token) {
+          toast({ title: 'Please sign in', variant: 'destructive' });
+          return;
+        }
+
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        for (const file of mediaFiles) {
+          const res = await fetch(`${supabaseUrl}/functions/v1/r2-presign`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json', 
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ 
+              fileName: file.name, 
+              fileType: file.type, 
+              fileSize: file.size,
+              folder: 'community-media',
+            }),
+          });
+          const presignData = await res.json();
+          if (presignData.error) throw new Error(presignData.error);
+
+          const uploadRes = await fetch(presignData.url, {
+            method: 'PUT',
+            body: file,
+          });
+          if (!uploadRes.ok) throw new Error('Upload failed');
+
+          mediaUrls.push(presignData.publicUrl);
+        }
+      }
+
+      const { error } = await supabase.from('community_posts').insert({
+        creator_id: currentUser.id,
+        content: newPostContent.trim(),
+        post_type: mediaUrls.length > 0 ? 'image' : 'text',
+        media_urls: mediaUrls.length > 0 ? mediaUrls : null,
+        visibility: 'public',
+      });
+
+      if (error) throw error;
+      
+      setNewPostContent('');
+      setMediaFiles([]);
+      toast({ title: 'Post created successfully' });
+      // Reload posts
+      window.location.reload();
+    } catch (error) {
+      console.error('Error creating post:', error);
+      toast({ title: 'Failed to create post', variant: 'destructive' });
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  const handleLikePost = async (postId: string) => {
+    if (!currentUser) {
+      toast({ title: 'Please login to like posts', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.rpc('toggle_community_post_like', {
+        p_post_id: postId,
+        p_user_id: currentUser.id,
+      });
+
+      if (error) throw error;
+      
+      // Reload posts to update like count
+      window.location.reload();
+    } catch (error) {
+      console.error('Error liking post:', error);
+      toast({ title: 'Failed to like post', variant: 'destructive' });
+    }
+  };
+
+  if (posts.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <p className="text-muted-foreground">No community posts yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {isOwnProfile && (
+        <div className="glass rounded-xl border border-border/40 p-4">
+          <div className="flex gap-3">
+            <Avatar className="w-10 h-10">
+              <AvatarImage src={currentUser?.user_metadata?.avatar_url} />
+              <AvatarFallback>Me</AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <Input
+                placeholder="Share something with your community..."
+                value={newPostContent}
+                onChange={(e) => setNewPostContent(e.target.value)}
+                maxLength={5000}
+                className="mb-2"
+              />
+              
+              {/* Media preview */}
+              {mediaFiles.length > 0 && (
+                <div className="flex gap-2 mb-2">
+                  {mediaFiles.map((file, i) => (
+                    <div key={i} className="relative w-20 h-20">
+                      <img 
+                        src={URL.createObjectURL(file)} 
+                        alt="" 
+                        className="w-full h-full object-cover rounded-lg" 
+                      />
+                      <button
+                        onClick={() => setMediaFiles(prev => prev.filter((_, idx) => idx !== i))}
+                        className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <div className="flex items-center justify-between">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => mediaInputRef.current?.click()}
+                    className="p-2 rounded-full hover:bg-muted/50 text-muted-foreground transition"
+                    title="Add image"
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                  </button>
+                  <input
+                    ref={mediaInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      setMediaFiles(prev => [...prev, ...files]);
+                    }}
+                  />
+                </div>
+                <button
+                  onClick={handleCreatePost}
+                  disabled={posting || (!newPostContent.trim() && mediaFiles.length === 0)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full gradient-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
+                >
+                  {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  Post
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {posts.map((post) => (
+        <div key={post.id} className="glass rounded-xl border border-border/40 p-4">
+          <div className="flex gap-3">
+            <Avatar className="w-10 h-10">
+              <AvatarImage src={post.creator_avatar} />
+              <AvatarFallback>{post.creator_name?.slice(0, 2).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-semibold text-foreground">{post.creator_name}</span>
+                <span className="text-xs text-muted-foreground">@{post.creator_handle}</span>
+                <span className="text-xs text-muted-foreground">• {timeAgo(post.created_at)}</span>
+                {post.is_pinned && (
+                  <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">Pinned</span>
+                )}
+              </div>
+              <p className="text-sm text-foreground mb-3">{post.content}</p>
+              
+              {post.media_urls && post.media_urls.length > 0 && (
+                <div className="flex gap-2 mb-3">
+                  {post.media_urls.map((url: string, i: number) => (
+                    <img key={i} src={url} alt="" className="w-20 h-20 rounded-lg object-cover" />
+                  ))}
+                </div>
+              )}
+
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <button
+                  onClick={() => handleLikePost(post.id)}
+                  className="flex items-center gap-1 hover:text-foreground transition"
+                >
+                  <HeartIcon className="w-4 h-4" />
+                  {post.likes_count}
+                </button>
+                <div className="flex items-center gap-1">
+                  <MessageSquare className="w-4 h-4" />
+                  {post.comments_count}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

@@ -79,7 +79,7 @@ export function useEarningsSeries(userId: string | undefined) {
   useEffect(() => {
     if (!userId) return;
     const ch = supabase
-      .channel(`earnings-${userId}-${Math.random().toString(36).slice(2)}`)
+      .channel(`earnings:${userId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'revenue_logs', filter: `user_id=eq.${userId}` }, fetchAll)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'creator_earnings', filter: `user_id=eq.${userId}` }, fetchAll)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'creator_earnings', filter: `creator_id=eq.${userId}` }, fetchAll)

@@ -17,7 +17,7 @@ import { useAuthSession } from "@/hooks/useAuthSession";
 import { useEarningsSeries } from "@/hooks/useEarningsSeries";
 
 interface EarnViewProps {
-  channelStats: ChannelStats;
+  channelStats: ChannelStats | null;
 }
 
 export const EarnView: React.FC<EarnViewProps> = ({ channelStats }) => {

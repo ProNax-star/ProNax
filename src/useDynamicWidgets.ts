@@ -36,7 +36,7 @@ export function useDynamicWidgets(slot: string) {
     };
     load();
     const ch = supabase
-      .channel(`widgets_${slot}_${Math.random().toString(36).slice(2, 8)}`)
+      .channel(`widgets:${slot}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'dynamic_widgets' }, load)
       .subscribe();
     return () => { alive = false; try { supabase.removeChannel(ch); } catch { /* noop */ } };

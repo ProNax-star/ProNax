@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from '@/lib/router-compat';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { FeedVideoCard } from '@/components/FeedVideoCard';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/loose';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 import { requestAdImpression } from '@/lib/adSdk';
 import { ReportModal } from '@/components/ReportModal';
 import { useLike, useSave, useComments, recordShare, recordDownload, recordView, useFollow } from '@/hooks/useInteractions';
@@ -130,7 +130,7 @@ export default function Watch() {
       // Load subtitles from database
       const { data: subtitleData } = await (supabase as any)
         .from('video_subtitles')
-        .select('*')
+        .select('label,language,src,kind,is_default')
         .eq('video_id', videoId);
       
       if (!cancelled && subtitleData) {
@@ -150,7 +150,7 @@ export default function Watch() {
   useEffect(() => {
     if (!isUuid(videoId)) return;
     const ch = supabase
-      .channel(`video-views:${videoId}:${Math.random().toString(36).slice(2)}`)
+      .channel(`video:${videoId}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'videos', filter: `id=eq.${videoId}` }, (payload) => {
         console.log('Realtime update received:', payload);
         const updated = payload.new as DbVideoRow;

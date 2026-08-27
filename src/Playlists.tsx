@@ -1,6 +1,6 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from '@/lib/router-compat';
 import { ListVideo, Loader2, Plus, Lock, Globe, EyeOff, Trash2 } from 'lucide-react';
 import { PlaylistGridSkeleton } from '@/components/NeonSkeleton';
 import { supabase } from '@/integrations/supabase/loose';

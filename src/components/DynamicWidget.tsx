@@ -1,6 +1,6 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 import type { DynamicWidget } from '@/hooks/useDynamicWidgets';
 import { useDynamicWidgets } from '@/hooks/useDynamicWidgets';
 import { supabase as _supabase } from '@/integrations/supabase/loose';

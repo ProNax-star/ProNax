@@ -16,13 +16,14 @@ import {
 import { ChannelStats } from "../types";
 
 interface HeaderProps {
-  channelStats: ChannelStats;
+  channelStats: ChannelStats | null;
   onToggleSidebar: () => void;
   onOpenUploadModal: () => void;
   onOpenLiveControlRoom?: () => void;
   onOpenAIAssistant: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
+  isAuthed: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -33,10 +34,25 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAIAssistant,
   searchQuery,
   onSearchChange,
+  isAuthed,
 }) => {
   const [showCreateDropdown, setShowCreateDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+
+  // Fallback stats when not authenticated
+  const safeChannelStats = channelStats || {
+    name: "Studio",
+    handle: "@studio",
+    avatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=800",
+    subscribers: 0,
+    subscriberChange28Days: 0,
+    views28Days: 0,
+    watchTimeHours28Days: 0,
+    estimatedRevenue28Days: 0,
+    realtime48HoursViews: 0,
+    realtime60MinsViews: 0,
+  };
 
   return (
     <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b border-[#272727] bg-[#0f0f0f] px-3 sm:px-4 text-white select-none">
@@ -110,144 +126,155 @@ export const Header: React.FC<HeaderProps> = ({
               <Search className="h-4 w-4" />
             </button>
 
-            {/* Studio AI Assistant Button */}
-            <button
-              onClick={onOpenAIAssistant}
-              className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 px-2.5 sm:px-3.5 py-1.5 text-xs font-semibold text-white shadow-md hover:from-purple-500 hover:to-indigo-500 transition-all active:scale-95"
-              id="open-ai-assistant-btn"
-            >
-              <Sparkles className="h-3.5 w-3.5 animate-pulse text-amber-300" />
-              <span className="hidden sm:inline">Studio AI Coach</span>
-              <span className="sm:hidden text-[10px]">AI</span>
-            </button>
-
-            {/* Create Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setShowCreateDropdown(!showCreateDropdown)}
-                className="flex items-center gap-1.5 sm:gap-2 rounded-full border border-[#383838] bg-[#212121] px-2.5 sm:px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[#323232] transition-colors"
-                id="create-menu-btn"
-              >
-                <Upload className="h-3.5 w-3.5 text-red-500 shrink-0" />
-                <span className="hidden xs:inline">CREATE</span>
-                <ChevronDown className="h-3 w-3 text-gray-400 shrink-0" />
-              </button>
-
-              {showCreateDropdown && (
-                <div
-                  className="absolute right-0 mt-2 w-52 sm:w-56 rounded-xl border border-[#333] bg-[#212121] py-2 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150"
-                  onMouseLeave={() => setShowCreateDropdown(false)}
+            {isAuthed ? (
+              <>
+                {/* Studio AI Assistant Button */}
+                <button
+                  onClick={onOpenAIAssistant}
+                  className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 px-2.5 sm:px-3.5 py-1.5 text-xs font-semibold text-white shadow-md hover:from-purple-500 hover:to-indigo-500 transition-all active:scale-95"
+                  id="open-ai-assistant-btn"
                 >
+                  <Sparkles className="h-3.5 w-3.5 animate-pulse text-amber-300" />
+                  <span className="hidden sm:inline">Studio AI Coach</span>
+                  <span className="sm:hidden text-[10px]">AI</span>
+                </button>
+
+                {/* Create Dropdown */}
+                <div className="relative">
                   <button
-                    onClick={() => {
-                      setShowCreateDropdown(false);
-                      onOpenUploadModal();
-                    }}
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs font-medium text-gray-200 hover:bg-[#2a2a2a] hover:text-white"
-                    id="create-upload-video-option"
+                    onClick={() => setShowCreateDropdown(!showCreateDropdown)}
+                    className="flex items-center gap-1.5 sm:gap-2 rounded-full border border-[#383838] bg-[#212121] px-2.5 sm:px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[#323232] transition-colors"
+                    id="create-menu-btn"
                   >
-                    <Upload className="h-4 w-4 text-blue-400" />
-                    <span>Upload video</span>
+                    <Upload className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                    <span className="hidden xs:inline">CREATE</span>
+                    <ChevronDown className="h-3 w-3 text-gray-400 shrink-0" />
                   </button>
-                  <button
-                    onClick={() => {
-                      setShowCreateDropdown(false);
-                      onOpenUploadModal();
-                    }}
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs font-medium text-gray-200 hover:bg-[#2a2a2a] hover:text-white"
-                  >
-                    <PlaySquare className="h-4 w-4 text-red-400" />
-                    <span>Create Short</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowCreateDropdown(false);
-                      if (onOpenLiveControlRoom) onOpenLiveControlRoom();
-                    }}
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs font-medium text-gray-200 hover:bg-[#2a2a2a] hover:text-white"
-                    id="header-go-live-option"
-                  >
-                    <Radio className="h-4 w-4 text-rose-500" />
-                    <span>Go live</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowCreateDropdown(false);
-                      alert("New playlist creation dialog");
-                    }}
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs font-medium text-gray-200 hover:bg-[#2a2a2a] hover:text-white"
-                  >
-                    <ListPlus className="h-4 w-4 text-emerald-400" />
-                    <span>New playlist</span>
-                  </button>
+
+                  {showCreateDropdown && (
+                    <div
+                      className="absolute right-0 mt-2 w-52 sm:w-56 rounded-xl border border-[#333] bg-[#212121] py-2 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150"
+                      onMouseLeave={() => setShowCreateDropdown(false)}
+                    >
+                      <button
+                        onClick={() => {
+                          setShowCreateDropdown(false);
+                          onOpenUploadModal();
+                        }}
+                        className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs font-medium text-gray-200 hover:bg-[#2a2a2a] hover:text-white"
+                        id="create-upload-video-option"
+                      >
+                        <Upload className="h-4 w-4 text-blue-400" />
+                        <span>Upload video</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowCreateDropdown(false);
+                          onOpenUploadModal();
+                        }}
+                        className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs font-medium text-gray-200 hover:bg-[#2a2a2a] hover:text-white"
+                      >
+                        <PlaySquare className="h-4 w-4 text-red-400" />
+                        <span>Create Short</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowCreateDropdown(false);
+                          if (onOpenLiveControlRoom) onOpenLiveControlRoom();
+                        }}
+                        className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs font-medium text-gray-200 hover:bg-[#2a2a2a] hover:text-white"
+                        id="header-go-live-option"
+                      >
+                        <Radio className="h-4 w-4 text-rose-500" />
+                        <span>Go live</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowCreateDropdown(false);
+                          alert("New playlist creation dialog");
+                        }}
+                        className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs font-medium text-gray-200 hover:bg-[#2a2a2a] hover:text-white"
+                      >
+                        <ListPlus className="h-4 w-4 text-emerald-400" />
+                        <span>New playlist</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* User Profile Avatar & Switcher */}
-            <div className="relative ml-0.5">
-              <button
-                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="flex items-center gap-2 rounded-full focus:outline-none ring-2 ring-transparent focus:ring-red-500"
-                id="profile-menu-btn"
-              >
-                <img
-                  src={channelStats.avatar}
-                  alt={channelStats.name}
-                  className="h-8 w-8 rounded-full object-cover border border-[#444]"
-                  referrerPolicy="no-referrer"
-                />
-              </button>
-
-              {showProfileDropdown && (
-                <div
-                  className="absolute right-0 mt-2 w-60 sm:w-64 rounded-2xl border border-[#333] bg-[#212121] py-3 shadow-2xl z-50 text-gray-200"
-                  onMouseLeave={() => setShowProfileDropdown(false)}
-                >
-                  <div className="flex items-center gap-3 border-b border-[#2d2d2d] px-4 pb-3">
+                {/* User Profile Avatar & Switcher */}
+                <div className="relative ml-0.5">
+                  <button
+                    onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                    className="flex items-center gap-2 rounded-full focus:outline-none ring-2 ring-transparent focus:ring-red-500"
+                    id="profile-menu-btn"
+                  >
                     <img
-                      src={channelStats.avatar}
-                      alt={channelStats.name}
-                      className="h-10 w-10 rounded-full object-cover"
+                      src={safeChannelStats.avatar}
+                      alt={safeChannelStats.name}
+                      className="h-8 w-8 rounded-full object-cover border border-[#444]"
                       referrerPolicy="no-referrer"
                     />
-                    <div className="overflow-hidden">
-                      <p className="truncate text-sm font-semibold text-white">
-                        {channelStats.name}
-                      </p>
-                      <p className="truncate text-xs text-gray-400">
-                        {channelStats.handle}
-                      </p>
-                      <p className="mt-0.5 text-[11px] font-medium text-emerald-400">
-                        {channelStats.subscribers.toLocaleString()} followers
-                      </p>
-                    </div>
-                  </div>
+                  </button>
 
-                  <div className="py-1">
-                    <div className="flex items-center justify-between px-4 py-2 text-xs font-semibold text-gray-300 hover:bg-[#2a2a2a] cursor-pointer">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-gray-400" />
-                        <span>Your Pronax Channel</span>
+                  {showProfileDropdown && (
+                    <div
+                      className="absolute right-0 mt-2 w-60 sm:w-64 rounded-2xl border border-[#333] bg-[#212121] py-3 shadow-2xl z-50 text-gray-200"
+                      onMouseLeave={() => setShowProfileDropdown(false)}
+                    >
+                      <div className="flex items-center gap-3 border-b border-[#2d2d2d] px-4 pb-3">
+                        <img
+                          src={safeChannelStats.avatar}
+                          alt={safeChannelStats.name}
+                          className="h-10 w-10 rounded-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="overflow-hidden">
+                          <p className="truncate text-sm font-semibold text-white">
+                            {safeChannelStats.name}
+                          </p>
+                          <p className="truncate text-xs text-gray-400">
+                            {safeChannelStats.handle}
+                          </p>
+                          <p className="mt-0.5 text-[11px] font-medium text-emerald-400">
+                            {safeChannelStats.subscribers.toLocaleString()} followers
+                          </p>
+                        </div>
                       </div>
-                      <Check className="h-4 w-4 text-emerald-500" />
+
+                      <div className="py-1">
+                        <div className="flex items-center justify-between px-4 py-2 text-xs font-semibold text-gray-300 hover:bg-[#2a2a2a] cursor-pointer">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-gray-400" />
+                            <span>Your Pronax Channel</span>
+                          </div>
+                          <Check className="h-4 w-4 text-emerald-500" />
+                        </div>
+                        <div
+                          onClick={() => alert("Switch channel dialog")}
+                          className="px-4 py-2 text-xs text-gray-400 hover:bg-[#2a2a2a] hover:text-white cursor-pointer"
+                        >
+                          Switch account
+                        </div>
+                        <div
+                          onClick={() => alert("Pronax Account Settings")}
+                          className="px-4 py-2 text-xs text-gray-400 hover:bg-[#2a2a2a] hover:text-white cursor-pointer"
+                        >
+                          Pronax Account Settings
+                        </div>
+                      </div>
                     </div>
-                    <div
-                      onClick={() => alert("Switch channel dialog")}
-                      className="px-4 py-2 text-xs text-gray-400 hover:bg-[#2a2a2a] hover:text-white cursor-pointer"
-                    >
-                      Switch account
-                    </div>
-                    <div
-                      onClick={() => alert("Pronax Account Settings")}
-                      className="px-4 py-2 text-xs text-gray-400 hover:bg-[#2a2a2a] hover:text-white cursor-pointer"
-                    >
-                      Pronax Account Settings
-                    </div>
-                  </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            ) : (
+              <a
+                href="/auth"
+                className="flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-500 transition-colors"
+              >
+                Sign in
+              </a>
+            )}
           </div>
         </>
       )}

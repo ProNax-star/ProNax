@@ -1,7 +1,7 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { Search, Compass, Flame, TrendingUp, Sparkles, Hash, Loader2, PlayCircle, Award } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from '@/lib/router-compat';
 import { supabase } from '@/integrations/supabase/loose';
 import { CategoryScroller } from '@/components/CategoryScroller';
 import { FeedVideoCard } from '@/components/FeedVideoCard';

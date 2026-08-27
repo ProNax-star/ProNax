@@ -41,7 +41,7 @@ const creatorItems: NavItem[] = [
   { title: 'Upload', url: '/upload', icon: Upload },
   { title: 'Go Live', url: '/live', icon: Radio },
   { title: 'Wallet', url: '/wallet', icon: Wallet },
-  { title: 'Studio', url: '/studio', icon: SlidersHorizontal },
+  { title: 'Studio', url: '/studio/dashboard', icon: SlidersHorizontal },
 ];
 
 const accountItems: NavItem[] = [

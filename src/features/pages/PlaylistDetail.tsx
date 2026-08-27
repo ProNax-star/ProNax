@@ -1,6 +1,6 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate } from '@/lib/router-compat';
 import { ListVideo, Loader2, Play, ArrowLeft, Plus, Trash2, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/loose';
 import { enrichVideos, type GridVideo } from '@/components/VideoGrid';
@@ -39,11 +39,11 @@ export default function PlaylistDetail() {
   const load = async () => {
     if (!id) return;
     setLoading(true);
-    const [{ data: auth }, { data: pl }] = await Promise.all([
+    const [{ data: auth }, { data: pl, error: plError }] = await Promise.all([
       supabase.auth.getUser(),
-      supabase.from('playlists').select('*').eq('id', id).single(),
+      supabase.from('playlists').select('*').eq('id', id).maybeSingle(),
     ]);
-    if (!pl) { setLoading(false); return; }
+    if (plError || !pl) { setLoading(false); return; }
     setPlaylist(pl);
     setIsOwner(auth?.user?.id === (pl as any).user_id);
 

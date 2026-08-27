@@ -1,6 +1,6 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from '@/lib/router-compat';
 import { ListVideo, Loader2, Plus, Lock, Globe, EyeOff, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/loose';
 import { toast } from '@/hooks/use-toast';
@@ -52,8 +52,8 @@ export default function Playlists() {
     const { data: auth } = await supabase.auth.getUser();
     const uid = auth?.user?.id;
     if (!uid) return;
-    const { data, error } = await supabase.from('playlists').insert({ user_id: uid, title: title.trim(), visibility }).select().single();
-    if (error) { toast({ title: 'Could not create', description: error.message, variant: 'destructive' as any }); return; }
+    const { data, error } = await supabase.from('playlists').insert({ user_id: uid, title: title.trim(), visibility }).select().maybeSingle();
+    if (error || !data) { toast({ title: 'Could not create', description: error?.message || 'Unknown error', variant: 'destructive' as any }); return; }
     toast({ title: 'Playlist created' });
     setTitle(''); setCreating(false);
     navigate(`/playlist/${data.id}`);

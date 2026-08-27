@@ -15,8 +15,9 @@ import type {
   NotificationResult,
   ContentModerationResult,
   CopyrightCheckResult,
-} from './types';
+} from './lib/queue/types';
 import { supabase } from '@/integrations/supabase/loose';
+import { config } from '@/config/app.config';
 
 /**
  * Video Processing Handler
@@ -45,7 +46,7 @@ export async function handleVideoProcessing(
     const { error } = await (supabase as any)
       .from('videos')
       .update({
-        thumbnail: data.thumbnail || `https://via.placeholder.com/320x180`,
+        thumb_url: data.thumbnail || `https://via.placeholder.com/320x180`,
         duration: data.duration || 120,
         is_short: data.isShort !== undefined ? data.isShort : data.duration < 60,
         status: 'ready',
@@ -474,11 +475,34 @@ export async function handleThumbnailGeneration(
     const count = data.count || 5;
     const timestamps = data.timestamps || Array.from({ length: count }, (_, i) => i * 10);
     
+    // Get the appropriate public URL based on storage provider
+    const publicUrl = config.storage.provider === 'local' 
+      ? config.storage.local?.publicUrl || '/uploads'
+      : config.storage.provider === 'r2'
+      ? config.storage.r2?.publicUrl
+      : config.storage.s3?.publicUrl;
+    
     for (const timestamp of timestamps) {
+      const filename = `${data.videoPath}_thumb_${timestamp}.jpg`;
+      const url = publicUrl ? `${publicUrl}/${filename}` : filename;
       thumbnails.push({
         timestamp,
-        url: `${data.videoPath}_thumb_${timestamp}.jpg`,
+        url,
       });
+    }
+    
+    // Update video with first thumbnail as main thumbnail
+    if (thumbnails.length > 0) {
+      const { error } = await (supabase as any)
+        .from('videos')
+        .update({
+          thumb_url: thumbnails[0].url,
+        })
+        .eq('id', data.videoId);
+      
+      if (error) {
+        throw new Error(`Database update failed: ${error.message}`);
+      }
     }
     
     return {

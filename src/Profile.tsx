@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Check, Edit3, Image as ImageIcon, UserPlus, UserCheck, Share2, Settings, BadgeCheck, MoreVertical, Wallet, LogOut, Users, Loader2, Home, Compass, PlaySquare, TrendingUp, History as HistoryIcon, ListVideo, Heart, Bookmark, Upload, Radio, SlidersHorizontal } from 'lucide-react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from '@/lib/router-compat';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/loose';
 import { OrbBackground } from '@/components/ui/orb-background';
@@ -315,7 +315,7 @@ export default function Profile() {
   useEffect(() => {
     if (!userId) return;
     const ch = supabase
-      .channel(`profile:${userId}-${Math.random().toString(36).slice(2)}`)
+      .channel(`profile:${userId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'follows', filter: `follower_id=eq.${userId}` }, () => { loadStats(); loadTabData(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'follows', filter: `following_id=eq.${userId}` }, () => { loadStats(); loadTabData(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'video_saves', filter: `user_id=eq.${userId}` }, () => { loadStats(); if (tab === 'saved') loadTabData(); })

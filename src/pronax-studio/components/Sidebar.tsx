@@ -17,7 +17,7 @@ import { ViewMode, ChannelStats } from "../types";
 interface SidebarProps {
   currentView: ViewMode;
   onSelectView: (view: ViewMode) => void;
-  channelStats: ChannelStats;
+  channelStats: ChannelStats | null;
   isCollapsed: boolean;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
@@ -31,6 +31,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isMobileOpen = false,
   onCloseMobile,
 }) => {
+  // Fallback stats when not authenticated
+  const safeChannelStats = channelStats || {
+    name: "Studio",
+    handle: "@studio",
+    avatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=800",
+    subscribers: 0,
+    subscriberChange28Days: 0,
+    views28Days: 0,
+    watchTimeHours28Days: 0,
+    estimatedRevenue28Days: 0,
+    realtime48HoursViews: 0,
+    realtime60MinsViews: 0,
+  };
   const menuItems = [
     {
       id: "dashboard" as ViewMode,
@@ -90,20 +103,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Channel Info Card (Visible when expanded or on mobile overlay) */}
         {(!isCollapsed || isMobileOpen) && (
           <div className="flex flex-col items-center px-4 pb-4 mb-2 border-b border-[#222]">
-            <div className="relative group cursor-pointer mb-2">
-              <img
-                src={channelStats.avatar}
-                alt={channelStats.name}
-                className="h-20 w-20 md:h-24 md:w-24 rounded-full object-cover ring-2 ring-[#FE2C55]/30 group-hover:ring-[#FE2C55] transition-all"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-            <p className="text-[11px] text-gray-400 font-medium tracking-wide uppercase">
-              Your channel
-            </p>
-            <h2 className="text-sm font-bold text-white mt-0.5 break-words whitespace-normal max-w-full text-center leading-tight" dir="auto">
-              {channelStats.name}
-            </h2>
+            {channelStats ? (
+              <>
+                <div className="relative group cursor-pointer mb-2">
+                  <img
+                    src={safeChannelStats.avatar}
+                    alt={safeChannelStats.name}
+                    className="h-20 w-20 md:h-24 md:w-24 rounded-full object-cover ring-2 ring-[#FE2C55]/30 group-hover:ring-[#FE2C55] transition-all"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+                <p className="text-[11px] text-gray-400 font-medium tracking-wide uppercase">
+                  Your channel
+                </p>
+                <h2 className="text-sm font-bold text-white mt-0.5 break-words whitespace-normal max-w-full text-center leading-tight" dir="auto">
+                  {safeChannelStats.name}
+                </h2>
+              </>
+            ) : (
+              <div className="text-center py-2">
+                <p className="text-xs text-gray-400">Sign in to see your channel</p>
+                <a href="/auth" className="text-xs text-red-500 hover:text-red-400 font-medium">Sign in</a>
+              </div>
+            )}
           </div>
         )}
 
@@ -113,17 +135,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
             const Icon = item.icon;
             const isActive = currentView === item.id;
             const showLabel = !isCollapsed || isMobileOpen;
+            const isDisabled = !channelStats;
             return (
               <button
                 key={item.id}
-                onClick={() => handleItemClick(item.id)}
+                onClick={() => isDisabled ? (window.location.href = '/auth') : handleItemClick(item.id)}
                 className={`flex w-full items-center gap-4 rounded-xl px-3.5 py-3 text-xs font-semibold transition-all ${
                   isActive
                     ? "bg-[#272727] text-[#FE2C55] shadow-lg shadow-[#FE2C55]/30 border-l-4 border-[#FE2C55] hover:shadow-xl hover:shadow-[#FE2C55]/40"
-                    : "text-gray-300 hover:bg-[#1f1f1f] hover:text-white hover:shadow-md"
+                    : isDisabled
+                      ? "text-gray-500 cursor-not-allowed opacity-50"
+                      : "text-gray-300 hover:bg-[#1f1f1f] hover:text-white hover:shadow-md"
                 } ${isCollapsed && !isMobileOpen ? "justify-center px-0" : ""}`}
-                title={item.label}
+                title={isDisabled ? "Sign in to access" : item.label}
                 id={`sidebar-item-${item.id}`}
+                disabled={isDisabled}
               >
                 <Icon
                   className={`h-5 w-5 shrink-0 ${

@@ -1,6 +1,6 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import { motion } from 'framer-motion';
 import { Mail, Lock, LogIn, UserPlus, Loader2, ShieldAlert, MailCheck } from 'lucide-react';
 import { toast } from 'sonner';
@@ -233,14 +233,14 @@ export default function Auth() {
               </div>
             </>
           )}
-          <motion.button
-            whileTap={{ scale: 0.96 }}
+          <button
+            type="submit"
             disabled={loading}
-            className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm text-primary-foreground gradient-primary glow-primary disabled:opacity-50"
+            className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm text-primary-foreground gradient-primary glow-primary disabled:opacity-50 cursor-pointer"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : mode === 'signin' ? <LogIn className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
             {mode === 'signin' ? 'Sign in' : 'Sign up'}
-          </motion.button>
+          </button>
         </form>
 
         <div className="flex items-center gap-2 my-4">

@@ -41,12 +41,12 @@ serve(async (req: Request) => {
       .from("videos")
       .select("r2_video_key")
       .eq("id", videoId)
-      .single()
+      .maybeSingle()
 
-    if (fetchError) {
+    if (fetchError || !video) {
       console.error("Fetch video failed:", fetchError)
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch video', details: fetchError.message }),
+        JSON.stringify({ error: 'Failed to fetch video', details: fetchError?.message || 'Video not found' }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }

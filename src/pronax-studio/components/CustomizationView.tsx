@@ -4,7 +4,7 @@ import { Upload, Check, Camera } from "lucide-react";
 import { ChannelStats } from "../types";
 
 interface CustomizationViewProps {
-  channelStats: ChannelStats;
+  channelStats: ChannelStats | null;
   onUpdateChannelStats: (updated: Partial<ChannelStats>) => void;
 }
 
@@ -16,10 +16,10 @@ export const CustomizationView: React.FC<CustomizationViewProps> = ({
     "branding"
   );
 
-  const [name, setName] = useState(channelStats.name);
-  const [handle, setHandle] = useState(channelStats.handle);
-  const [avatar, setAvatar] = useState(channelStats.avatar);
-  const [banner, setBanner] = useState(channelStats.banner);
+  const [name, setName] = useState(channelStats?.name || '');
+  const [handle, setHandle] = useState(channelStats?.handle || '');
+  const [avatar, setAvatar] = useState(channelStats?.avatar || '');
+  const [banner, setBanner] = useState(channelStats?.banner || '');
   const [description, setDescription] = useState(
     "Official Dev Creator Studio channel. Sharing tutorials, full-stack AI roadmaps, code architecture tips, and software engineering deep dives."
   );

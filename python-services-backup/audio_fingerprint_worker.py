@@ -19,23 +19,28 @@ from psycopg2.extras import RealDictCursor
 env_path = Path(__file__).parent / ".env"
 load_dotenv(env_path)
 
-# Configure FFmpeg path for pydub
-ffmpeg_dir = r"C:\Users\ZKG\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-9.0-full_build\bin"
-if os.path.exists(ffmpeg_dir):
-    os.environ["PATH"] = ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
-
-# Add dejavu to path
-sys.path.insert(0, str(Path(__file__).parent / "dejavu"))
-
-from dejavu import Dejavu
-from dejavu.logic.recognizer.file_recognizer import FileRecognizer
-
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Configure FFmpeg path for pydub
+# Get the project root by going up from the script location
+project_root = Path(__file__).resolve().parent.parent
+ffmpeg_dir = str(project_root / "ffmpeg" / "bin")
+if os.path.exists(ffmpeg_dir):
+    os.environ["PATH"] = ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
+    logger.info(f"FFmpeg configured at: {ffmpeg_dir}")
+else:
+    logger.warning(f"FFmpeg not found at: {ffmpeg_dir}")
+
+# Add dejavu to path
+sys.path.insert(0, str(Path(__file__).parent / "dejavu"))
+
+from dejavu import Dejavu
+from dejavu.logic.recognizer.file_recognizer import FileRecognizer
 
 
 class AudioFingerprintWorker:

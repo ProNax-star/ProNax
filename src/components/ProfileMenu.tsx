@@ -1,6 +1,6 @@
 /* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from '@/lib/router-compat';
 import { User, LogOut, SlidersHorizontal, Settings as SettingsIcon, Sun, Moon, LogIn, Shield, Key, Sparkles, X } from 'lucide-react';
 import {
   DropdownMenu,

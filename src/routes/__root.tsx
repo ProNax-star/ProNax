@@ -59,8 +59,10 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useLocation,
   HeadContent,
   Scripts,
+  Outlet,
 } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
@@ -164,6 +166,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "apple-touch-icon", href: "/icon-192x192.svg" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { name: "theme-color", content: "#0f0f0f" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "ProNax" },
     ],
   }),
   shellComponent: RootShell,
@@ -185,6 +193,8 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const location = useLocation();
+  const isStudioRoute = location.pathname.startsWith('/studio');
 
   // Global error capture (uncaught errors, rejections, perf timings) and the
   // inactivity sign-out timer.
@@ -218,12 +228,17 @@ function RootComponent() {
         <Sonner />
         <AppConfigProvider>
           <WalletProvider>
-            {/* Required: nested routes render inside the shell's <Outlet />. */}
             <ClientOnly fallback={<div className="min-h-screen bg-background" />}>
               <ErrorBoundary>
-                <MainLayout />
+                {isStudioRoute ? (
+                  // Studio routes render directly without MainLayout
+                  <Outlet />
+                ) : (
+                  // Main app routes render with MainLayout
+                  <MainLayout />
+                )}
               </ErrorBoundary>
-              <CookieConsent />
+              {!isStudioRoute && <CookieConsent />}
             </ClientOnly>
           </WalletProvider>
         </AppConfigProvider>

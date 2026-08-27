@@ -1,4 +1,3 @@
-/* Copyright (c) 2026 ProNax. All rights reserved. Proprietary and Confidential. Unauthorized copying or redistribution is strictly prohibited. */
 export type Json =
   | string
   | number
@@ -8,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.15"
-  }
   public: {
     Tables: {
       ab_assignments: {
@@ -330,6 +324,39 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_user_id: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_by: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_user_id?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_user_id?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+        }
+        Relationships: []
+      }
       algorithm_audit_log: {
         Row: {
           actor: string | null
@@ -359,6 +386,7 @@ export type Database = {
       }
       analytics_events: {
         Row: {
+          country_code: string | null
           cpm: number | null
           created_at: string
           event: string
@@ -367,10 +395,12 @@ export type Database = {
           id: number
           props: Json | null
           revenue: number | null
+          traffic_source: string | null
           user_id: string | null
           video_id: string | null
         }
         Insert: {
+          country_code?: string | null
           cpm?: number | null
           created_at?: string
           event: string
@@ -379,10 +409,12 @@ export type Database = {
           id?: number
           props?: Json | null
           revenue?: number | null
+          traffic_source?: string | null
           user_id?: string | null
           video_id?: string | null
         }
         Update: {
+          country_code?: string | null
           cpm?: number | null
           created_at?: string
           event?: string
@@ -391,6 +423,7 @@ export type Database = {
           id?: number
           props?: Json | null
           revenue?: number | null
+          traffic_source?: string | null
           user_id?: string | null
           video_id?: string | null
         }
@@ -398,16 +431,19 @@ export type Database = {
       }
       app_settings: {
         Row: {
+          id: number | null
           key: string
           updated_at: string
           value: Json
         }
         Insert: {
+          id?: number | null
           key: string
           updated_at?: string
           value?: Json
         }
         Update: {
+          id?: number | null
           key?: string
           updated_at?: string
           value?: Json
@@ -417,35 +453,125 @@ export type Database = {
       appeals: {
         Row: {
           admin_note: string | null
+          admin_response: string | null
           created_at: string
           email: string | null
           id: string
           message: string
+          reviewed_at: string | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
           admin_note?: string | null
+          admin_response?: string | null
           created_at?: string
           email?: string | null
           id?: string
           message: string
+          reviewed_at?: string | null
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           admin_note?: string | null
+          admin_response?: string | null
           created_at?: string
           email?: string | null
           id?: string
           message?: string
+          reviewed_at?: string | null
           status?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: []
+      }
+      audio_fingerprints: {
+        Row: {
+          date_created: string | null
+          date_modified: string | null
+          hash: string
+          offset: number
+          song_id: number | null
+        }
+        Insert: {
+          date_created?: string | null
+          date_modified?: string | null
+          hash: string
+          offset: number
+          song_id?: number | null
+        }
+        Update: {
+          date_created?: string | null
+          date_modified?: string | null
+          hash?: string
+          offset?: number
+          song_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audio_fingerprints_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "audio_fingerprints_songs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audio_fingerprints_songs: {
+        Row: {
+          created_at: string | null
+          file_sha1: string | null
+          id: number
+          owner_id: string | null
+          song_name: string
+          updated_at: string | null
+          video_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_sha1?: string | null
+          id?: number
+          owner_id?: string | null
+          song_name: string
+          updated_at?: string | null
+          video_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          file_sha1?: string | null
+          id?: number
+          owner_id?: string | null
+          song_name?: string
+          updated_at?: string | null
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audio_fingerprints_songs_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audio_fingerprints_songs_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "mv_trending_videos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audio_fingerprints_songs_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       audit_logs: {
         Row: {
@@ -489,6 +615,27 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_users: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -498,6 +645,7 @@ export type Database = {
           name: string
           position: number
           slug: string
+          sort_order: number | null
         }
         Insert: {
           created_at?: string
@@ -507,6 +655,7 @@ export type Database = {
           name: string
           position?: number
           slug: string
+          sort_order?: number | null
         }
         Update: {
           created_at?: string
@@ -516,6 +665,7 @@ export type Database = {
           name?: string
           position?: number
           slug?: string
+          sort_order?: number | null
         }
         Relationships: []
       }
@@ -631,10 +781,47 @@ export type Database = {
             foreignKeyName: "channel_notices_related_video_id_fkey"
             columns: ["related_video_id"]
             isOneToOne: false
+            referencedRelation: "mv_trending_videos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_notices_related_video_id_fkey"
+            columns: ["related_video_id"]
+            isOneToOne: false
             referencedRelation: "videos"
             referencedColumns: ["id"]
           },
         ]
+      }
+      channel_reports: {
+        Row: {
+          channel_id: string
+          created_at: string
+          details: string | null
+          id: string
+          reason: string
+          reporter_id: string
+          status: string
+        }
+        Insert: {
+          channel_id: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason: string
+          reporter_id: string
+          status?: string
+        }
+        Update: {
+          channel_id?: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason?: string
+          reporter_id?: string
+          status?: string
+        }
+        Relationships: []
       }
       comment_likes: {
         Row: {
@@ -656,6 +843,35 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      community_post_likes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       community_posts: {
         Row: {
@@ -707,6 +923,44 @@ export type Database = {
           visibility?: string
         }
         Relationships: []
+      }
+      copyright_claim_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_type: string
+          claim_id: string
+          created_at: string | null
+          id: string
+          payload: Json | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_type: string
+          claim_id: string
+          created_at?: string | null
+          id?: string
+          payload?: Json | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_type?: string
+          claim_id?: string
+          created_at?: string | null
+          id?: string
+          payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copyright_claim_events_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "copyright_claims"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       copyright_claims: {
         Row: {
@@ -773,6 +1027,13 @@ export type Database = {
           video_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "copyright_claims_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "mv_trending_videos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "copyright_claims_video_id_fkey"
             columns: ["video_id"]
@@ -1060,6 +1321,27 @@ export type Database = {
           },
         ]
       }
+      handle_history: {
+        Row: {
+          changed_at: string
+          id: string
+          old_handle: string
+          user_id: string
+        }
+        Insert: {
+          changed_at?: string
+          id?: string
+          old_handle: string
+          user_id: string
+        }
+        Update: {
+          changed_at?: string
+          id?: string
+          old_handle?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ip_rules: {
         Row: {
           created_at: string
@@ -1092,6 +1374,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      live_chat_messages: {
+        Row: {
+          body: string
+          created_at: string | null
+          deleted_by: string | null
+          id: string
+          is_deleted: boolean | null
+          stream_id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          stream_id: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          stream_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_chat_messages_stream_id_fkey"
+            columns: ["stream_id"]
+            isOneToOne: false
+            referencedRelation: "streams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       moderation_queue: {
         Row: {
@@ -1143,19 +1463,73 @@ export type Database = {
       }
       moderation_settings: {
         Row: {
-          key: string
+          adult_content_threshold: number
+          auto_moderation_enabled: boolean
+          auto_suppress_threshold: number
+          copyright_threshold: number
+          id: string
+          manual_review_required: boolean
+          spam_threshold: number
           updated_at: string
-          value: Json
         }
         Insert: {
-          key: string
+          adult_content_threshold?: number
+          auto_moderation_enabled?: boolean
+          auto_suppress_threshold?: number
+          copyright_threshold?: number
+          id?: string
+          manual_review_required?: boolean
+          spam_threshold?: number
           updated_at?: string
-          value?: Json
         }
         Update: {
-          key?: string
+          adult_content_threshold?: number
+          auto_moderation_enabled?: boolean
+          auto_suppress_threshold?: number
+          copyright_threshold?: number
+          id?: string
+          manual_review_required?: boolean
+          spam_threshold?: number
           updated_at?: string
-          value?: Json
+        }
+        Relationships: []
+      }
+      notification_preferences: {
+        Row: {
+          channel_overrides: Json
+          comment_reply: boolean
+          copyright: boolean
+          live_start: boolean
+          marketing: boolean
+          mention: boolean
+          new_video: boolean
+          payout: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channel_overrides?: Json
+          comment_reply?: boolean
+          copyright?: boolean
+          live_start?: boolean
+          marketing?: boolean
+          mention?: boolean
+          new_video?: boolean
+          payout?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channel_overrides?: Json
+          comment_reply?: boolean
+          copyright?: boolean
+          live_start?: boolean
+          marketing?: boolean
+          mention?: boolean
+          new_video?: boolean
+          payout?: boolean
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1203,6 +1577,61 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      pdq_image_hashes: {
+        Row: {
+          created_at: string | null
+          id: number
+          image_name: string
+          owner_id: string | null
+          pdq_hash: string
+          quality_score: number | null
+          updated_at: string | null
+          video_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          image_name: string
+          owner_id?: string | null
+          pdq_hash: string
+          quality_score?: number | null
+          updated_at?: string | null
+          video_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          image_name?: string
+          owner_id?: string | null
+          pdq_hash?: string
+          quality_score?: number | null
+          updated_at?: string | null
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pdq_image_hashes_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pdq_image_hashes_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "mv_trending_videos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pdq_image_hashes_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       platform_revenue: {
         Row: {
@@ -1310,78 +1739,147 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          balance: number | null
           ban_reason: string | null
           banned_until: string | null
           banner_url: string | null
           bio: string | null
           bot_flag_reason: string | null
           bot_flagged_at: string | null
+          business_email: string | null
+          country: string | null
           created_at: string
           daily_earnings_usd: number | null
           display_name: string | null
           email: string | null
+          external_links: Json
           follower_count: number | null
           following_count: number | null
           handle: string | null
+          handle_changed_at: string | null
+          hide_liked_videos: boolean
+          hide_playlists: boolean
+          hide_subscriptions: boolean
           id: string
           is_banned: boolean
           is_bot_flagged: boolean
+          is_creator: boolean | null
+          is_verified: boolean | null
           status: string
+          subscribers_count: number | null
           total_views: number | null
           updated_at: string
           upload_limit_mb: number
           verified: boolean | null
           video_count: number | null
+          videos_count: number | null
         }
         Insert: {
           avatar_url?: string | null
+          balance?: number | null
           ban_reason?: string | null
           banned_until?: string | null
           banner_url?: string | null
           bio?: string | null
           bot_flag_reason?: string | null
           bot_flagged_at?: string | null
+          business_email?: string | null
+          country?: string | null
           created_at?: string
           daily_earnings_usd?: number | null
           display_name?: string | null
           email?: string | null
+          external_links?: Json
           follower_count?: number | null
           following_count?: number | null
           handle?: string | null
+          handle_changed_at?: string | null
+          hide_liked_videos?: boolean
+          hide_playlists?: boolean
+          hide_subscriptions?: boolean
           id: string
           is_banned?: boolean
           is_bot_flagged?: boolean
+          is_creator?: boolean | null
+          is_verified?: boolean | null
           status?: string
+          subscribers_count?: number | null
           total_views?: number | null
           updated_at?: string
           upload_limit_mb?: number
           verified?: boolean | null
           video_count?: number | null
+          videos_count?: number | null
         }
         Update: {
           avatar_url?: string | null
+          balance?: number | null
           ban_reason?: string | null
           banned_until?: string | null
           banner_url?: string | null
           bio?: string | null
           bot_flag_reason?: string | null
           bot_flagged_at?: string | null
+          business_email?: string | null
+          country?: string | null
           created_at?: string
           daily_earnings_usd?: number | null
           display_name?: string | null
           email?: string | null
+          external_links?: Json
           follower_count?: number | null
           following_count?: number | null
           handle?: string | null
+          handle_changed_at?: string | null
+          hide_liked_videos?: boolean
+          hide_playlists?: boolean
+          hide_subscriptions?: boolean
           id?: string
           is_banned?: boolean
           is_bot_flagged?: boolean
+          is_creator?: boolean | null
+          is_verified?: boolean | null
           status?: string
+          subscribers_count?: number | null
           total_views?: number | null
           updated_at?: string
           upload_limit_mb?: number
           verified?: boolean | null
           video_count?: number | null
+          videos_count?: number | null
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1418,6 +1916,18 @@ export type Database = {
           metadata?: Json
           user_agent?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      reserved_handles: {
+        Row: {
+          handle: string
+        }
+        Insert: {
+          handle: string
+        }
+        Update: {
+          handle?: string
         }
         Relationships: []
       }
@@ -1495,6 +2005,33 @@ export type Database = {
           label?: string
           position?: number
           section?: string
+        }
+        Relationships: []
+      }
+      storage_cleanup_queue: {
+        Row: {
+          cleaned_at: string | null
+          created_at: string
+          id: string
+          status: string | null
+          storage_path: string
+          video_id: string
+        }
+        Insert: {
+          cleaned_at?: string | null
+          created_at?: string
+          id?: string
+          status?: string | null
+          storage_path: string
+          video_id: string
+        }
+        Update: {
+          cleaned_at?: string | null
+          created_at?: string
+          id?: string
+          status?: string | null
+          storage_path?: string
+          video_id?: string
         }
         Relationships: []
       }
@@ -1582,6 +2119,21 @@ export type Database = {
           user_id?: string
           viewer_count?: number
           viewer_peak?: number
+        }
+        Relationships: []
+      }
+      super_admins: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1735,9 +2287,124 @@ export type Database = {
         }
         Relationships: []
       }
+      user_settings: {
+        Row: {
+          autoplay_shorts: boolean
+          autoplay_videos: boolean
+          captions_enabled: boolean
+          captions_language: string
+          custom_settings: Json
+          language: string
+          mini_player_enabled: boolean
+          muted: boolean
+          notifications_enabled: boolean
+          playback_speed: number
+          quality_preference: string
+          restricted_mode: boolean
+          theme: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          autoplay_shorts?: boolean
+          autoplay_videos?: boolean
+          captions_enabled?: boolean
+          captions_language?: string
+          custom_settings?: Json
+          language?: string
+          mini_player_enabled?: boolean
+          muted?: boolean
+          notifications_enabled?: boolean
+          playback_speed?: number
+          quality_preference?: string
+          restricted_mode?: boolean
+          theme?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          autoplay_shorts?: boolean
+          autoplay_videos?: boolean
+          captions_enabled?: boolean
+          captions_language?: string
+          custom_settings?: Json
+          language?: string
+          mini_player_enabled?: boolean
+          muted?: boolean
+          notifications_enabled?: boolean
+          playback_speed?: number
+          quality_preference?: string
+          restricted_mode?: boolean
+          theme?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_strikes: {
+        Row: {
+          category: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          issued_by: string | null
+          reason: string
+          revoked_at: string | null
+          revoked_reason: string | null
+          severity: number
+          source: string
+          user_id: string
+          video_id: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          issued_by?: string | null
+          reason: string
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          severity?: number
+          source?: string
+          user_id: string
+          video_id?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          issued_by?: string | null
+          reason?: string
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          severity?: number
+          source?: string
+          user_id?: string
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_strikes_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "mv_trending_videos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_strikes_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_wallets: {
         Row: {
           balance: number
+          created_at: string
           total_earned: number
           total_withdrawn: number
           updated_at: string
@@ -1745,6 +2412,7 @@ export type Database = {
         }
         Insert: {
           balance?: number
+          created_at?: string
           total_earned?: number
           total_withdrawn?: number
           updated_at?: string
@@ -1752,6 +2420,7 @@ export type Database = {
         }
         Update: {
           balance?: number
+          created_at?: string
           total_earned?: number
           total_withdrawn?: number
           updated_at?: string
@@ -1980,30 +2649,99 @@ export type Database = {
       }
       video_shares: {
         Row: {
-          channel: string
-          created_at: string
           id: string
-          platform: string | null
+          ip_address: unknown
+          platform: string
+          shared_at: string
+          user_agent: string | null
           user_id: string | null
           video_id: string
         }
         Insert: {
-          channel?: string
-          created_at?: string
           id?: string
-          platform?: string | null
+          ip_address?: unknown
+          platform: string
+          shared_at?: string
+          user_agent?: string | null
           user_id?: string | null
           video_id: string
         }
         Update: {
-          channel?: string
-          created_at?: string
           id?: string
-          platform?: string | null
+          ip_address?: unknown
+          platform?: string
+          shared_at?: string
+          user_agent?: string | null
           user_id?: string | null
           video_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "video_shares_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "mv_trending_videos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_shares_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_subtitles: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          kind: string
+          label: string
+          language: string
+          src: string
+          updated_at: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          kind?: string
+          label: string
+          language: string
+          src: string
+          updated_at?: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          kind?: string
+          label?: string
+          language?: string
+          src?: string
+          updated_at?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_subtitles_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "mv_trending_videos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_subtitles_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       video_views: {
         Row: {
@@ -2038,6 +2776,13 @@ export type Database = {
             foreignKeyName: "video_views_video_id_fkey"
             columns: ["video_id"]
             isOneToOne: false
+            referencedRelation: "mv_trending_videos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_views_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
             referencedRelation: "videos"
             referencedColumns: ["id"]
           },
@@ -2060,6 +2805,9 @@ export type Database = {
           boost_score: number
           category: string | null
           comments_count: number | null
+          copyright_scan_completed_at: string | null
+          copyright_scan_retry_count: number | null
+          copyright_scan_status: string | null
           created_at: string
           description: string | null
           duet_source_video: string | null
@@ -2071,6 +2819,7 @@ export type Database = {
           is_short: boolean
           language: string | null
           license: string | null
+          likes: number | null
           likes_count: number | null
           mime_type: string | null
           moderation_reason: string | null
@@ -2086,6 +2835,7 @@ export type Database = {
           reaction_source_video: string | null
           report_count: number
           scheduled_at: string | null
+          search_tsv: unknown
           sha256: string | null
           shares_count: number | null
           size_bytes: number | null
@@ -2099,6 +2849,7 @@ export type Database = {
           trending_score: number
           updated_at: string
           variants: Json | null
+          video_data: string | null
           video_url: string
           views_count: number
           visibility: string
@@ -2112,6 +2863,9 @@ export type Database = {
           boost_score?: number
           category?: string | null
           comments_count?: number | null
+          copyright_scan_completed_at?: string | null
+          copyright_scan_retry_count?: number | null
+          copyright_scan_status?: string | null
           created_at?: string
           description?: string | null
           duet_source_video?: string | null
@@ -2123,6 +2877,7 @@ export type Database = {
           is_short?: boolean
           language?: string | null
           license?: string | null
+          likes?: number | null
           likes_count?: number | null
           mime_type?: string | null
           moderation_reason?: string | null
@@ -2138,6 +2893,7 @@ export type Database = {
           reaction_source_video?: string | null
           report_count?: number
           scheduled_at?: string | null
+          search_tsv?: unknown
           sha256?: string | null
           shares_count?: number | null
           size_bytes?: number | null
@@ -2151,6 +2907,7 @@ export type Database = {
           trending_score?: number
           updated_at?: string
           variants?: Json | null
+          video_data?: string | null
           video_url: string
           views_count?: number
           visibility?: string
@@ -2164,6 +2921,9 @@ export type Database = {
           boost_score?: number
           category?: string | null
           comments_count?: number | null
+          copyright_scan_completed_at?: string | null
+          copyright_scan_retry_count?: number | null
+          copyright_scan_status?: string | null
           created_at?: string
           description?: string | null
           duet_source_video?: string | null
@@ -2175,6 +2935,7 @@ export type Database = {
           is_short?: boolean
           language?: string | null
           license?: string | null
+          likes?: number | null
           likes_count?: number | null
           mime_type?: string | null
           moderation_reason?: string | null
@@ -2190,6 +2951,7 @@ export type Database = {
           reaction_source_video?: string | null
           report_count?: number
           scheduled_at?: string | null
+          search_tsv?: unknown
           sha256?: string | null
           shares_count?: number | null
           size_bytes?: number | null
@@ -2203,6 +2965,7 @@ export type Database = {
           trending_score?: number
           updated_at?: string
           variants?: Json | null
+          video_data?: string | null
           video_url?: string
           views_count?: number
           visibility?: string
@@ -2213,6 +2976,64 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vpdq_video_hashes: {
+        Row: {
+          created_at: string | null
+          frame_count: number | null
+          id: number
+          owner_id: string | null
+          quality_score: number | null
+          updated_at: string | null
+          video_id: string | null
+          video_name: string
+          vpdq_hash: string
+        }
+        Insert: {
+          created_at?: string | null
+          frame_count?: number | null
+          id?: number
+          owner_id?: string | null
+          quality_score?: number | null
+          updated_at?: string | null
+          video_id?: string | null
+          video_name: string
+          vpdq_hash: string
+        }
+        Update: {
+          created_at?: string | null
+          frame_count?: number | null
+          id?: number
+          owner_id?: string | null
+          quality_score?: number | null
+          updated_at?: string | null
+          video_id?: string | null
+          video_name?: string
+          vpdq_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vpdq_video_hashes_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vpdq_video_hashes_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "mv_trending_videos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vpdq_video_hashes_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
             referencedColumns: ["id"]
           },
         ]
@@ -2333,27 +3154,71 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      mv_trending_videos: {
+        Row: {
+          category: string | null
+          comments_count: number | null
+          created_at: string | null
+          description: string | null
+          duration_seconds: number | null
+          hours_since_publish: number | null
+          id: string | null
+          is_removed: boolean | null
+          is_shadow_banned: boolean | null
+          likes_count: number | null
+          owner_id: string | null
+          shares_count: number | null
+          status: string | null
+          tags: string[] | null
+          thumb_url: string | null
+          title: string | null
+          trending_score: number | null
+          velocity_score: number | null
+          views_count: number | null
+          visibility: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "videos_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
-      admin_adjust_wallet: {
-        Args: { p_delta: number; p_set_balance?: number; p_user_id: string }
-        Returns: {
-          balance: number
-          total_earned: number
-          total_withdrawn: number
-          updated_at: string
-          user_id: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "user_wallets"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+      active_strike_count: { Args: { _user_id: string }; Returns: number }
+      admin_adjust_wallet:
+        | {
+            Args: { p_delta: number; p_set_balance?: number; p_user_id: string }
+            Returns: {
+              balance: number
+              created_at: string
+              total_earned: number
+              total_withdrawn: number
+              updated_at: string
+              user_id: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "user_wallets"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: {
+              p_delta: number
+              p_reason?: string
+              p_set_balance?: number
+              p_user_id: string
+            }
+            Returns: Json
+          }
       admin_ban_user: {
-        Args: { p_reason: string; p_until?: string; p_user: string }
+        Args: { p_reason: string; p_until: string; p_user: string }
         Returns: Json
       }
       admin_bootstrap_status: {
@@ -2363,57 +3228,73 @@ export type Database = {
           is_admin: boolean
         }[]
       }
+      admin_cancel_invite: { Args: { p_id: string }; Returns: Json }
       admin_delete_ip_rule: { Args: { p_ip: string }; Returns: Json }
       admin_flag_bot: {
         Args: { p_flag?: boolean; p_user: string }
         Returns: Json
       }
+      admin_invite_by_email: { Args: { p_email: string }; Returns: Json }
+      admin_issue_strike: {
+        Args: {
+          p_category: string
+          p_reason: string
+          p_severity?: number
+          p_source?: string
+          p_user: string
+          p_video_id?: string
+        }
+        Returns: Json
+      }
       admin_mark_withdrawal_processed: {
         Args: { p_note?: string; p_request_id: string }
-        Returns: {
-          admin_note: string | null
-          amount: number
-          country: string | null
-          created_at: string
-          destination: string | null
-          id: string
-          method: string | null
-          payment_details: Json
-          processed_at: string | null
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "withdrawal_requests"
-          isOneToOne: true
-          isSetofReturn: false
-        }
+        Returns: Json
       }
-      admin_set_ip_rule: {
-        Args: {
-          p_expires?: string
-          p_ip: string
-          p_mode: string
-          p_reason?: string
-        }
-        Returns: {
-          created_at: string
-          created_by: string | null
-          expires_at: string | null
-          id: string
-          ip_address: string
-          mode: string
-          reason: string | null
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "ip_rules"
-          isOneToOne: true
-          isSetofReturn: false
-        }
+      admin_moderate_video: {
+        Args: { p_action: string; p_reason: string; p_video: string }
+        Returns: Json
+      }
+      admin_resolve_appeal: {
+        Args: { p_appeal_id: string; p_decision: string; p_note?: string }
+        Returns: Json
+      }
+      admin_revoke_admin: { Args: { p_user: string }; Returns: Json }
+      admin_revoke_strike: {
+        Args: { p_reason: string; p_strike_id: string }
+        Returns: Json
+      }
+      admin_set_ip_rule:
+        | {
+            Args: { p_action: string; p_ip: unknown; p_reason?: string }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_expires?: string
+              p_ip: string
+              p_mode: string
+              p_reason?: string
+            }
+            Returns: {
+              created_at: string
+              created_by: string | null
+              expires_at: string | null
+              id: string
+              ip_address: string
+              mode: string
+              reason: string | null
+              updated_at: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "ip_rules"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+      admin_set_owner: {
+        Args: { p_grant: boolean; p_user: string }
+        Returns: Json
       }
       admin_set_role: {
         Args: {
@@ -2423,16 +3304,92 @@ export type Database = {
         }
         Returns: Json
       }
-      admin_set_video_boost: {
-        Args: { p_score: number; p_video: string }
-        Returns: Json
-      }
+      admin_set_video_boost:
+        | { Args: { p_score: number; p_video: string }; Returns: Json }
+        | { Args: { p_boost_score: number; p_video: string }; Returns: Json }
+      admin_team_list: { Args: never; Returns: Json }
       admin_unban_user: { Args: { p_user: string }; Returns: Json }
       admin_unflag_bot: { Args: { p_user: string }; Returns: Json }
       assign_ab_variant: { Args: { p_test: string }; Returns: string }
       bump_ad_slot_impression: { Args: { p_slot: string }; Returns: undefined }
+      calculate_video_24h_metrics: {
+        Args: { p_video_id: string }
+        Returns: {
+          comments_24h: number
+          likes_24h: number
+          shares_24h: number
+          views_24h: number
+        }[]
+      }
       cancel_account_deletion: { Args: never; Returns: Json }
+      change_handle: { Args: { _handle: string }; Returns: Json }
+      check_and_handle_duplicate_fingerprint: {
+        Args: {
+          p_fingerprint: string
+          p_owner_id: string
+          p_video_id: string
+          p_video_title: string
+        }
+        Returns: {
+          claim_id: string
+          is_duplicate: boolean
+          message: string
+          status: string
+        }[]
+      }
+      check_audio_copyright: {
+        Args: { p_audio_url: string }
+        Returns: {
+          confidence: number
+          match_count: number
+          owner_id: string
+          song_id: number
+          song_name: string
+          video_id: string
+        }[]
+      }
+      check_duplicate_fingerprint: {
+        Args: {
+          p_fingerprint: string
+          p_owner_id?: string
+          p_video_id?: string
+        }
+        Returns: {
+          confidence: number
+          existing_owner_id: string
+          existing_video_id: string
+          existing_video_title: string
+          is_duplicate: boolean
+          match_type: string
+        }[]
+      }
+      check_pdq_match: {
+        Args: { p_pdq_hash: string }
+        Returns: {
+          id: number
+          image_name: string
+          match_distance: number
+          owner_id: string
+          pdq_hash: string
+          quality_score: number
+          video_id: string
+        }[]
+      }
+      check_vpdq_match: {
+        Args: { p_vpdq_hash: string }
+        Returns: {
+          frame_count: number
+          id: number
+          match_distance: number
+          owner_id: string
+          quality_score: number
+          video_id: string
+          video_name: string
+          vpdq_hash: string
+        }[]
+      }
       claim_initial_admin: { Args: never; Returns: Json }
+      cleanup_analytics_events: { Args: never; Returns: number }
       create_copyright_claim: {
         Args: {
           p_claim_type: string
@@ -2446,6 +3403,17 @@ export type Database = {
         }
         Returns: string
       }
+      create_copyright_claim_from_duplicate: {
+        Args: {
+          p_confidence: number
+          p_existing_owner_id: string
+          p_existing_video_id: string
+          p_match_type: string
+          p_video_id: string
+        }
+        Returns: string
+      }
+      delete_video_with_storage: { Args: { p_video_id: string }; Returns: Json }
       dispute_copyright_claim: {
         Args: {
           p_claim_id: string
@@ -2454,7 +3422,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      expire_bans: { Args: never; Returns: undefined }
       export_my_data: { Args: never; Returns: Json }
+      get_aggregated_analytics: {
+        Args: { p_days?: number; p_user_id: string }
+        Returns: {
+          date: string
+          revenue: number
+          subscribers: number
+          views: number
+          watch_time_hours: number
+        }[]
+      }
       get_algo_weights: { Args: never; Returns: Json }
       get_audit_logs: {
         Args: {
@@ -2484,6 +3463,29 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_channel_analytics: { Args: { p_user_id: string }; Returns: Json }
+      get_channel_community_posts: {
+        Args: { p_creator_id: string; p_limit?: number; p_offset?: number }
+        Returns: {
+          comments_count: number
+          content: string
+          created_at: string
+          creator_avatar: string
+          creator_handle: string
+          creator_id: string
+          creator_name: string
+          id: string
+          is_pinned: boolean
+          likes_count: number
+          media_urls: string[]
+          poll_expires_at: string
+          poll_options: Json
+          post_type: string
+          shares_count: number
+          updated_at: string
+          visibility: string
+        }[]
+      }
       get_channel_notices: {
         Args: { p_limit?: number; p_unread_only?: boolean; p_user_id?: string }
         Returns: {
@@ -2503,6 +3505,14 @@ export type Database = {
       get_creator_analytics: {
         Args: { p_days?: number; p_user?: string }
         Returns: Json
+      }
+      get_geography_analytics: {
+        Args: { p_user_id: string }
+        Returns: {
+          country_code: string
+          country_name: string
+          percentage: number
+        }[]
       }
       get_home_feed_v2: {
         Args: {
@@ -2530,7 +3540,44 @@ export type Database = {
           views_count: number
         }[]
       }
+      get_minute_views: {
+        Args: { p_minutes?: number; p_user_id: string }
+        Returns: {
+          minute_label: string
+          views: number
+        }[]
+      }
+      get_notification_preferences: {
+        Args: { p_user_id: string }
+        Returns: {
+          channel_overrides: Json
+          comment_reply: boolean
+          copyright: boolean
+          live_start: boolean
+          marketing: boolean
+          mention: boolean
+          new_video: boolean
+          payout: boolean
+          user_id: string
+        }[]
+      }
+      get_pending_storage_cleanup: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          storage_path: string
+          video_id: string
+        }[]
+      }
       get_platform_overview: { Args: never; Returns: Json }
+      get_realtime_views: {
+        Args: { p_user_id: string }
+        Returns: {
+          last_48_hours: number
+          last_60_minutes: number
+        }[]
+      }
       get_related_videos: {
         Args: { p_limit?: number; p_video: string }
         Returns: {
@@ -2542,6 +3589,9 @@ export type Database = {
           boost_score: number
           category: string | null
           comments_count: number | null
+          copyright_scan_completed_at: string | null
+          copyright_scan_retry_count: number | null
+          copyright_scan_status: string | null
           created_at: string
           description: string | null
           duet_source_video: string | null
@@ -2553,6 +3603,7 @@ export type Database = {
           is_short: boolean
           language: string | null
           license: string | null
+          likes: number | null
           likes_count: number | null
           mime_type: string | null
           moderation_reason: string | null
@@ -2568,6 +3619,7 @@ export type Database = {
           reaction_source_video: string | null
           report_count: number
           scheduled_at: string | null
+          search_tsv: unknown
           sha256: string | null
           shares_count: number | null
           size_bytes: number | null
@@ -2581,6 +3633,7 @@ export type Database = {
           trending_score: number
           updated_at: string
           variants: Json | null
+          video_data: string | null
           video_url: string
           views_count: number
           visibility: string
@@ -2603,6 +3656,9 @@ export type Database = {
           boost_score: number
           category: string | null
           comments_count: number | null
+          copyright_scan_completed_at: string | null
+          copyright_scan_retry_count: number | null
+          copyright_scan_status: string | null
           created_at: string
           description: string | null
           duet_source_video: string | null
@@ -2614,6 +3670,7 @@ export type Database = {
           is_short: boolean
           language: string | null
           license: string | null
+          likes: number | null
           likes_count: number | null
           mime_type: string | null
           moderation_reason: string | null
@@ -2629,6 +3686,7 @@ export type Database = {
           reaction_source_video: string | null
           report_count: number
           scheduled_at: string | null
+          search_tsv: unknown
           sha256: string | null
           shares_count: number | null
           size_bytes: number | null
@@ -2642,6 +3700,7 @@ export type Database = {
           trending_score: number
           updated_at: string
           variants: Json | null
+          video_data: string | null
           video_url: string
           views_count: number
           visibility: string
@@ -2654,6 +3713,61 @@ export type Database = {
         }
       }
       get_studio_dashboard: { Args: { p_user?: string }; Returns: Json }
+      get_traffic_sources_analytics: {
+        Args: { p_user_id: string }
+        Returns: {
+          percentage: number
+          source: string
+          views: number
+        }[]
+      }
+      get_trending_videos: {
+        Args: {
+          p_category?: string
+          p_cursor?: string
+          p_limit?: number
+          p_region?: string
+          p_window?: string
+        }
+        Returns: {
+          category: string
+          comments_count: number
+          created_at: string
+          description: string
+          duration_seconds: number
+          hours_since_publish: number
+          id: string
+          likes_count: number
+          owner_id: string
+          shares_count: number
+          tags: string[]
+          thumb_url: string
+          title: string
+          trending_rank: number
+          velocity_score: number
+          views_count: number
+        }[]
+      }
+      get_user_settings: {
+        Args: { p_user_id: string }
+        Returns: {
+          autoplay_shorts: boolean
+          autoplay_videos: boolean
+          captions_enabled: boolean
+          captions_language: string
+          custom_settings: Json
+          language: string
+          mini_player_enabled: boolean
+          muted: boolean
+          notifications_enabled: boolean
+          playback_speed: number
+          quality_preference: string
+          restricted_mode: boolean
+          theme: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
       get_video_copyright_claims: {
         Args: { p_video_id: string }
         Returns: {
@@ -2669,12 +3783,38 @@ export type Database = {
         }[]
       }
       get_video_retention: { Args: { p_video: string }; Returns: Json }
+      get_video_share_breakdown: {
+        Args: { p_video_id: string }
+        Returns: {
+          count: number
+          platform: string
+        }[]
+      }
+      get_video_share_count: { Args: { p_video_id: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      is_handle_available: { Args: { _handle: string }; Returns: boolean }
+      is_handle_valid: { Args: { _handle: string }; Returns: boolean }
+      is_subscribed_to_creator: {
+        Args: { p_creator_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      log_ai_evaluation_event: {
+        Args: {
+          p_claim_id: string
+          p_fair_use_factors: Json
+          p_merit_level: string
+          p_merit_score: number
+          p_reasoning: string
+          p_recommendation: string
+        }
+        Returns: string
       }
       log_audit_event: {
         Args: {
@@ -2688,11 +3828,45 @@ export type Database = {
         }
         Returns: string
       }
+      log_policy_change_event: {
+        Args: {
+          p_actor_id: string
+          p_claim_id: string
+          p_new_policy: string
+          p_note?: string
+          p_old_policy: string
+        }
+        Returns: string
+      }
+      log_search_analytics: {
+        Args: {
+          p_filters?: Json
+          p_query?: string
+          p_results_count?: number
+          p_user_id?: string
+        }
+        Returns: undefined
+      }
+      log_status_change_event: {
+        Args: {
+          p_actor_id: string
+          p_claim_id: string
+          p_new_status: string
+          p_note?: string
+          p_old_status: string
+        }
+        Returns: string
+      }
       log_video_impression: {
         Args: { p_surface?: string; p_video: string }
         Returns: undefined
       }
       mark_notice_read: { Args: { p_notice_id: string }; Returns: boolean }
+      mark_storage_cleanup_completed: {
+        Args: { p_queue_id: string; p_status?: string }
+        Returns: boolean
+      }
+      normalize_handle: { Args: { _handle: string }; Returns: string }
       pick_ad_for_video: { Args: { p_video: string }; Returns: Json }
       post_comment: {
         Args: {
@@ -2718,6 +3892,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      rate_limit_chat_message: {
+        Args: { p_stream_id: string; p_user_id: string }
+        Returns: boolean
       }
       record_ab_event: {
         Args: {
@@ -2745,6 +3923,16 @@ export type Database = {
       record_share:
         | { Args: { p_channel?: string; p_video: string }; Returns: Json }
         | { Args: { p_platform?: string; p_video: string }; Returns: Json }
+      record_video_share: {
+        Args: {
+          p_ip_address?: unknown
+          p_platform?: string
+          p_user_agent?: string
+          p_user_id?: string
+          p_video_id: string
+        }
+        Returns: string
+      }
       record_view:
         | {
             Args: {
@@ -2770,8 +3958,53 @@ export type Database = {
         Args: { p_seconds?: number; p_video: string }
         Returns: Json
       }
+      refresh_trending_videos_mv: { Args: never; Returns: undefined }
+      register_audio_fingerprint: {
+        Args: {
+          p_file_sha1: string
+          p_owner_id: string
+          p_song_name: string
+          p_video_id?: string
+        }
+        Returns: number
+      }
+      register_pdq_hash: {
+        Args: {
+          p_image_name: string
+          p_owner_id: string
+          p_pdq_hash: string
+          p_quality_score: number
+          p_video_id?: string
+        }
+        Returns: number
+      }
+      register_push_subscription: {
+        Args: {
+          p_auth: string
+          p_endpoint: string
+          p_p256dh: string
+          p_user_agent?: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      register_vpdq_hash: {
+        Args: {
+          p_frame_count: number
+          p_owner_id: string
+          p_quality_score: number
+          p_video_id?: string
+          p_video_name: string
+          p_vpdq_hash: string
+        }
+        Returns: number
+      }
       release_copyright_claim: {
         Args: { p_claim_id: string }
+        Returns: boolean
+      }
+      remove_push_subscription: {
+        Args: { p_endpoint: string; p_user_id: string }
         Returns: boolean
       }
       request_account_deletion: {
@@ -2819,6 +4052,91 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      resolve_channel_handle: {
+        Args: { _handle: string }
+        Returns: {
+          canonical_handle: string
+          redirected: boolean
+          user_id: string
+        }[]
+      }
+      search_channels: {
+        Args: { p_limit?: number; p_query?: string }
+        Returns: {
+          avatar_url: string
+          description: string
+          display_name: string
+          followers_count: number
+          handle: string
+          id: string
+          rank: number
+          videos_count: number
+        }[]
+      }
+      search_videos: {
+        Args: {
+          p_category?: string
+          p_duration_filter?: string
+          p_include_channels?: boolean
+          p_include_playlists?: boolean
+          p_limit?: number
+          p_offset?: number
+          p_query?: string
+          p_sort_by?: string
+          p_upload_date?: string
+          p_video_type?: string
+        }
+        Returns: {
+          avatar_url: string
+          category: string
+          comments_count: number
+          created_at: string
+          description: string
+          display_name: string
+          duration_seconds: number
+          followers_count: number
+          handle: string
+          id: string
+          is_short: boolean
+          likes_count: number
+          owner_id: string
+          rank: number
+          result_type: string
+          tags: string[]
+          thumb_url: string
+          title: string
+          videos_count: number
+          views_count: number
+        }[]
+      }
+      search_videos_fulltext: {
+        Args: {
+          p_category?: string
+          p_duration_filter?: string
+          p_limit?: number
+          p_offset?: number
+          p_query?: string
+          p_sort_by?: string
+          p_upload_date?: string
+          p_video_type?: string
+        }
+        Returns: {
+          category: string
+          comments_count: number
+          created_at: string
+          description: string
+          duration_seconds: number
+          id: string
+          is_short: boolean
+          likes_count: number
+          owner_id: string
+          rank: number
+          tags: string[]
+          thumb_url: string
+          title: string
+          views_count: number
+        }[]
+      }
       search_videos_suggest: {
         Args: { p_limit?: number; p_q: string }
         Returns: {
@@ -2826,6 +4144,16 @@ export type Database = {
           thumb_url: string
           title: string
         }[]
+      }
+      send_push_notification: {
+        Args: {
+          p_body: string
+          p_data?: Json
+          p_icon?: string
+          p_title: string
+          p_user_id: string
+        }
+        Returns: boolean
       }
       settle_ad_impression: {
         Args: {
@@ -2839,6 +4167,16 @@ export type Database = {
           reason: string
           settled: boolean
         }[]
+      }
+      suggest_handles: {
+        Args: { _base: string; _limit?: number }
+        Returns: {
+          handle: string
+        }[]
+      }
+      toggle_community_post_like: {
+        Args: { p_post_id: string; p_user_id: string }
+        Returns: Json
       }
       toggle_follow: { Args: { p_target: string }; Returns: Json }
       toggle_like: {
@@ -2862,9 +4200,42 @@ export type Database = {
         Args: { p_note?: string; p_weights: Json }
         Returns: Json
       }
+      update_notification_preferences: {
+        Args: {
+          p_channel_overrides?: Json
+          p_comment_reply?: boolean
+          p_copyright?: boolean
+          p_live_start?: boolean
+          p_marketing?: boolean
+          p_mention?: boolean
+          p_new_video?: boolean
+          p_payout?: boolean
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      update_user_settings: {
+        Args: {
+          p_autoplay_shorts?: boolean
+          p_autoplay_videos?: boolean
+          p_captions_enabled?: boolean
+          p_captions_language?: string
+          p_custom_settings?: Json
+          p_language?: string
+          p_mini_player_enabled?: boolean
+          p_muted?: boolean
+          p_notifications_enabled?: boolean
+          p_playback_speed?: number
+          p_quality_preference?: string
+          p_restricted_mode?: boolean
+          p_theme?: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
+      app_role: "admin" | "moderator" | "user" | "support"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2992,7 +4363,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user"],
+      app_role: ["admin", "moderator", "user", "support"],
     },
   },
 } as const
+

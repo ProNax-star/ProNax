@@ -108,7 +108,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) return;
     const ch = supabase
-      .channel(`wallet-${user.id}-${Math.random().toString(36).slice(2)}`)
+      .channel(`wallet:${user.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_wallets', filter: `user_id=eq.${user.id}` }, () => fetchAll())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'wallet_transactions', filter: `user_id=eq.${user.id}` }, () => fetchAll())
       .subscribe();
